@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghost / Rose — Autonomous Voice Companion</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <!-- Ambient Top Minimal HUD -->
+  <header class="top-hud">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-title">GHOST</div>
+      <div class="brand-tag">OMNIROUTE RUNTIME</div>
+    </div>
+    
+    <div class="hud-right">
+      <div id="token-telemetry-chip" class="telemetry-chip" title="Active session and daily token consumption">
+        <span class="telemetry-icon">⚡</span>
+        <span id="token-stats-text">LAST: 0 | TODAY: 0</span>
+      </div>
+
+      <div class="hud-status status-IDLE" id="status-container">
+        <div class="state-indicator"></div>
+        <span id="status-label">IDLE</span>
+      </div>
+
+      <button id="btn-interrupt" class="hud-btn hud-btn-danger" title="Barge-In Interruption">
+        <span>⚡ Intercept</span>
+      </button>
+
+      <button id="btn-settings" class="hud-btn-icon-link" title="OmniRoute Connection Settings">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- Fullscreen Glowing Multi-Filament Orbital Sphere -->
+  <div id="canvas-container">
+    <canvas id="orb-canvas"></canvas>
+  </div>
+
+  <!-- Settings Modal (Local Secure Storage) -->
+  <div id="settings-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">OmniRoute Neural Connection</div>
+        <button id="btn-close-modal" class="modal-close">&times;</button>
+      </div>
+      <p class="modal-desc">
+        Your API key is saved locally in <code>configs/omniroute.json</code> and never transmitted outside your machine.
+      </p>
+
+      <div class="form-group">
+        <label for="cfg-base-url">OmniRoute Base URL</label>
+        <input type="text" id="cfg-base-url" placeholder="http://127.0.0.1:20128/v1" />
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-api-key">OmniRoute API Key</label>
+        <input type="password" id="cfg-api-key" placeholder="Enter API Key (omni-... or sk-...)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="cfg-model">Model ID</label>
+          <input type="text" id="cfg-model" placeholder="antigravity/gemini-3.8-flash-low" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-thinking">Thinking Mode</label>
+          <select id="cfg-thinking">
+            <option value="low">Low (Fast)</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="off">Disabled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span id="save-status" class="save-status"></span>
+        <button id="btn-save-settings" class="hud-btn hud-btn-primary">Save Connection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactical Authorization Modal (Human-In-The-Loop) -->
+  <div id="auth-modal" class="modal-backdrop hidden">
+    <div class="modal-card auth-card">
+      <div class="auth-header">
+        <div class="auth-tag">⚠️ TACTICAL AUTHORIZATION REQUIRED</div>
+      </div>
+      <div class="auth-body">
+        <p id="auth-description">Action authorization requested.</p>
+      </div>
+      <div class="auth-footer">
+        <button id="btn-auth-deny" class="hud-btn hud-btn-danger">✕ DENY</button>
+        <button id="btn-auth-allow" class="hud-btn hud-btn-primary">✓ ALLOW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ambient Floating Bottom Transcript HUD -->
+  <footer class="bottom-hud">
+    <!-- Active Tool Badge Indicator -->
+    <div class="tool-badge-container" id="tool-badge-container"></div>
+
+    <!-- Floating Frameless Subtitle Transcript -->
+    <div class="transcript-bubble" id="transcript-bubble">
+      <div class="transcript-speaker">GHOST</div>
+      <div id="transcript-text">Voice core initialized and online. Standing by, sir.</div>
+    </div>
+
+    <!-- Minimalist HUD Action & Input Bar -->
+    <div class="action-bar">
+      <button id="btn-mic" class="hud-btn hud-btn-primary hud-btn-icon" title="Toggle Voice Recognition">
+        <span id="mic-icon">🎙️</span>
+      </button>
+
+      <input type="text" id="text-input" placeholder="Type a command and press Enter, or speak aloud..." autocomplete="off" />
+
+      <button id="btn-send" class="hud-btn hud-btn-primary hud-btn-icon" title="Send message (Enter)">
+        <span>➔</span>
+      </button>
+    </div>
+  </footer>
+
+  <script src="/static/js/orb.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

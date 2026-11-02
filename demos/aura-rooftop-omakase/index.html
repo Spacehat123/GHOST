@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Rooftop Omakase — Skyline Omakase &amp; Rare Vintage Sake</title>
+  <meta name="description" content="Aura Rooftop Omakase — a twelve-seat counter on the 48th floor. Skyline omakase paired with rare vintage sakes in Minato, Tokyo.">
+  <meta property="og:title" content="Aura Rooftop Omakase">
+  <meta property="og:description" content="Skyline omakase paired with rare vintage sakes. Twelve seats. Two seatings. Level 48.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230c0c0e'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' fill='%23d4af37' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0c0c0e',
+            surface: '#16161a',
+            gold: '#d4af37',
+            cream: '#eae6df',
+            line: '#272521',
+            muted: '#8e8a82'
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0c0c0e;
+      --surface: #16161a;
+      --gold: #d4af37;
+      --cream: #eae6df;
+      --line: #272521;
+      --muted: #8e8a82;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--ink);
+      color: var(--cream);
+      font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: -0.01em;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--gold); color: var(--ink); }
+
+    .shell {
+      width: 100%;
+      max-width: 82rem;
+      margin-inline: auto;
+      padding-inline: 1.5rem;
+    }
+    @media (min-width: 768px) { .shell { padding-inline: 2.5rem; } }
+    @media (min-width: 1280px) { .shell { padding-inline: 3.5rem; } }
+
+    .hero-glow {
+      background:
+        radial-gradient(58% 52% at 74% 16%, rgba(212, 175, 55, 0.11), transparent 62%),
+        radial-gradient(70% 60% at 12% 100%, rgba(212, 175, 55, 0.06), transparent 66%),
+        linear-gradient(180deg, #0e0e11 0%, #0c0c0e 68%);
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      font-size: 0.625rem;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .eyebrow::before {
+      content: "";
+      display: block;
+      width: 2.25rem;
+      height: 1px;
+      background: rgba(212, 175, 55, 0.55);
+      flex: none;
+    }
+    @media (max-width: 639px) {
+      .eyebrow { font-size: 0.5625rem; letter-spacing: 0.24em; }
+      .eyebrow::before { width: 1.5rem; }
+    }
+
+    /* Buttons — tracked, architectural, never generic */
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.85rem;
+      padding: 1.05rem 2.1rem;
+      border: 1px solid transparent;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: background-color 0.45s ease, border-color 0.45s ease, color 0.45s ease, transform 0.45s ease, box-shadow 0.45s ease;
+    }
+    .btn svg { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+    .btn:hover svg { transform: translateX(4px); }
+    .btn-gold {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--ink);
+    }
+    .btn-gold:hover {
+      background: #e2c25c;
+      border-color: #e2c25c;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px -18px rgba(212, 175, 55, 0.65);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: rgba(234, 230, 223, 0.26);
+      color: var(--cream);
+    }
+    .btn-ghost:hover {
+      border-color: rgba(212, 175, 55, 0.75);
+      color: var(--gold);
+      background: rgba(212, 175, 55, 0.05);
+      transform: translateY(-2px);
+    }
+    .btn-sm { padding: 0.78rem 1.4rem; font-size: 0.625rem; letter-spacing: 0.2em; }
+
+    /* Navigation */
+    #site-header {
+      background: transparent;
+      border-bottom: 1px solid transparent;
+      transition: background-color 0.5s ease, border-color 0.5s ease, backdrop-filter 0.5s ease;
+    }
+    #site-header.is-scrolled {
+      background: rgba(12, 12, 14, 0.86);
+      border-bottom-color: var(--line);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .nav-link {
+      position: relative;
+      padding-block: 0.4rem;
+      color: var(--muted);
+      transition: color 0.35s ease;
+    }
+    .nav-link::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 0;
+      height: 1px;
+      background: var(--gold);
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .nav-link:hover { color: var(--cream); }
+    .nav-link:hover::after { width: 100%; }
+
+    /* Category pills */
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      padding: 0.7rem 1.25rem;
+      font-size: 0.625rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: transparent;
+      transition: color 0.35s ease, border-color 0.35s ease, background-color 0.35s ease, box-shadow 0.35s ease;
+    }
+    .pill:hover {
+      color: var(--cream);
+      border-color: rgba(212, 175, 55, 0.45);
+    }
+    .pill[aria-pressed="true"] {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--ink);
+      box-shadow: 0 10px 30px -16px rgba(212, 175, 55, 0.8);
+    }
+
+    /* Menu cards */
+    .menu-card::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: 0;
+      height: 1px;
+      width: 0;
+      background: linear-gradient(90deg, var(--gold), rgba(212, 175, 55, 0));
+      transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .menu-card:hover::before { width: 100%; }
+    .menu-card:hover { transform: translateY(-4px); }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .menu-card.is-in { animation: riseIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+
+    /* Scroll reveal */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    [data-reveal].revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Marquee */
+    .marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 46s linear infinite;
+    }
+    .marquee:hover { animation-play-state: paused; }
+    @keyframes marquee { to { transform: translateX(-50%); } }
+
+    /* Mobile menu */
+    @keyframes menuIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #mobile-menu:not(.hidden) { animation: menuIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+    /* Forms */
+    .field {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 0.8rem 0;
+      font-size: 0.875rem;
+      color: var(--cream);
+      transition: border-color 0.35s ease;
+    }
+    .field::placeholder { color: rgba(142, 138, 130, 0.55); }
+    .field:focus { outline: none; border-bottom-color: var(--gold); }
+    select.field {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 1.5rem;
+      cursor: pointer;
+    }
+    select.field option { background: var(--surface); color: var(--cream); }
+
+    :focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+    }
+    #booking-confirm:focus,
+    #booking-confirm:focus-visible { outline: none; }
+
+    /* Grain overlay */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      opacity: 0.032;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.7; }
+    }
+    .star { animation: twinkle 7s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+      [data-reveal] { opacity: 1; transform: none; }
+      .marquee { animation: none; }
+    }
+  </style>
+</head>
+<body id="top" class="bg-ink font-sans text-cream antialiased">
+
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-6 focus:top-6 focus:z-[70] focus:bg-gold focus:px-5 focus:py-3 focus:text-[10px] focus:font-semibold focus:uppercase focus:tracking-[0.2em] focus:text-ink">
+    Skip to content
+  </a>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header id="site-header" class="fixed inset-x-0 top-0 z-50">
+    <div class="shell flex h-20 items-center justify-between gap-6 md:h-24">
+      <a href="#top" class="group flex items-center gap-3.5" aria-label="Aura Rooftop Omakase — home">
+        <span class="flex h-10 w-10 flex-none items-center justify-center border border-gold/40 font-serif text-lg text-gold transition-colors duration-500 group-hover:border-gold group-hover:bg-gold/10">A</span>
+        <span class="leading-none">
+          <span class="block font-serif text-lg tracking-[0.2em] text-cream">AURA</span>
+          <span class="mt-1.5 block text-[8px] font-medium uppercase tracking-[0.34em] text-muted">Rooftop Omakase</span>
+        </span>
+      </a>
+
+      <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-10 text-[10px] font-medium uppercase tracking-[0.24em] lg:flex" aria-label="Primary">
+        <a href="#experience" class="nav-link">The Experience</a>
+        <a href="#menu" class="nav-link">The Menu</a>
+        <a href="#salon" class="nav-link">The Salon</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <a href="#salon" class="btn btn-ghost btn-sm hidden sm:inline-flex">
+          Reserve
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <button id="menu-toggle" type="button" class="flex h-11 w-11 items-center justify-center border border-line text-cream transition-colors hover:border-gold/60 hover:text-gold lg:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg id="icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 8h18M3 16h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <svg id="icon-close" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m5 5 14 14M19 5 5 19" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="fixed inset-0 z-40 hidden overflow-y-auto backdrop-blur-xl lg:hidden" style="background: radial-gradient(ellipse at 72% 0%, rgba(212,175,55,0.08), transparent 55%), #0c0c0e;" aria-hidden="true">
+    <div class="shell flex min-h-full flex-col pb-10 pt-28">
+      <nav class="flex flex-col" aria-label="Mobile">
+        <a href="#experience" class="border-b border-line py-7 font-serif text-4xl text-cream transition-colors hover:text-gold">The Experience</a>
+        <a href="#menu" class="border-b border-line py-7 font-serif text-4xl text-cream transition-colors hover:text-gold">The Menu</a>
+        <a href="#salon" class="border-b border-line py-7 font-serif text-4xl text-cream transition-colors hover:text-gold">The Salon</a>
+      </nav>
+      <div class="mt-10">
+        <a href="#salon" class="btn btn-gold w-full">
+          Reserve the Counter
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+      <div class="mt-auto pt-12">
+        <p class="text-[9px] uppercase tracking-[0.3em] text-muted">Level 48 · The Meridian Tower</p>
+        <p class="mt-3 text-sm text-cream">2-11-3 Akasaka, Minato, Tokyo</p>
+        <a href="tel:+81355550148" class="mt-4 inline-block font-serif text-lg text-gold">+81 3 5555 0148</a>
+      </div>
+    </div>
+  </div>
+
+  <main id="main">
+
+    <!-- ══════════════ HERO ══════════════ -->
+    <section class="hero-glow relative flex min-h-[100svh] flex-col overflow-hidden pt-28 md:pt-32" aria-labelledby="hero-heading">
+      <!-- Atmosphere -->
+      <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div class="absolute -top-[30%] right-[-10%] h-[70vw] w-[70vw] rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.10),transparent_65%)] blur-2xl"></div>
+        <span class="star absolute left-[14%] top-[24%] h-1 w-1 rounded-full bg-gold/70"></span>
+        <span class="star absolute left-[38%] top-[17%] h-px w-px rounded-full bg-cream/60" style="animation-delay:1.8s"></span>
+        <span class="star absolute right-[24%] top-[30%] h-1 w-1 rounded-full bg-gold/60" style="animation-delay:3.4s"></span>
+        <span class="star absolute right-[12%] top-[14%] h-px w-px rounded-full bg-cream/50" style="animation-delay:5s"></span>
+
+        <!-- Skyline -->
+        <svg class="absolute inset-x-0 bottom-0 h-[42vh] w-full opacity-80" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="bldg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1c1c22"/>
+              <stop offset="1" stop-color="#0d0d10"/>
+            </linearGradient>
+            <linearGradient id="skyFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0c0c0e" stop-opacity="0"/>
+              <stop offset="0.72" stop-color="#0c0c0e" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#0c0c0e" stop-opacity="0.95"/>
+            </linearGradient>
+          </defs>
+          <g fill="url(#bldg)" stroke="#272521" stroke-width="1">
+            <rect x="0" y="180" width="70" height="120"/>
+            <rect x="70" y="110" width="46" height="190"/>
+            <rect x="116" y="150" width="58" height="150"/>
+            <rect x="174" y="70" width="34" height="230"/>
+            <rect x="208" y="130" width="74" height="170"/>
+            <rect x="282" y="190" width="50" height="110"/>
+            <rect x="332" y="50" width="38" height="250"/>
+            <rect x="370" y="120" width="86" height="180"/>
+            <rect x="456" y="160" width="54" height="140"/>
+            <rect x="510" y="90" width="32" height="210"/>
+            <rect x="542" y="180" width="68" height="120"/>
+            <rect x="610" y="105" width="48" height="195"/>
+            <rect x="658" y="140" width="96" height="160"/>
+            <rect x="754" y="65" width="42" height="235"/>
+            <rect x="796" y="125" width="58" height="175"/>
+            <rect x="854" y="195" width="36" height="105"/>
+            <rect x="890" y="100" width="74" height="200"/>
+            <rect x="964" y="160" width="48" height="140"/>
+            <rect x="1012" y="40" width="32" height="260"/>
+            <rect x="1044" y="130" width="84" height="170"/>
+            <rect x="1128" y="180" width="54" height="120"/>
+            <rect x="1182" y="95" width="42" height="205"/>
+            <rect x="1224" y="150" width="70" height="150"/>
+            <rect x="1294" y="75" width="38" height="225"/>
+            <rect x="1332" y="125" width="66" height="175"/>
+            <rect x="1398" y="180" width="42" height="120"/>
+          </g>
+          <g stroke="#272521" stroke-width="1">
+            <line x1="93" y1="110" x2="93" y2="76"/>
+            <line x1="351" y1="50" x2="351" y2="18"/>
+            <line x1="775" y1="65" x2="775" y2="30"/>
+            <line x1="1028" y1="40" x2="1028" y2="10"/>
+            <line x1="1313" y1="75" x2="1313" y2="48"/>
+          </g>
+          <g fill="#d4af37" opacity="0.28">
+            <rect x="20" y="200" width="2" height="5"/><rect x="42" y="222" width="2" height="5"/>
+            <rect x="86" y="152" width="2" height="5"/><rect x="98" y="182" width="2" height="5"/>
+            <rect x="132" y="180" width="2" height="5"/><rect x="190" y="112" width="2" height="5"/>
+            <rect x="242" y="162" width="2" height="5"/><rect x="302" y="212" width="2" height="5"/>
+            <rect x="350" y="92" width="2" height="5"/><rect x="392" y="152" width="2" height="5"/>
+            <rect x="430" y="182" width="2" height="5"/><rect x="472" y="192" width="2" height="5"/>
+            <rect x="530" y="122" width="2" height="5"/><rect x="562" y="202" width="2" height="5"/>
+            <rect x="632" y="152" width="2" height="5"/><rect x="682" y="182" width="2" height="5"/>
+            <rect x="720" y="202" width="2" height="5"/><rect x="770" y="112" width="2" height="5"/>
+            <rect x="812" y="162" width="2" height="5"/><rect x="872" y="222" width="2" height="5"/>
+            <rect x="912" y="142" width="2" height="5"/><rect x="982" y="192" width="2" height="5"/>
+            <rect x="1030" y="82" width="2" height="5"/><rect x="1062" y="162" width="2" height="5"/>
+            <rect x="1102" y="202" width="2" height="5"/><rect x="1142" y="152" width="2" height="5"/>
+            <rect x="1202" y="132" width="2" height="5"/><rect x="1242" y="182" width="2" height="5"/>
+            <rect x="1312" y="112" width="2" height="5"/><rect x="1352" y="162" width="2" height="5"/>
+            <rect x="1404" y="202" width="2" height="5"/>
+          </g>
+          <rect width="1440" height="300" fill="url(#skyFade)"/>
+        </svg>
+      </div>
+
+      <div class="shell relative z-10 flex flex-1 flex-col justify-center pb-8">
+        <div class="max-w-5xl">
+          <div data-reveal class="eyebrow"><span>Level 48 · The Meridian Tower<span class="hidden sm:inline"> · Est. 2016</span></span></div>
+
+          <h1 id="hero-heading" data-reveal style="transition-delay:120ms" class="mt-7 font-serif text-[clamp(3.1rem,8.2vw,7.4rem)] font-normal leading-[0.98] tracking-[-0.025em] text-cream">
+            Omakase at the<br class="hidden sm:block">
+            <span class="italic text-gold">edge of the sky.</span>
+          </h1>
+
+          <p data-reveal style="transition-delay:240ms" class="mt-7 max-w-lg text-base font-light leading-relaxed text-cream/70 md:max-w-xl md:text-lg">
+            Skyline omakase paired with rare vintage sakes. Twelve seats, two seatings, and a menu written for the evening.
+          </p>
+
+          <div data-reveal style="transition-delay:360ms" class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <a href="#salon" class="btn btn-gold">
+              Reserve the Counter
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <a href="#menu" class="btn btn-ghost">
+              View the Menu
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div data-reveal style="transition-delay:480ms" class="mt-10 grid grid-cols-1 divide-y divide-line border-t border-line sm:mt-20 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div class="py-4 sm:px-0 sm:py-6 sm:pr-8">
+            <p class="font-serif text-2xl text-cream">Twelve</p>
+            <p class="mt-1.5 text-[9px] font-medium uppercase tracking-[0.28em] text-muted">Seats at the counter</p>
+          </div>
+          <div class="py-4 sm:px-8 sm:py-6">
+            <p class="font-serif text-2xl text-cream">Two</p>
+            <p class="mt-1.5 text-[9px] font-medium uppercase tracking-[0.28em] text-muted">Seatings nightly</p>
+          </div>
+          <div class="py-4 sm:px-8 sm:py-6">
+            <p class="font-serif text-2xl tracking-[0.14em] text-gold">★★</p>
+            <p class="mt-1.5 text-[9px] font-medium uppercase tracking-[0.28em] text-muted">Michelin Guide · 2026</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 xl:block" aria-hidden="true">
+        <span class="text-[8px] font-medium uppercase tracking-[0.42em] text-muted/70 [writing-mode:vertical-rl]">Skyline omakase · rare vintage sake</span>
+      </div>
+    </section>
+
+    <!-- ══════════════ ACCLAIM MARQUEE ══════════════ -->
+    <div class="overflow-hidden border-y border-line bg-ink py-5" aria-label="Accolades">
+      <div class="marquee">
+        <div class="flex shrink-0 items-center">
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Michelin Guide ★★ 2026</span>
+          <span class="text-[7px] text-gold/50" aria-hidden="true">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">World's 50 Best · No. 34</span>
+          <span class="text-[7px] text-gold/50" aria-hidden="true">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Relais &amp; Châteaux</span>
+          <span class="text-[7px] text-gold/50" aria-hidden="true">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Sake Sommelier of the Year</span>
+          <span class="text-[7px] text-gold/50" aria-hidden="true">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">James Beard Foundation</span>
+          <span class="text-[7px] text-gold/50" aria-hidden="true">◆</span>
+        </div>
+        <div class="flex shrink-0 items-center" aria-hidden="true">
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Michelin Guide ★★ 2026</span>
+          <span class="text-[7px] text-gold/50">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">World's 50 Best · No. 34</span>
+          <span class="text-[7px] text-gold/50">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Relais &amp; Châteaux</span>
+          <span class="text-[7px] text-gold/50">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">Sake Sommelier of the Year</span>
+          <span class="text-[7px] text-gold/50">◆</span>
+          <span class="whitespace-nowrap px-8 text-[9px] font-medium uppercase tracking-[0.32em] text-muted">James Beard Foundation</span>
+          <span class="text-[7px] text-gold/50">◆</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ EXPERIENCE ══════════════ -->
+    <section id="experience" class="relative scroll-mt-24 border-b border-line py-24 md:py-32">
+      <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-20">
+        <div class="lg:col-span-5">
+          <div data-reveal class="eyebrow">The Experience</div>
+          <h2 data-reveal style="transition-delay:100ms" class="mt-6 max-w-md font-serif text-4xl leading-[1.08] text-cream md:text-5xl">
+            A twelve-course dialogue between sea, fire, and time.
+          </h2>
+          <p data-reveal style="transition-delay:200ms" class="mt-7 max-w-md text-sm font-light leading-relaxed text-muted">
+            Aura is not a restaurant in the ordinary sense. It is a counter suspended above the city, where the evening unfolds at the pace of the kitchen — unhurried, precise, and entirely yours.
+          </p>
+          <div data-reveal style="transition-delay:300ms" class="mt-9 flex items-center gap-4">
+            <span class="h-px w-10 bg-gold/50" aria-hidden="true"></span>
+            <p class="font-serif text-lg italic text-cream/80">“Restraint, at this altitude, is its own luxury.”</p>
+          </div>
+          <p data-reveal style="transition-delay:360ms" class="mt-3 pl-14 text-[9px] uppercase tracking-[0.26em] text-muted">The Michelin Guide</p>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div data-reveal class="group grid grid-cols-[auto_1fr] gap-6 border-t border-line py-8 transition-colors duration-500 hover:border-gold/40 md:gap-10 md:py-9">
+            <span class="font-serif text-sm text-gold/70 transition-colors duration-500 group-hover:text-gold">01</span>
+            <div>
+              <h3 class="font-serif text-2xl text-cream md:text-[1.7rem]">The Counter</h3>
+              <p class="mt-2 max-w-lg text-sm font-light leading-relaxed text-muted">Twelve seats of pale hinoki, facing a silent kitchen. Each course is composed inches from your hands, in the order the morning's market allows.</p>
+            </div>
+          </div>
+          <div data-reveal style="transition-delay:100ms" class="group grid grid-cols-[auto_1fr] gap-6 border-t border-line py-8 transition-colors duration-500 hover:border-gold/40 md:gap-10 md:py-9">
+            <span class="font-serif text-sm text-gold/70 transition-colors duration-500 group-hover:text-gold">02</span>
+            <div>
+              <h3 class="font-serif text-2xl text-cream md:text-[1.7rem]">The Cellar</h3>
+              <p class="mt-2 max-w-lg text-sm font-light leading-relaxed text-muted">Forty-eight rare sakes, some older than the tower itself. Poured by our sommelier in hand-blown glass, matched to the weight and temperature of each course.</p>
+            </div>
+          </div>
+          <div data-reveal style="transition-delay:200ms" class="group grid grid-cols-[auto_1fr] gap-6 border-y border-line py-8 transition-colors duration-500 hover:border-gold/40 md:gap-10 md:py-9">
+            <span class="font-serif text-sm text-gold/70 transition-colors duration-500 group-hover:text-gold">03</span>
+            <div>
+              <h3 class="font-serif text-2xl text-cream md:text-[1.7rem]">The Salon</h3>
+              <p class="mt-2 max-w-lg text-sm font-light leading-relaxed text-muted">A private room for ten, wrapped in smoked oak and city light. Your own chef, your own tempo, and a door that closes on the world below.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ MENU ══════════════ -->
+    <section id="menu" class="relative scroll-mt-24 overflow-hidden py-24 md:py-32" style="background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.045), transparent 55%), #0c0c0e;">
+      <div class="shell">
+        <div class="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <div class="max-w-xl">
+            <div data-reveal class="eyebrow">The Menu</div>
+            <h2 data-reveal style="transition-delay:100ms" class="mt-6 font-serif text-4xl leading-[1.06] text-cream md:text-5xl lg:text-[3.4rem]">
+              A progression written<br class="hidden md:block"> each morning.
+            </h2>
+          </div>
+          <div data-reveal style="transition-delay:200ms" class="md:pb-2 md:text-right">
+            <p class="text-sm text-cream">Twelve courses · <span class="text-gold">¥48,000</span> per guest</p>
+            <p class="mt-2 text-xs text-muted">Sake pairing ¥28,000 · Menus evolve with the season</p>
+          </div>
+        </div>
+
+        <!-- Category pills -->
+        <div data-reveal style="transition-delay:260ms" class="mt-10 flex flex-wrap gap-2 md:mt-12" role="group" aria-label="Filter the menu by category">
+          <button type="button" class="pill" data-filter="all" aria-pressed="true">All Courses</button>
+          <button type="button" class="pill" data-filter="raw" aria-pressed="false">Raw &amp; Chilled</button>
+          <button type="button" class="pill" data-filter="fire" aria-pressed="false">From the Fire</button>
+          <button type="button" class="pill" data-filter="signature" aria-pressed="false">Signatures</button>
+        </div>
+        <p id="filter-status" class="sr-only" aria-live="polite">Showing all courses.</p>
+
+        <!-- Menu grid -->
+        <div id="menu-grid" data-reveal style="transition-delay:120ms" class="mt-8 grid grid-cols-1 gap-4 md:mt-10 md:grid-cols-2 md:gap-5">
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="raw">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">08</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Raw &amp; Chilled</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">A5 Miyazaki Wagyu Tartare</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Hand-cut A5, smoked egg yolk, Ossetra caviar, black truffle brioche.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Kokuryū · Junmai Daiginjo</span>
+            </div>
+            <span class="absolute right-7 top-24 hidden items-center gap-2 text-[8px] font-medium uppercase tracking-[0.2em] text-gold/80 sm:flex md:right-8">
+              <span class="h-1 w-1 rounded-full bg-gold" aria-hidden="true"></span> Chef's signature
+            </span>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="raw">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">06</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Raw &amp; Chilled</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Hokkaido Scallop Crudo</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Finger lime, white soy ponzu, sea grapes, first-press chive oil.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Isojiman · Daiginjo</span>
+            </div>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="fire">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">04</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">From the Fire</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Dry-Aged Duck Breast</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Fermented plum glaze, charred endive, spiced duck jus.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Juyondai · Junmai</span>
+            </div>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="signature">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">02</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Signatures</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Black Winter Truffle Agnolotti</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Aged parmesan emulsion, brown butter, hazelnut crumb, shaved Alba truffle.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Dassai · Junmai Daiginjo</span>
+            </div>
+            <span class="absolute right-7 top-24 hidden items-center gap-2 text-[8px] font-medium uppercase tracking-[0.2em] text-gold/80 sm:flex md:right-8">
+              <span class="h-1 w-1 rounded-full bg-gold" aria-hidden="true"></span> Chef's signature
+            </span>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="fire">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">03</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">From the Fire</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Binchōtan-Grilled Unagi</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Charcoal-glazed eel, sansho pepper, young ginger, sweet soy.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Hiroki · Junmai</span>
+            </div>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="signature">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">05</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Signatures</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Hokkaido Uni Chawanmushi</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Silken egg custard, bafun uni, dashi ankake, mitsuba.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Zaku · Junmai Ginjo</span>
+            </div>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="raw">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">07</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Raw &amp; Chilled</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Kinmedai Nigiri</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Aged golden eye snapper, red vinegar shari, yuzu koshō.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Jikon · Junmai Ginjo</span>
+            </div>
+          </article>
+
+          <article class="menu-card group relative flex flex-col overflow-hidden border border-line bg-surface p-7 transition-[transform,border-color,background-color] duration-500 hover:border-gold/40 md:p-8" data-dish data-category="signature">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[8px] font-medium uppercase tracking-[0.3em] text-muted">Course</p>
+                <p class="mt-1 font-serif text-3xl leading-none text-gold/80 transition-colors duration-500 group-hover:text-gold">09</p>
+              </div>
+              <span class="rounded-full border border-line px-3 py-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Signatures</span>
+            </div>
+            <h3 class="mt-6 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">Matcha Mille-Feuille</h3>
+            <p class="mb-7 mt-3 max-w-sm text-sm font-light leading-relaxed text-muted">Uji matcha cream, white chocolate, toasted buckwheat.</p>
+            <div class="mt-auto flex items-center justify-between gap-4 border-t border-line pt-5">
+              <span class="text-[8px] font-medium uppercase tracking-[0.22em] text-muted">Sake pairing</span>
+              <span class="text-right font-serif text-sm italic text-gold/90">Sayuri · Nigori</span>
+            </div>
+          </article>
+
+        </div>
+
+        <p class="mt-6 text-[10px] font-light leading-relaxed text-muted/80">
+          Menus are subject to the morning's market. Please advise us of allergies and dietary requirements when reserving.
+        </p>
+
+        <!-- Sake cellar -->
+        <div data-reveal class="mt-14 border border-line bg-gradient-to-b from-surface to-ink p-7 md:mt-16 md:p-10">
+          <div class="flex flex-col gap-3 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="text-[9px] font-medium uppercase tracking-[0.3em] text-gold">The Sake Cellar</p>
+              <h3 class="mt-2 font-serif text-2xl text-cream md:text-3xl">Bottles worth the altitude.</h3>
+            </div>
+            <p class="text-[9px] uppercase tracking-[0.24em] text-muted">48 labels · 9 prefectures · poured by the glass</p>
+          </div>
+          <div class="grid gap-6 pt-6 sm:grid-cols-3 sm:gap-8">
+            <div>
+              <p class="font-serif text-xl text-gold/80">1998</p>
+              <p class="mt-1 font-serif text-lg text-cream">Kokuryū</p>
+              <p class="mt-1 text-[9px] uppercase tracking-[0.2em] text-muted">Junmai Daiginjo · Fukui</p>
+            </div>
+            <div class="border-t border-line pt-6 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+              <p class="font-serif text-xl text-gold/80">2007</p>
+              <p class="mt-1 font-serif text-lg text-cream">Juyondai</p>
+              <p class="mt-1 text-[9px] uppercase tracking-[0.2em] text-muted">Junmai Daiginjo · Yamagata</p>
+            </div>
+            <div class="border-t border-line pt-6 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+              <p class="font-serif text-xl text-gold/80">2011</p>
+              <p class="mt-1 font-serif text-lg text-cream">Isojiman</p>
+              <p class="mt-1 text-[9px] uppercase tracking-[0.2em] text-muted">Daiginjo · Shizuoka</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ PRIVATE SALON ══════════════ -->
+    <section id="salon" class="scroll-mt-24 border-t border-line py-24 md:py-32">
+      <div class="shell">
+        <div data-reveal class="relative overflow-hidden border border-line bg-surface">
+          <div class="pointer-events-none absolute -right-32 -top-40 h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.10),transparent_65%)]" aria-hidden="true"></div>
+
+          <div class="relative grid lg:grid-cols-2">
+            <!-- Copy -->
+            <div class="p-8 md:p-12 lg:p-14">
+              <div class="eyebrow">Private Salon</div>
+              <h2 class="mt-6 max-w-md font-serif text-4xl leading-[1.06] text-cream md:text-5xl">
+                An evening kept entirely to yourselves.
+              </h2>
+              <p class="mt-6 max-w-md text-sm font-light leading-relaxed text-muted">
+                Behind a door of smoked oak, the Salon keeps its own weather. Ten seats, one table, and a menu written for the evening — with a cellar of rare sake opened only for you.
+              </p>
+
+              <ul class="mt-9 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                <li class="flex items-start gap-3 border-t border-line pt-4">
+                  <span class="mt-1.5 text-[7px] text-gold" aria-hidden="true">◆</span>
+                  <span class="text-xs font-light leading-relaxed text-cream/80">Up to ten guests at a single hinoki table</span>
+                </li>
+                <li class="flex items-start gap-3 border-t border-line pt-4">
+                  <span class="mt-1.5 text-[7px] text-gold" aria-hidden="true">◆</span>
+                  <span class="text-xs font-light leading-relaxed text-cream/80">A dedicated chef and sommelier for the night</span>
+                </li>
+                <li class="flex items-start gap-3 border-t border-line pt-4">
+                  <span class="mt-1.5 text-[7px] text-gold" aria-hidden="true">◆</span>
+                  <span class="text-xs font-light leading-relaxed text-cream/80">Bespoke twelve-course progression</span>
+                </li>
+                <li class="flex items-start gap-3 border-t border-line pt-4">
+                  <span class="mt-1.5 text-[7px] text-gold" aria-hidden="true">◆</span>
+                  <span class="text-xs font-light leading-relaxed text-cream/80">Private terrace with uninterrupted skyline</span>
+                </li>
+              </ul>
+
+              <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line pt-6">
+                <p class="text-[9px] uppercase tracking-[0.26em] text-muted">From ¥180,000 · per salon</p>
+                <a href="tel:+81355550148" class="text-[9px] uppercase tracking-[0.26em] text-gold underline decoration-gold/30 underline-offset-4 transition-colors hover:text-cream">Or call +81 3 5555 0148</a>
+              </div>
+            </div>
+
+            <!-- Booking card -->
+            <div class="border-t border-line bg-ink/60 p-8 md:p-12 lg:border-l lg:border-t-0 lg:p-14">
+              <p class="text-[9px] font-medium uppercase tracking-[0.3em] text-gold">Request the Salon</p>
+              <p class="mt-3 text-xs font-light leading-relaxed text-muted">Requests are confirmed personally by our maître d’. No payment is taken today.</p>
+
+              <form id="booking-form" class="mt-8" novalidate>
+                <div class="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label for="booking-date" class="mb-1 block text-[9px] font-medium uppercase tracking-[0.24em] text-muted">Date</label>
+                    <input id="booking-date" name="date" type="date" required class="field [color-scheme:dark]">
+                  </div>
+                  <div>
+                    <label for="booking-guests" class="mb-1 block text-[9px] font-medium uppercase tracking-[0.24em] text-muted">Guests</label>
+                    <div class="relative">
+                      <select id="booking-guests" name="guests" required class="field">
+                        <option value="" disabled selected>Select</option>
+                        <option value="2 guests">2 guests</option>
+                        <option value="4 guests">4 guests</option>
+                        <option value="6 guests">6 guests</option>
+                        <option value="8 guests">8 guests</option>
+                        <option value="10 guests">10 guests</option>
+                      </select>
+                      <svg class="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <fieldset class="mt-7">
+                  <legend class="mb-3 block text-[9px] font-medium uppercase tracking-[0.24em] text-muted">Seating</legend>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer">
+                      <input type="radio" name="seating" value="18:00" class="peer sr-only" checked>
+                      <span class="flex items-center justify-center border border-line py-3 text-[9px] font-medium uppercase tracking-[0.22em] text-muted transition-colors duration-300 hover:border-gold/40 hover:text-cream peer-checked:border-gold peer-checked:text-gold peer-focus-visible:ring-1 peer-focus-visible:ring-gold peer-focus-visible:ring-offset-0">18:00</span>
+                    </label>
+                    <label class="cursor-pointer">
+                      <input type="radio" name="seating" value="20:30" class="peer sr-only">
+                      <span class="flex items-center justify-center border border-line py-3 text-[9px] font-medium uppercase tracking-[0.22em] text-muted transition-colors duration-300 hover:border-gold/40 hover:text-cream peer-checked:border-gold peer-checked:text-gold peer-focus-visible:ring-1 peer-focus-visible:ring-gold peer-focus-visible:ring-offset-0">20:30</span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <div class="mt-7 grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label for="booking-name" class="mb-1 block text-[9px] font-medium uppercase tracking-[0.24em] text-muted">Name</label>
+                    <input id="booking-name" name="name" type="text" autocomplete="name" required placeholder="Your full name" class="field">
+                  </div>
+                  <div>
+                    <label for="booking-email" class="mb-1 block text-[9px] font-medium uppercase tracking-[0.24em] text-muted">Email</label>
+                    <input id="booking-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" class="field">
+                  </div>
+                </div>
+
+                <p id="booking-error" class="mt-4 hidden text-[10px] leading-relaxed text-gold" role="alert">Please complete every field so we can confirm your evening.</p>
+
+                <button type="submit" class="btn btn-gold mt-8 w-full">
+                  Request Reservation
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <p class="mt-4 text-center text-[9px] font-light uppercase tracking-[0.18em] text-muted/80">A reply within twelve hours · Tuesday to Saturday</p>
+              </form>
+
+              <div id="booking-confirm" class="hidden" tabindex="-1">
+                <span class="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 text-gold">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <h3 class="mt-6 font-serif text-2xl text-cream">Your request is with us.</h3>
+                <p id="confirm-copy" class="mt-3 text-sm font-light leading-relaxed text-muted"></p>
+                <p class="mt-4 text-[9px] uppercase tracking-[0.22em] text-gold/80">The Salon · Level 48</p>
+                <button type="button" id="booking-reset" class="mt-8 border-b border-gold/40 pb-1 text-[9px] font-medium uppercase tracking-[0.24em] text-gold transition-colors hover:border-gold hover:text-cream">Make another request</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════ FOOTER ══════════════ -->
+  <footer class="border-t border-line bg-ink">
+    <div class="shell grid gap-12 py-16 md:py-20 lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-5">
+        <a href="#top" class="flex items-center gap-3.5" aria-label="Aura Rooftop Omakase — home">
+          <span class="flex h-10 w-10 items-center justify-center border border-gold/40 font-serif text-lg text-gold">A</span>
+          <span class="leading-none">
+            <span class="block font-serif text-lg tracking-[0.2em] text-cream">AURA</span>
+            <span class="mt-1.5 block text-[8px] font-medium uppercase tracking-[0.34em] text-muted">Rooftop Omakase</span>
+          </span>
+        </a>
+        <p class="mt-6 max-w-xs font-serif text-xl italic leading-relaxed text-cream/70">Skyline omakase, paired with rare vintage sakes.</p>
+        <p class="mt-6 text-[9px] uppercase tracking-[0.26em] text-muted">Michelin Guide ★★ · 2026</p>
+      </div>
+
+      <div class="lg:col-span-2">
+        <h3 class="text-[9px] font-medium uppercase tracking-[0.28em] text-gold">Visit</h3>
+        <address class="mt-4 space-y-1 text-xs font-light not-italic leading-relaxed text-muted">
+          <p>The Meridian Tower, 48F</p>
+          <p>2-11-3 Akasaka, Minato</p>
+          <p>Tokyo 107-0052, Japan</p>
+        </address>
+        <p class="mt-4 text-xs font-light leading-relaxed text-muted">Tue – Sat<br>Seatings 18:00 &amp; 20:30</p>
+      </div>
+
+      <div class="lg:col-span-2">
+        <h3 class="text-[9px] font-medium uppercase tracking-[0.28em] text-gold">Inquire</h3>
+        <ul class="mt-4 space-y-2 text-xs font-light leading-relaxed text-muted">
+          <li><a href="tel:+81355550148" class="transition-colors hover:text-cream">+81 3 5555 0148</a></li>
+          <li><a href="mailto:salon@aurarooftop.jp" class="transition-colors hover:text-cream">salon@aurarooftop.jp</a></li>
+          <li><a href="#salon" class="transition-colors hover:text-cream">Private salon enquiries</a></li>
+          <li><a href="#" class="transition-colors hover:text-cream">Press &amp; partnerships</a></li>
+        </ul>
+        <div class="mt-5 flex gap-4 text-[9px] uppercase tracking-[0.2em] text-muted">
+          <a href="#" class="transition-colors hover:text-gold">Instagram</a>
+          <a href="#" class="transition-colors hover:text-gold">Journal</a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3">
+        <h3 class="text-[9px] font-medium uppercase tracking-[0.28em] text-gold">The Aura Letter</h3>
+        <p class="mt-4 max-w-xs text-xs font-light leading-relaxed text-muted">Four dispatches a year. New menus, rare bottles, quiet announcements.</p>
+        <form id="newsletter-form" class="mt-5" novalidate>
+          <div id="newsletter-row" class="flex items-center gap-3 border-b border-line pb-3 transition-colors focus-within:border-gold">
+            <label for="newsletter-email" class="sr-only">Email address</label>
+            <input id="newsletter-email" name="email" type="email" required placeholder="Email address" class="w-full bg-transparent text-sm text-cream placeholder:text-muted/60 focus:outline-none">
+            <button type="submit" aria-label="Subscribe to the Aura Letter" class="flex h-8 w-8 flex-none items-center justify-center border border-line text-gold transition-colors hover:border-gold hover:bg-gold hover:text-ink">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 8h11M9 3.5 13.5 8 9 12.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <p id="newsletter-message" class="mt-3 hidden text-[10px] uppercase tracking-[0.18em] text-gold" role="status"></p>
+        </form>
+        <p class="mt-5 text-[9px] font-light leading-relaxed text-muted/70">Smart elegant attire. Guests aged 12 and above. Please advise us of allergies at least 48 hours prior.</p>
+      </div>
+    </div>
+
+    <div class="overflow-hidden border-t border-line">
+      <p aria-hidden="true" class="select-none whitespace-nowrap py-6 text-center font-serif text-[clamp(5rem,17vw,13rem)] leading-none tracking-[0.06em] text-transparent [-webkit-text-stroke:1px_#2e2b25] md:py-8">AURA</p>
+    </div>
+
+    <div class="border-t border-line">
+      <div class="shell flex flex-col gap-4 py-6 text-[9px] uppercase tracking-[0.2em] text-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>© <span id="year">2026</span> Aura Rooftop Omakase. All rights reserved.</p>
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
+          <a href="#" class="transition-colors hover:text-gold">Privacy</a>
+          <a href="#" class="transition-colors hover:text-gold">Cancellation Policy</a>
+          <a href="#" class="transition-colors hover:text-gold">Accessibility</a>
+        </div>
+        <p class="text-muted/70">Designed in Tokyo</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ── Header state ── */
+      var header = document.getElementById('site-header');
+      function onScroll() {
+        header.classList.toggle('is-scrolled', window.scrollY > 24);
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      /* ── Mobile menu ── */
+      var menuToggle = document.getElementById('menu-toggle');
+      var mobileMenu = document.getElementById('mobile-menu');
+      var iconOpen = document.getElementById('icon-open');
+      var iconClose = document.getElementById('icon-close');
+
+      function setMenu(open, returnFocus) {
+        menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        menuToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        mobileMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+        mobileMenu.classList.toggle('hidden', !open);
+        iconOpen.classList.toggle('hidden', open);
+        iconClose.classList.toggle('hidden', !open);
+        document.body.classList.toggle('overflow-hidden', open);
+        if (open) {
+          var first = mobileMenu.querySelector('a');
+          if (first) first.focus({ preventScroll: true });
+        } else if (returnFocus) {
+          menuToggle.focus({ preventScroll: true });
+        }
+      }
+
+      menuToggle.addEventListener('click', function () {
+        setMenu(menuToggle.getAttribute('aria-expanded') !== 'true', true);
+      });
+
+      mobileMenu.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () { setMenu(false, false); });
+      });
+
+      header.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          if (menuToggle.getAttribute('aria-expanded') === 'true') setMenu(false, false);
+        });
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') {
+          setMenu(false, true);
+        }
+      });
+
+      window.addEventListener('resize', function () {
+        if (window.innerWidth >= 1024 && menuToggle.getAttribute('aria-expanded') === 'true') {
+          setMenu(false, false);
+        }
+      });
+
+      /* ── Menu filtering ── */
+      var pills = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
+      var dishes = Array.prototype.slice.call(document.querySelectorAll('[data-dish]'));
+      var filterStatus = document.getElementById('filter-status');
+
+      function applyFilter(category, label) {
+        dishes.forEach(function (card) {
+          var show = category === 'all' || card.getAttribute('data-category') === category;
+          card.classList.remove('is-in');
+          if (show) {
+            card.hidden = false;
+            void card.offsetWidth;
+            card.style.animationDelay = (dishes.indexOf(card) % 4) * 55 + 'ms';
+            card.classList.add('is-in');
+          } else {
+            card.hidden = true;
+          }
+        });
+        filterStatus.textContent = 'Showing ' + label.toLowerCase() + '.';
+      }
+
+      pills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          pills.forEach(function (p) { p.setAttribute('aria-pressed', 'false'); });
+          pill.setAttribute('aria-pressed', 'true');
+          applyFilter(pill.getAttribute('data-filter'), pill.textContent.trim());
+        });
+      });
+
+      /* ── Scroll reveal ── */
+      var revealEls = document.querySelectorAll('[data-reveal]');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('revealed');
+              io.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        revealEls.forEach(function (el) { io.observe(el); });
+      } else {
+        revealEls.forEach(function (el) { el.classList.add('revealed'); });
+      }
+
+      /* ── Booking form ── */
+      var bookingForm = document.getElementById('booking-form');
+      var bookingConfirm = document.getElementById('booking-confirm');
+      var confirmCopy = document.getElementById('confirm-copy');
+      var bookingError = document.getElementById('booking-error');
+      var bookingReset = document.getElementById('booking-reset');
+      var dateField = document.getElementById('booking-date');
+
+      if (dateField) {
+        var today = new Date();
+        var iso = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        dateField.min = iso;
+      }
+
+      function formatDate(value) {
+        if (!value) return 'your chosen evening';
+        var parts = value.split('-');
+        if (parts.length !== 3) return value;
+        var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (isNaN(d.getTime())) return value;
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      if (bookingForm) {
+        bookingForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          if (!bookingForm.checkValidity()) {
+            bookingError.classList.remove('hidden');
+            var firstInvalid = bookingForm.querySelector(':invalid');
+            if (firstInvalid) firstInvalid.focus();
+            return;
+          }
+          bookingError.classList.add('hidden');
+
+          var data = new FormData(bookingForm);
+          var name = (data.get('name') || '').toString().trim().split(' ')[0] || 'guest';
+          var guests = data.get('guests') || 'your party';
+          var seating = data.get('seating') || '18:00';
+          var dateLabel = formatDate((data.get('date') || '').toString());
+
+          confirmCopy.textContent = 'Thank you, ' + name + '. Your request for ' + guests + ' on ' + dateLabel + ' at ' + seating + ' is with our maître d’. We will confirm by email within twelve hours.';
+
+          bookingForm.classList.add('hidden');
+          bookingConfirm.classList.remove('hidden');
+          bookingConfirm.focus({ preventScroll: true });
+        });
+      }
+
+      if (bookingReset) {
+        bookingReset.addEventListener('click', function () {
+          bookingConfirm.classList.add('hidden');
+          bookingForm.classList.remove('hidden');
+          bookingForm.reset();
+          bookingError.classList.add('hidden');
+          var nameField = document.getElementById('booking-name');
+          if (nameField) nameField.focus();
+        });
+      }
+
+      /* ── Newsletter ── */
+      var newsletterForm = document.getElementById('newsletter-form');
+      var newsletterRow = document.getElementById('newsletter-row');
+      var newsletterMessage = document.getElementById('newsletter-message');
+      var newsletterEmail = document.getElementById('newsletter-email');
+
+      if (newsletterForm) {
+        newsletterForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var email = newsletterEmail.value.trim();
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            newsletterMessage.textContent = 'Please enter a valid email address.';
+            newsletterMessage.classList.remove('hidden');
+            newsletterEmail.focus();
+            return;
+          }
+          newsletterRow.classList.add('hidden');
+          newsletterMessage.textContent = 'You are on the list. The next Aura Letter arrives in December.';
+          newsletterMessage.classList.remove('hidden');
+        });
+      }
+
+      /* ── Footer year ── */
+      var yearEl = document.getElementById('year');
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>

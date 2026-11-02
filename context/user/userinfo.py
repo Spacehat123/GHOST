@@ -1,0 +1,8 @@
+"""Basic system environment and user identity."""
+USER = "pranc"
+HOME = "/home/pranc"
+OS = "Arch Linux"
+COMPOSITOR = "Hyprland v0.56.2"
+SHELL = "cool-shell (Quickshell)"
+TERMINAL = "kitty"
+BROWSER = "Brave (CDP 9222)"

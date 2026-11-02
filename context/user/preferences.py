@@ -1,0 +1,5 @@
+"""User workflow habits and desktop preferences."""
+SPOTIFY_WORKSPACE = "3"
+DEFAULT_WALLPAPER_QUERY = "ghost"
+PREFERRED_PERSONA = "Simon 'Ghost' Riley (MWII Task Force 141)"
+FILE_ORGANIZATION = "Organize messy files into subfolders, but always request tactical authorization before moving."

@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "rea": {
+      "command": "node",
+      "args": ["/home/pranc/projects/rea/scripts/rea.mjs"],
+      "description": "REA Reverse Engineering and dynamic runtime memory analysis engine"
+    },
+    "brave_cdp": {
+      "endpoint": "http://127.0.0.1:9222",
+      "description": "Brave Browser remote hardware debugging and tab automation"
+    },
+    "brave_search": {
+      "type": "web_search",
+      "fallback": "duckduckgo",
+      "description": "Live Web search queries, knowledge retrieval, and documentation lookup"
+    },
+    "database": {
+      "type": "sqlite_postgres",
+      "default_sqlite": "/home/pranc/.omniroute/storage.sqlite",
+      "description": "Local SQLite database querying and PostgreSQL database inspector"
+    },
+    "github": {
+      "type": "github_rest_mcp",
+      "endpoint": "https://api.github.com",
+      "description": "GitHub repository, issues, code inspection, and profile management"
+    },
+    "filesystem_vault": {
+      "root": "/home/pranc/Obsidian Vault/Ghost",
+      "description": "Obsidian Vault Ghost memory link and dynamic knowledge graph"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+# ==============================================================================
+# Ghost Security & Environment Exclusion (.gitignore)
+# Protects private tokens, credentials, SQLite databases, logs, and environments
+# ==============================================================================
+
+# --- Secrets, API Keys & Private Configs ---
+configs/email.json
+configs/figma.json
+configs/framer.json
+configs/vercel.json
+configs/omniroute.json
+configs/token_stats.json
+configs/session_state.json
+configs/*.secret.json
+configs/*.local.*
+*.env
+*.env.*
+!.env.example
+
+# --- Personal & Runtime Data ---
+data/*.db
+data/*.sqlite*
+data/conversation_history.json
+data/user_profile.json
+data/private/
+logs/
+*.log
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual Environments ---
+venv/
+venv-*/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- IDE, OS & Editor Artifacts ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.directory
+
+# --- Local User Context & Notes ---
+context/user/Daily Log.md
+context/user/Preferences.md
+context/user/User Profile.md
+configs/vercel.json
+configs/figma.json

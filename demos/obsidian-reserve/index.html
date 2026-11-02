@@ -1,0 +1,3693 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0c0c0e">
+  <meta name="description" content="Obsidian Reserve — an intimate Michelin-starred culinary journey in Paris. Eleven courses, twenty-four seats, one candlelit room. Private salon and cellar reserve by reservation.">
+  <title>Obsidian Reserve — An Intimate Michelin-Starred Culinary Journey</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230c0c0e'/%3E%3Cpath d='M32 12 52 32 32 52 12 32Z' fill='none' stroke='%23d4af37' stroke-width='1.5'/%3E%3Ctext x='32' y='39' font-family='Georgia,serif' font-size='18' fill='%23d4af37' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+
+  <script>
+    document.documentElement.classList.add('js');
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.remove('js');
+    }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0c0c0e',
+            surface: '#16161a',
+            gold: '#d4af37',
+            cream: '#eae6df',
+            line: '#272521',
+            muted: '#918c83'
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    @property --sa {
+      syntax: '<angle>';
+      inherits: false;
+      initial-value: 0deg;
+    }
+
+    :root{
+      --ink:#0c0c0e;
+      --surface:#16161a;
+      --gold:#d4af37;
+      --cream:#eae6df;
+      --line:#272521;
+      --muted:#918c83;
+      --spring:cubic-bezier(.34,1.56,.64,1);
+      --out:cubic-bezier(.22,1,.36,1);
+      --inout:cubic-bezier(.76,0,.24,1);
+      color-scheme: dark;
+    }
+
+    *,*::before,*::after{ box-sizing:border-box; }
+    html{
+      scroll-behavior:smooth;
+      scroll-padding-top:104px;
+      -webkit-text-size-adjust:100%;
+    }
+    body{
+      margin:0;
+      background:var(--ink);
+      color:var(--cream);
+      font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;
+      font-weight:400;
+      letter-spacing:-.011em;
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    body.is-locked{ overflow:hidden; }
+    h1,h2,h3,h4,.serif{ font-family:'Playfair Display',Georgia,serif; }
+    h1,h2,h3,h4,p{ margin:0; }
+    a{ color:inherit; text-decoration:none; }
+    button,input,select,textarea{ font:inherit; color:inherit; }
+    button{ background:none; border:0; cursor:pointer; }
+    img,svg{ display:block; max-width:100%; }
+    ::selection{ background:var(--gold); color:var(--ink); }
+
+    ::-webkit-scrollbar{ width:9px; height:9px; }
+    ::-webkit-scrollbar-track{ background:#08080a; }
+    ::-webkit-scrollbar-thumb{ background:#2d2a24; border-radius:99px; border:2px solid #08080a; }
+    ::-webkit-scrollbar-thumb:hover{ background:#4a4436; }
+
+    :focus-visible{
+      outline:1px solid rgba(212,175,55,.9);
+      outline-offset:4px;
+    }
+
+    .shell{
+      width:100%;
+      max-width:1360px;
+      margin-inline:auto;
+      padding-inline:1.25rem;
+    }
+    @media (min-width:640px){ .shell{ padding-inline:2rem; } }
+    @media (min-width:1024px){ .shell{ padding-inline:3rem; } }
+
+    .eyebrow{
+      font-size:.625rem;
+      line-height:1.4;
+      letter-spacing:.32em;
+      text-transform:uppercase;
+      font-weight:600;
+      color:var(--gold);
+    }
+    .micro{
+      font-size:.5625rem;
+      line-height:1.5;
+      letter-spacing:.26em;
+      text-transform:uppercase;
+      font-weight:500;
+      color:var(--muted);
+    }
+    .display{
+      font-weight:400;
+      line-height:.94;
+      letter-spacing:-.035em;
+      color:var(--cream);
+    }
+    .gold-text{
+      background:linear-gradient(102deg,#f5e5ae 0%,#d4af37 36%,#9a7925 66%,#edd58f 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      -webkit-text-fill-color:transparent;
+    }
+    .hairline{
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(212,175,55,.36),transparent);
+    }
+    .diamond{
+      width:4px; height:4px;
+      background:var(--gold);
+      transform:rotate(45deg);
+      display:inline-block;
+      flex:none;
+    }
+
+    /* ---------- grain + scroll progress ---------- */
+    .grain{
+      position:fixed;
+      inset:0;
+      z-index:100;
+      pointer-events:none;
+      opacity:.038;
+      mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+    #progress{
+      position:fixed;
+      top:0; left:0;
+      width:100%; height:2px;
+      z-index:90;
+      transform-origin:0 50%;
+      transform:scaleX(0);
+      background:linear-gradient(90deg,#8a6c1d,#d4af37 60%,#f4e3a8);
+      will-change:transform;
+    }
+    .skip-link{
+      position:fixed;
+      top:10px; left:10px;
+      z-index:120;
+      padding:.7rem 1rem;
+      background:var(--gold);
+      color:var(--ink);
+      font-size:.7rem;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-weight:700;
+      transform:translateY(-160%);
+      transition:transform .3s var(--out);
+    }
+    .skip-link:focus{ transform:translateY(0); }
+
+    /* ---------- ambient mesh ---------- */
+    .orb{
+      position:absolute;
+      border-radius:50%;
+      filter:blur(140px);
+      pointer-events:none;
+      will-change:transform,opacity;
+      opacity:.5;
+    }
+    .orb-a{
+      background:radial-gradient(circle at 50% 50%,rgba(212,175,55,.34),rgba(154,118,34,.10) 58%,transparent 72%);
+      animation:driftA 24s ease-in-out infinite alternate;
+    }
+    .orb-b{
+      background:radial-gradient(circle at 50% 50%,rgba(90,68,40,.30),rgba(40,30,22,.08) 62%,transparent 75%);
+      animation:driftB 31s ease-in-out infinite alternate;
+    }
+    .orb-c{
+      background:radial-gradient(circle at 50% 50%,rgba(228,207,150,.13),rgba(120,96,48,.05) 55%,transparent 72%);
+      animation:driftC 19s ease-in-out infinite alternate;
+    }
+    @keyframes driftA{
+      0%{ transform:translate3d(0,0,0) scale(1); opacity:.38; }
+      50%{ transform:translate3d(4%,-3%,0) scale(1.12); opacity:.58; }
+      100%{ transform:translate3d(-3%,4%,0) scale(1.04); opacity:.42; }
+    }
+    @keyframes driftB{
+      0%{ transform:translate3d(0,0,0) scale(1.05); opacity:.34; }
+      100%{ transform:translate3d(-6%,5%,0) scale(1.18); opacity:.52; }
+    }
+    @keyframes driftC{
+      0%{ transform:translate3d(0,0,0) scale(.95); opacity:.3; }
+      100%{ transform:translate3d(5%,-6%,0) scale(1.1); opacity:.5; }
+    }
+
+    /* ---------- navigation ---------- */
+    .site-header{
+      position:fixed;
+      top:0; left:0; right:0;
+      z-index:70;
+      transition:background .5s var(--out),border-color .5s var(--out),backdrop-filter .5s var(--out);
+      border-bottom:1px solid transparent;
+    }
+    .site-header.is-scrolled{
+      background:rgba(10,10,12,.72);
+      border-bottom-color:rgba(234,230,223,.07);
+      -webkit-backdrop-filter:blur(22px);
+      backdrop-filter:blur(22px);
+    }
+    .nav-inner{
+      height:76px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1.5rem;
+    }
+    @media (min-width:1024px){ .nav-inner{ height:88px; } }
+    .brand{ display:flex; align-items:center; gap:.8rem; flex:none; }
+    .brand-mark{
+      width:38px; height:38px;
+      transition:transform .7s var(--spring);
+    }
+    .brand:hover .brand-mark{ transform:rotate(45deg); }
+    .brand-word{
+      font-family:'Playfair Display',serif;
+      font-size:1.02rem;
+      letter-spacing:.12em;
+      line-height:1;
+    }
+    .brand-sub{
+      display:block;
+      margin-top:5px;
+      font-size:.46rem;
+      letter-spacing:.44em;
+      color:var(--muted);
+      text-transform:uppercase;
+    }
+    .nav-links{ display:none; align-items:center; gap:2.25rem; }
+    @media (min-width:1024px){ .nav-links{ display:flex; } }
+    .nav-link{
+      position:relative;
+      font-size:.635rem;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      font-weight:500;
+      color:#c9c4ba;
+      padding-block:.4rem;
+      transition:color .35s var(--out);
+    }
+    .nav-link::after{
+      content:'';
+      position:absolute;
+      left:0; bottom:0;
+      width:100%; height:1px;
+      background:var(--gold);
+      transform:scaleX(0);
+      transform-origin:100% 50%;
+      transition:transform .5s var(--inout);
+    }
+    .nav-link:hover{ color:var(--cream); }
+    .nav-link:hover::after,
+    .nav-link:focus-visible::after{ transform:scaleX(1); transform-origin:0 50%; }
+    .nav-actions{ display:flex; align-items:center; gap:.7rem; }
+    .nav-phone{
+      display:none;
+      font-size:.6rem;
+      letter-spacing:.16em;
+      color:var(--muted);
+      transition:color .3s;
+    }
+    .nav-phone:hover{ color:var(--cream); }
+    @media (min-width:1200px){ .nav-phone{ display:inline; } }
+
+    .menu-toggle{
+      display:grid;
+      place-items:center;
+      width:42px; height:42px;
+      border:1px solid rgba(234,230,223,.14);
+      background:rgba(255,255,255,.02);
+      transition:border-color .4s,background .4s;
+    }
+    .menu-toggle:hover{ border-color:rgba(212,175,55,.5); background:rgba(212,175,55,.06); }
+    @media (min-width:1024px){ .menu-toggle{ display:none; } }
+    .menu-toggle span{
+      display:block;
+      width:17px; height:1px;
+      background:var(--cream);
+      transition:transform .45s var(--spring),opacity .3s;
+    }
+    .menu-toggle span + span{ margin-top:5px; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(1){ transform:translateY(3px) rotate(45deg); }
+    .menu-toggle[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(3){ transform:translateY(-3px) rotate(-45deg); }
+
+    /* ---------- buttons ---------- */
+    .btn{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.7rem;
+      padding:1.02rem 1.5rem;
+      border-radius:2px;
+      font-size:.615rem;
+      letter-spacing:.23em;
+      text-transform:uppercase;
+      font-weight:700;
+      line-height:1;
+      white-space:nowrap;
+      isolation:isolate;
+      overflow:hidden;
+      transition:transform .6s var(--spring),box-shadow .5s var(--out),filter .4s var(--out);
+      -webkit-backdrop-filter:blur(10px);
+      backdrop-filter:blur(10px);
+    }
+    .btn:hover{ transform:translateY(-2px); }
+    .btn:active{ transform:translateY(0) scale(.995); }
+    .btn svg{ width:13px; height:13px; transition:transform .5s var(--spring); flex:none; }
+    .btn:hover svg{ transform:translate(3px,-3px); }
+
+    .btn-gold{
+      background:linear-gradient(135deg,#efdda2 0%,#d4af37 38%,#b78e2b 72%,#e2c472 100%);
+      color:#0a0a0b;
+      box-shadow:0 14px 40px -18px rgba(212,175,55,.55),inset 0 1px 0 rgba(255,255,255,.45);
+    }
+    .btn-gold:hover{ box-shadow:0 20px 50px -16px rgba(212,175,55,.68),inset 0 1px 0 rgba(255,255,255,.55); filter:brightness(1.04); }
+    .btn-ghost{
+      background:rgba(255,255,255,.035);
+      color:var(--cream);
+      border:1px solid rgba(234,230,223,.16);
+    }
+    .btn-ghost:hover{
+      border-color:rgba(212,175,55,.55);
+      background:rgba(212,175,55,.07);
+      box-shadow:0 18px 40px -24px rgba(0,0,0,.9);
+    }
+    .btn-sm{ padding:.78rem 1.05rem; font-size:.55rem; letter-spacing:.2em; }
+
+    .btn-sheen::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      padding:1px;
+      border-radius:inherit;
+      background:conic-gradient(from var(--sa),
+        rgba(212,175,55,.10) 0deg,
+        rgba(212,175,55,.55) 46deg,
+        #fff6d8 76deg,
+        rgba(212,175,55,.72) 108deg,
+        rgba(212,175,55,.10) 176deg,
+        rgba(212,175,55,.10) 360deg);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      mask-composite:exclude;
+      animation:sheenSpin 6.5s linear infinite;
+      pointer-events:none;
+      z-index:2;
+      opacity:.9;
+    }
+    .btn-sheen::after{
+      content:'';
+      position:absolute;
+      top:-60%; bottom:-60%; left:-35%;
+      width:38%;
+      background:linear-gradient(100deg,transparent,rgba(255,255,255,.30) 48%,transparent);
+      transform:translateX(-180%) rotate(10deg);
+      animation:sheenSweep 6.5s cubic-bezier(.65,0,.35,1) infinite;
+      pointer-events:none;
+      z-index:1;
+    }
+    .btn-gold.btn-sheen::after{ background:linear-gradient(100deg,transparent,rgba(255,255,255,.55) 48%,transparent); }
+    .btn > *{ position:relative; z-index:3; }
+    @keyframes sheenSpin{ to{ --sa:360deg; } }
+    @keyframes sheenSweep{
+      0%,42%{ transform:translateX(-180%) rotate(10deg); opacity:0; }
+      49%{ opacity:1; }
+      68%,100%{ transform:translateX(430%) rotate(10deg); opacity:0; }
+    }
+
+    /* ---------- hero ---------- */
+    .hero{
+      position:relative;
+      min-height:100svh;
+      overflow:hidden;
+      padding-top:7.5rem;
+      padding-bottom:3.5rem;
+      display:flex;
+      align-items:center;
+      --px:50%;
+      --py:40%;
+    }
+    @media (min-width:1024px){
+      .hero{ padding-top:8.5rem; padding-bottom:4rem; }
+    }
+    .hero::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(ellipse 80% 60% at 62% 28%,rgba(212,175,55,.085),transparent 62%),
+        radial-gradient(ellipse 60% 80% at 12% 18%,rgba(212,175,55,.045),transparent 60%),
+        linear-gradient(180deg,rgba(12,12,14,0) 58%,rgba(12,12,14,.92) 100%);
+      pointer-events:none;
+    }
+    .hero::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:radial-gradient(ellipse 62% 55% at 50% 45%,transparent 40%,rgba(12,12,14,.55) 100%);
+      pointer-events:none;
+    }
+    .hero-spot{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      background:radial-gradient(520px circle at var(--px) var(--py),rgba(212,175,55,.075),transparent 62%);
+      opacity:0;
+      transition:opacity .8s var(--out);
+      pointer-events:none;
+    }
+    .hero:hover .hero-spot{ opacity:1; }
+    .hero-content{ position:relative; z-index:3; }
+    .hero-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      align-items:center;
+      gap:4rem;
+    }
+    @media (min-width:1024px){
+      .hero-grid{ grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:2rem; }
+    }
+    .hero-eyebrow{
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:.9rem;
+      margin-bottom:2.2rem;
+    }
+    .hero-eyebrow .line{
+      width:34px; height:1px;
+      background:rgba(212,175,55,.55);
+    }
+    .hero-eyebrow .aside{
+      font-size:.55rem;
+      letter-spacing:.28em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .hero h1{
+      font-size:clamp(2.55rem,6.1vw,5.7rem);
+      line-height:.965;
+      letter-spacing:-.038em;
+      max-width:9.4em;
+    }
+    .hero-line{ display:block; overflow:hidden; padding-bottom:.06em; margin-bottom:-.02em; }
+    .hero-line .line-inner{ display:block; will-change:transform; }
+    .hero-line em{
+      font-style:italic;
+      letter-spacing:-.022em;
+      padding-right:.04em;
+    }
+    .hero-sub{
+      margin-top:2rem;
+      max-width:29rem;
+      color:#b9b3a8;
+      font-size:.95rem;
+      line-height:1.8;
+      font-weight:300;
+    }
+    @media (min-width:640px){ .hero-sub{ font-size:1.02rem; } }
+    .hero-sub strong{ color:var(--cream); font-weight:500; }
+    .hero-cta{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:.75rem;
+      margin-top:2.3rem;
+    }
+    .hero-meta{
+      display:flex;
+      align-items:stretch;
+      gap:1.5rem;
+      margin-top:3.2rem;
+      padding-top:1.4rem;
+      border-top:1px solid rgba(234,230,223,.09);
+      max-width:33rem;
+    }
+    .hero-meta-item{ flex:1; min-width:0; }
+    .hero-meta-item + .hero-meta-item{ border-left:1px solid rgba(234,230,223,.09); padding-left:1.5rem; }
+    .hero-meta-value{
+      font-family:'Playfair Display',serif;
+      font-size:1.25rem;
+      line-height:1;
+      letter-spacing:.02em;
+      color:var(--cream);
+    }
+    .hero-meta-label{
+      display:block;
+      margin-top:.5rem;
+      font-size:.475rem;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    /* plate */
+    .hero-visual{
+      position:relative;
+      z-index:2;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding-inline:1rem;
+    }
+    @media (min-width:1024px){ .hero-visual{ padding-inline:0; } }
+    .plate-parallax{ position:relative; width:100%; max-width:470px; transition:transform .9s var(--out); }
+    .plate-frame{ position:relative; aspect-ratio:1/1; width:100%; }
+    .plate-disc{
+      position:absolute;
+      inset:4.5%;
+      border-radius:50%;
+      background:
+        radial-gradient(circle at 34% 24%,rgba(60,56,48,.55),transparent 48%),
+        radial-gradient(circle at 70% 78%,rgba(30,28,24,.9),transparent 58%),
+        radial-gradient(circle at 50% 50%,#16161a 0%,#0b0b0d 72%);
+      border:1px solid rgba(234,230,223,.10);
+      box-shadow:
+        0 70px 120px -50px rgba(0,0,0,.95),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -30px 70px rgba(0,0,0,.55);
+    }
+    .plate-disc::before{
+      content:'';
+      position:absolute;
+      inset:6.5%;
+      border-radius:50%;
+      border:1px solid rgba(212,175,55,.18);
+      box-shadow:inset 0 0 60px rgba(212,175,55,.04);
+    }
+    .plate-disc::after{
+      content:'';
+      position:absolute;
+      inset:13%;
+      border-radius:50%;
+      border:1px solid rgba(234,230,223,.05);
+    }
+    .plate-ring-outer{
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      border:1px solid rgba(212,175,55,.26);
+    }
+    .plate-ring-outer::before{
+      content:'';
+      position:absolute;
+      inset:-9px;
+      border-radius:50%;
+      border:1px solid rgba(212,175,55,.08);
+    }
+    .plate-ring-rotate{
+      position:absolute;
+      inset:0;
+      width:100%; height:100%;
+      animation:spinSlow 76s linear infinite;
+    }
+    @keyframes spinSlow{ to{ transform:rotate(360deg); } }
+    .plate-mono{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:20%;
+    }
+    .plate-mono .or{
+      font-family:'Playfair Display',serif;
+      font-size:clamp(4.5rem,11vw,7.2rem);
+      line-height:.78;
+      letter-spacing:-.08em;
+      padding-right:.08em;
+      filter:drop-shadow(0 16px 30px rgba(0,0,0,.6));
+    }
+    .plate-mono .rule{
+      width:44px; height:1px;
+      background:rgba(212,175,55,.6);
+      margin:1.15rem 0 .85rem;
+    }
+    .plate-mono .caption{
+      font-size:.48rem;
+      letter-spacing:.4em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .plate-tick{
+      position:absolute;
+      width:5px; height:5px;
+      border-radius:50%;
+      background:var(--gold);
+      box-shadow:0 0 14px rgba(212,175,55,.7);
+      z-index:4;
+    }
+    .plate-tick.t1{ top:1.4%; left:50%; transform:translate(-50%,-50%); }
+    .plate-tick.t2{ bottom:1.4%; left:50%; transform:translate(-50%,50%); opacity:.5; }
+    .plate-tick.t3{ left:1.4%; top:50%; transform:translate(-50%,-50%); opacity:.5; }
+    .plate-tick.t4{ right:1.4%; top:50%; transform:translate(50%,-50%); opacity:.5; }
+
+    .plate-card{
+      position:absolute;
+      left:-.5rem;
+      bottom:2.5%;
+      z-index:6;
+      width:min(258px,78%);
+      padding:1.15rem 1.25rem;
+      background:rgba(18,18,21,.58);
+      -webkit-backdrop-filter:blur(26px);
+      backdrop-filter:blur(26px);
+      border:1px solid rgba(234,230,223,.14);
+      box-shadow:0 34px 70px -30px rgba(0,0,0,.95);
+      animation:floaty 8s ease-in-out infinite;
+    }
+    @media (min-width:640px){ .plate-card{ left:-1.5rem; bottom:6%; } }
+    .plate-card::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg,rgba(212,175,55,.11),transparent 46%);
+      pointer-events:none;
+    }
+    .plate-card .pc-top{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .plate-card .pc-title{
+      font-family:'Playfair Display',serif;
+      font-size:1.02rem;
+      line-height:1.2;
+      margin-top:.7rem;
+      letter-spacing:-.01em;
+    }
+    .plate-card .pc-sub{
+      font-size:.58rem;
+      letter-spacing:.13em;
+      color:var(--muted);
+      margin-top:.32rem;
+      text-transform:uppercase;
+    }
+    .plate-card .pc-rule{ height:1px; background:rgba(234,230,223,.10); margin:.85rem 0 .75rem; }
+    .plate-card .pc-foot{ display:flex; align-items:flex-end; justify-content:space-between; gap:.5rem; }
+    .plate-card .pc-score{
+      font-family:'Playfair Display',serif;
+      font-size:1.35rem;
+      line-height:1;
+      color:var(--gold);
+    }
+    .plate-card .pc-score small{ font-family:'Plus Jakarta Sans',sans-serif; font-size:.5rem; letter-spacing:.2em; color:var(--muted); margin-left:.25rem; }
+    .plate-card .pc-decant{ font-size:.47rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); text-align:right; line-height:1.6; }
+    @keyframes floaty{
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-9px); }
+    }
+    .plate-caption{
+      position:absolute;
+      right:-1.1rem;
+      top:50%;
+      transform:translateY(-50%) rotate(90deg);
+      transform-origin:center;
+      font-size:.46rem;
+      letter-spacing:.38em;
+      text-transform:uppercase;
+      color:rgba(145,140,131,.7);
+      display:none;
+      white-space:nowrap;
+    }
+    @media (min-width:1280px){ .plate-caption{ display:block; } }
+    .scroll-hint{
+      position:absolute;
+      left:50%;
+      bottom:1.4rem;
+      transform:translateX(-50%);
+      z-index:4;
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      gap:.7rem;
+      color:rgba(145,140,131,.8);
+      font-size:.445rem;
+      letter-spacing:.34em;
+      text-transform:uppercase;
+    }
+    @media (min-width:1024px){ .scroll-hint{ display:flex; } }
+    .scroll-hint span.line{
+      width:1px; height:42px;
+      background:linear-gradient(180deg,rgba(212,175,55,.7),transparent);
+      animation:scrollPulse 2.6s ease-in-out infinite;
+      transform-origin:top;
+    }
+    @keyframes scrollPulse{
+      0%,100%{ transform:scaleY(.35); opacity:.4; }
+      50%{ transform:scaleY(1); opacity:1; }
+    }
+
+    /* js initial states (only when JS + motion enabled) */
+    .js .hero-eyebrow,
+    .js .hero-sub,
+    .js .hero-cta,
+    .js .hero-meta,
+    .js .hero-visual{ opacity:0; }
+    .js .hero-line > .line-inner{ transform:translateY(112%); }
+
+    /* ---------- mobile menu ---------- */
+    .mobile-menu{
+      position:fixed;
+      inset:0;
+      z-index:80;
+      display:flex;
+      flex-direction:column;
+      background:rgba(9,9,11,.96);
+      -webkit-backdrop-filter:blur(28px);
+      backdrop-filter:blur(28px);
+      padding:1.25rem;
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .5s var(--out),visibility .5s;
+    }
+    .mobile-menu.is-open{ opacity:1; visibility:visible; }
+    .mobile-menu-head{ display:flex; align-items:center; justify-content:space-between; height:52px; }
+    .mobile-links{ display:flex; flex-direction:column; margin-top:8vh; }
+    .mobile-link{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:1rem;
+      padding:1.35rem 0;
+      border-bottom:1px solid rgba(234,230,223,.09);
+      font-family:'Playfair Display',serif;
+      font-size:clamp(1.7rem,8vw,2.4rem);
+      line-height:1;
+      letter-spacing:-.02em;
+      opacity:0;
+      transform:translateY(20px);
+      transition:opacity .6s var(--out),transform .6s var(--spring),color .3s;
+    }
+    .mobile-link .idx{ font-family:'Plus Jakarta Sans',sans-serif; font-size:.5rem; letter-spacing:.2em; color:var(--gold); }
+    .mobile-menu.is-open .mobile-link{ opacity:1; transform:none; }
+    .mobile-link:nth-child(1){ transition-delay:.08s; }
+    .mobile-link:nth-child(2){ transition-delay:.14s; }
+    .mobile-link:nth-child(3){ transition-delay:.20s; }
+    .mobile-link:nth-child(4){ transition-delay:.26s; }
+    .mobile-link:nth-child(5){ transition-delay:.32s; }
+    .mobile-link:hover{ color:var(--gold); }
+    .mobile-menu-foot{ margin-top:auto; padding-top:2rem; display:flex; flex-direction:column; gap:1.2rem; }
+
+    /* ---------- shared section bits ---------- */
+    .section{ position:relative; padding-block:5.5rem; }
+    @media (min-width:768px){ .section{ padding-block:8rem; } }
+    @media (min-width:1280px){ .section{ padding-block:10rem; } }
+    .section-head{ display:flex; align-items:center; gap:1rem; margin-bottom:2.6rem; }
+    .section-head .num{ font-family:'Playfair Display',serif; font-size:.8rem; letter-spacing:.1em; color:var(--gold); }
+    .section-head .line{ height:1px; width:60px; background:rgba(212,175,55,.32); }
+    .section-title{ font-size:clamp(2.1rem,4.6vw,4.1rem); line-height:1.01; letter-spacing:-.038em; font-weight:400; }
+    .section-title em{ font-style:italic; letter-spacing:-.02em; }
+    .body-copy{ color:#a9a49a; font-size:.925rem; line-height:1.85; font-weight:300; }
+    .body-copy + .body-copy{ margin-top:1.2rem; }
+
+    .ghost-num{
+      position:absolute;
+      font-family:'Playfair Display',serif;
+      font-size:clamp(9rem,25vw,23rem);
+      line-height:.7;
+      color:transparent;
+      -webkit-text-stroke:1px rgba(212,175,55,.09);
+      pointer-events:none;
+      user-select:none;
+      z-index:0;
+    }
+
+    /* ---------- accolades ---------- */
+    .accolades{ background:#0a0a0c; }
+    .accolade-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    @media (min-width:1024px){
+      .accolade-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+    }
+    .accolade{
+      display:flex;
+      flex-direction:column;
+      gap:.32rem;
+      padding:1.55rem 1rem;
+      border-top:1px solid rgba(234,230,223,.07);
+      transition:background .4s var(--out);
+    }
+    .accolade:nth-child(-n+2){ border-top:0; }
+    .accolade:nth-child(odd){ border-right:1px solid rgba(234,230,223,.07); }
+    .accolade:hover{ background:rgba(212,175,55,.035); }
+    @media (min-width:640px){ .accolade{ padding:1.9rem 1.4rem; } }
+    @media (min-width:1024px){
+      .accolade{ border-top:0; border-right:0; border-left:1px solid rgba(234,230,223,.07); padding:2.1rem 1.6rem; }
+      .accolade:first-child{ border-left:0; }
+    }
+    .accolade-mark{ font-size:.7rem; line-height:1; color:var(--gold); margin-bottom:.45rem; }
+    .accolade-name{
+      font-family:'Playfair Display',serif;
+      font-size:1.02rem;
+      line-height:1.15;
+      color:var(--cream);
+      letter-spacing:-.01em;
+    }
+    @media (min-width:640px){ .accolade-name{ font-size:1.15rem; } }
+    .accolade-meta{
+      font-size:.48rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    /* ---------- house ---------- */
+    .house-signature{
+      display:flex;
+      align-items:center;
+      gap:.7rem;
+      margin-top:1.8rem;
+    }
+    .house-signature .micro{ color:#8b867c; letter-spacing:.2em; }
+    .house-facts{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:0 1.6rem;
+      margin-top:2.4rem;
+      border-top:1px solid rgba(234,230,223,.09);
+    }
+    .house-fact{ padding:1.1rem 0; border-bottom:1px solid rgba(234,230,223,.07); }
+    .house-fact-value{
+      display:block;
+      font-family:'Playfair Display',serif;
+      font-size:1.35rem;
+      line-height:1;
+      color:var(--cream);
+    }
+    .house-fact-label{
+      display:block;
+      margin-top:.35rem;
+      font-size:.46rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .house-lede{
+      font-family:'Playfair Display',serif;
+      font-size:clamp(1.18rem,2.1vw,1.5rem);
+      line-height:1.55;
+      letter-spacing:-.01em;
+      color:#ddd8ce;
+      margin-bottom:1.6rem;
+    }
+    .house-lede::first-letter{
+      font-size:2.6em;
+      float:left;
+      line-height:.82;
+      padding-right:.11em;
+      color:var(--gold);
+      font-style:italic;
+    }
+    .chef-row{
+      display:flex;
+      align-items:center;
+      gap:1rem;
+      flex-wrap:wrap;
+      margin-top:2rem;
+      padding-top:1.4rem;
+      border-top:1px solid rgba(234,230,223,.09);
+    }
+    .chef-monogram{
+      width:44px; height:44px;
+      border-radius:50%;
+      border:1px solid rgba(212,175,55,.4);
+      display:grid;
+      place-items:center;
+      font-family:'Playfair Display',serif;
+      font-size:.82rem;
+      letter-spacing:.06em;
+      color:var(--gold);
+      flex:none;
+      background:radial-gradient(circle at 35% 30%,rgba(212,175,55,.14),transparent 70%);
+    }
+    .chef-name{
+      font-family:'Playfair Display',serif;
+      font-size:1.02rem;
+      line-height:1.2;
+      color:var(--cream);
+    }
+    .chef-row .micro{ margin-top:.2rem; }
+    .chef-rule{ flex:1; min-width:24px; height:1px; background:rgba(234,230,223,.1); }
+    .chef-note{
+      font-family:'Playfair Display',serif;
+      font-style:italic;
+      font-size:.9rem;
+      color:var(--muted);
+      max-width:13rem;
+    }
+    .quote-card{
+      position:relative;
+      margin-top:2.3rem;
+      padding:1.65rem 1.5rem 1.45rem;
+      border-radius:3px;
+      overflow:hidden;
+    }
+    .quote-card::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg,rgba(212,175,55,.10),transparent 48%);
+      pointer-events:none;
+    }
+    .quote-card .quote-glyph{
+      position:absolute;
+      top:-.35rem; right:1rem;
+      font-family:'Playfair Display',serif;
+      font-size:5rem;
+      line-height:1;
+      color:rgba(212,175,55,.2);
+    }
+    .quote-card blockquote{
+      position:relative;
+      font-family:'Playfair Display',serif;
+      font-size:clamp(1.1rem,2vw,1.3rem);
+      line-height:1.5;
+      color:#dfdad0;
+      max-width:24ch;
+    }
+    .quote-card figcaption{
+      position:relative;
+      display:flex;
+      align-items:center;
+      gap:.7rem;
+      margin-top:1.2rem;
+    }
+    .quote-card figcaption .hairline{ width:32px; flex:none; }
+
+    /* ---------- menu ---------- */
+    .menu-section{
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(ellipse 70% 50% at 82% 4%,rgba(212,175,55,.045),transparent 60%),
+        linear-gradient(180deg,#0c0c0e 0%,#101013 34%,#0c0c0e 100%);
+      border-top:1px solid rgba(234,230,223,.06);
+      border-bottom:1px solid rgba(234,230,223,.06);
+    }
+    .menu-head{
+      display:grid;
+      gap:2rem;
+      align-items:end;
+      margin-bottom:2.6rem;
+    }
+    @media (min-width:1024px){
+      .menu-head{ grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr); gap:4rem; margin-bottom:3.2rem; }
+    }
+    .menu-intro .body-copy{ max-width:30rem; }
+    .menu-price{
+      display:flex;
+      align-items:center;
+      gap:.8rem;
+      margin-top:1.2rem;
+      font-size:.56rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .menu-price strong{
+      font-family:'Playfair Display',serif;
+      font-size:1.15rem;
+      font-weight:400;
+      letter-spacing:0;
+      color:var(--gold);
+      margin-right:.15rem;
+    }
+    .menu-toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      padding-top:1.4rem;
+      margin-bottom:2rem;
+      border-top:1px solid rgba(234,230,223,.08);
+    }
+    .tabs{
+      display:flex;
+      align-items:center;
+      gap:.42rem;
+      overflow-x:auto;
+      padding-bottom:.35rem;
+      scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
+      max-width:100%;
+    }
+    .tabs::-webkit-scrollbar{ display:none; }
+    .tab{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      flex:none;
+      padding:.62rem .9rem;
+      border:1px solid rgba(234,230,223,.12);
+      border-radius:9999px;
+      font-size:.54rem;
+      letter-spacing:.17em;
+      text-transform:uppercase;
+      font-weight:500;
+      color:#a39e94;
+      background:rgba(255,255,255,.018);
+      transition:color .35s var(--out),background .4s var(--out),border-color .4s var(--out),transform .5s var(--spring);
+    }
+    .tab span{
+      font-size:.46rem;
+      letter-spacing:.05em;
+      color:#6f6a62;
+      transition:color .3s;
+    }
+    .tab:hover{ color:var(--cream); border-color:rgba(212,175,55,.4); transform:translateY(-1px); }
+    .tab[aria-selected="true"]{
+      background:var(--gold);
+      border-color:var(--gold);
+      color:#0b0b0c;
+      box-shadow:0 8px 26px -14px rgba(212,175,55,.7);
+    }
+    .tab[aria-selected="true"] span{ color:rgba(11,11,12,.55); }
+    .menu-count{
+      font-size:.5rem;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      color:var(--muted);
+      flex:none;
+      padding-left:.2rem;
+    }
+    .menu-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:.9rem;
+    }
+    @media (min-width:768px){ .menu-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (min-width:1280px){ .menu-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.1rem; } }
+    .menu-card{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      min-height:305px;
+      padding:1.55rem;
+      border-radius:3px;
+      overflow:hidden;
+      transition:transform .65s var(--spring),border-color .45s var(--out),background .45s var(--out),box-shadow .5s var(--out);
+    }
+    @media (min-width:640px){ .menu-card{ padding:1.75rem; } }
+    .menu-card::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at 88% 0%,rgba(212,175,55,.12),transparent 55%);
+      opacity:0;
+      transition:opacity .5s var(--out);
+      pointer-events:none;
+    }
+    .menu-card:hover{
+      transform:translateY(-5px);
+      border-color:rgba(212,175,55,.38) !important;
+      box-shadow:0 30px 60px -34px rgba(0,0,0,.95),0 0 0 1px rgba(212,175,55,.08) inset;
+    }
+    .menu-card:hover::before{ opacity:1; }
+    .menu-card.is-featured{ min-height:340px; }
+    @media (min-width:768px){
+      .menu-card.is-featured{ grid-column:span 2; padding:2rem 2.1rem; min-height:325px; }
+    }
+    .card-watermark{
+      position:absolute;
+      right:1rem; top:2.2rem;
+      font-family:'Playfair Display',serif;
+      font-size:clamp(5rem,9vw,8rem);
+      line-height:.8;
+      color:transparent;
+      -webkit-text-stroke:1px rgba(212,175,55,.13);
+      pointer-events:none;
+      user-select:none;
+    }
+    .menu-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; position:relative; z-index:1; }
+    .course-no{
+      font-family:'Playfair Display',serif;
+      font-size:1.75rem;
+      line-height:.9;
+      letter-spacing:.02em;
+      color:var(--gold);
+      display:flex;
+      flex-direction:column;
+      gap:.38rem;
+    }
+    .course-no small{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:.42rem;
+      letter-spacing:.26em;
+      text-transform:uppercase;
+      color:#77726a;
+      line-height:1;
+    }
+    .card-tag{
+      border:1px solid rgba(234,230,223,.14);
+      border-radius:9999px;
+      padding:.32rem .6rem;
+      font-size:.44rem;
+      letter-spacing:.19em;
+      text-transform:uppercase;
+      color:#a8a297;
+      white-space:nowrap;
+    }
+    .menu-card-body{ margin-top:1.6rem; position:relative; z-index:1; }
+    .signature-line{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      font-size:.47rem;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      color:var(--gold);
+      margin-bottom:.65rem;
+    }
+    .menu-card-title{
+      font-family:'Playfair Display',serif;
+      font-size:1.38rem;
+      line-height:1.18;
+      font-weight:400;
+      letter-spacing:-.015em;
+      color:var(--cream);
+      max-width:22ch;
+    }
+    .menu-card.is-featured .menu-card-title{
+      font-size:clamp(1.75rem,2.6vw,2.35rem);
+      max-width:18ch;
+    }
+    .menu-card-desc{
+      margin-top:.7rem;
+      font-size:.79rem;
+      line-height:1.7;
+      font-weight:300;
+      color:#9d988e;
+      max-width:40ch;
+    }
+    .menu-card-foot{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:.45rem 1rem;
+      margin-top:auto;
+      padding-top:1.1rem;
+      border-top:1px solid rgba(234,230,223,.07);
+      position:relative;
+      z-index:1;
+    }
+    .pairing-label{
+      font-size:.43rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:#6f6a62;
+    }
+    .pairing-name{
+      font-family:'Playfair Display',serif;
+      font-style:italic;
+      font-size:.79rem;
+      color:#c6c0b5;
+      text-align:right;
+    }
+    .menu-footnote{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:1.4rem;
+      margin-top:2.2rem;
+      padding-top:1.6rem;
+      border-top:1px solid rgba(234,230,223,.08);
+    }
+    .menu-footnote p{
+      font-size:.68rem;
+      line-height:1.7;
+      letter-spacing:.02em;
+      color:#77726a;
+      max-width:36rem;
+    }
+
+    /* ---------- cellar ---------- */
+    .cellar-section{
+      background:
+        radial-gradient(ellipse 55% 55% at 22% 55%,rgba(212,175,55,.05),transparent 62%),
+        linear-gradient(180deg,#0c0c0e,#0f0f12 45%,#0c0c0e);
+      overflow:hidden;
+    }
+    .cellar-head{
+      display:grid;
+      gap:1.5rem;
+      align-items:end;
+      margin-bottom:2.5rem;
+    }
+    @media (min-width:1024px){
+      .cellar-head{ grid-template-columns:minmax(0,1fr) minmax(0,.72fr); gap:5rem; margin-bottom:3.5rem; }
+    }
+    .cellar-intro{ max-width:31rem; }
+    .cellar-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:2.5rem;
+      align-items:center;
+    }
+    @media (min-width:1024px){
+      .cellar-grid{ grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:3.5rem; }
+    }
+    @media (min-width:1280px){ .cellar-grid{ gap:5rem; } }
+
+    .bottle-stage{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:440px;
+      padding:1rem 0 2.5rem;
+    }
+    @media (min-width:640px){ .bottle-stage{ min-height:520px; } }
+    .bottle-glow{
+      position:absolute;
+      width:380px; height:380px;
+      max-width:90vw; max-height:90vw;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(212,175,55,.20),rgba(212,175,55,.05) 48%,transparent 70%);
+      filter:blur(50px);
+      top:50%; left:50%;
+      transform:translate(-50%,-52%);
+      animation:glowPulse 9s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes glowPulse{
+      0%,100%{ opacity:.55; transform:translate(-50%,-52%) scale(.96); }
+      50%{ opacity:.9; transform:translate(-50%,-52%) scale(1.05); }
+    }
+    .bottle-plinth{
+      position:absolute;
+      bottom:2.1rem; left:50%;
+      width:58%; height:1px;
+      transform:translateX(-50%);
+      background:linear-gradient(90deg,transparent,rgba(212,175,55,.45),transparent);
+      box-shadow:0 18px 40px 6px rgba(0,0,0,.8);
+    }
+    .bottle-svg{
+      position:relative;
+      z-index:2;
+      height:clamp(360px,48vw,550px);
+      width:auto;
+      filter:drop-shadow(0 44px 40px rgba(0,0,0,.65));
+      animation:bottleFloat 10s ease-in-out infinite;
+    }
+    @keyframes bottleFloat{
+      0%,100%{ transform:translateY(0) rotate(-.3deg); }
+      50%{ transform:translateY(-7px) rotate(.3deg); }
+    }
+    .bottle-tag{
+      position:absolute;
+      top:26%; right:0;
+      z-index:4;
+      padding:.85rem 1rem;
+      width:122px;
+      text-align:center;
+      border-radius:2px;
+      box-shadow:0 26px 50px -24px rgba(0,0,0,.9);
+      animation:floaty 7.5s ease-in-out infinite;
+    }
+    @media (min-width:640px){ .bottle-tag{ right:2%; width:132px; } }
+    .bottle-tag .micro{ font-size:.43rem; }
+    .bottle-tag-value{
+      font-family:'Playfair Display',serif;
+      font-size:2.15rem;
+      line-height:1;
+      color:var(--gold);
+      margin:.35rem 0 .3rem;
+    }
+    .bottle-tag-value span{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:.44rem;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+      margin-left:.25rem;
+    }
+    .bottle-caption{
+      position:absolute;
+      bottom:0; left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:.6rem;
+      white-space:nowrap;
+      font-size:.47rem;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      color:#77726a;
+    }
+
+    .metric-card{
+      position:relative;
+      padding:1.45rem;
+      border-radius:3px;
+      overflow:hidden;
+    }
+    @media (min-width:640px){ .metric-card{ padding:1.8rem; } }
+    @media (min-width:1280px){ .metric-card{ padding:2.1rem; } }
+    .metric-card::before{
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(212,175,55,.7),transparent);
+    }
+    .metric-card::after{
+      content:'';
+      position:absolute;
+      top:-45%; right:-25%;
+      width:60%; height:90%;
+      background:radial-gradient(circle,rgba(212,175,55,.11),transparent 65%);
+      pointer-events:none;
+    }
+    .metric-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      padding-bottom:1rem;
+      border-bottom:1px solid rgba(234,230,223,.08);
+    }
+    .metric-eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      font-size:.5rem;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      font-weight:600;
+      color:var(--gold);
+    }
+    .live-dot{
+      width:5px; height:5px;
+      border-radius:50%;
+      background:var(--gold);
+      box-shadow:0 0 0 0 rgba(212,175,55,.45);
+      animation:livePulse 2.4s ease-out infinite;
+    }
+    @keyframes livePulse{
+      0%{ box-shadow:0 0 0 0 rgba(212,175,55,.4); }
+      70%{ box-shadow:0 0 0 7px rgba(212,175,55,0); }
+      100%{ box-shadow:0 0 0 0 rgba(212,175,55,0); }
+    }
+    .metric-score-row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:1.2rem;
+      margin-top:1.15rem;
+    }
+    .metric-score{
+      display:flex;
+      align-items:flex-end;
+      gap:.5rem;
+    }
+    .metric-number{
+      font-family:'Playfair Display',serif;
+      font-size:clamp(3.9rem,7vw,5.2rem);
+      line-height:.8;
+      letter-spacing:-.045em;
+      background:linear-gradient(115deg,#f6e7b4,#d4af37 55%,#a17c25);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      -webkit-text-fill-color:transparent;
+    }
+    .metric-denom{
+      font-size:.55rem;
+      letter-spacing:.15em;
+      color:#77726a;
+      padding-bottom:.55rem;
+    }
+    .metric-score-label{
+      margin-top:.55rem;
+      font-size:.47rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:#8b867c;
+    }
+    .metric-stamp{
+      width:62px; height:62px;
+      flex:none;
+      border:1px solid rgba(212,175,55,.35);
+      border-radius:50%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      transform:rotate(8deg);
+      background:radial-gradient(circle at 35% 30%,rgba(212,175,55,.10),transparent 70%);
+    }
+    .stamp-top{ font-family:'Playfair Display',serif; font-size:.92rem; color:var(--gold); line-height:1; }
+    .stamp-line{ width:16px; height:1px; background:rgba(212,175,55,.45); margin:.28rem 0; }
+    .stamp-bottom{ font-size:.36rem; letter-spacing:.2em; text-transform:uppercase; color:#918c83; }
+    .metric-wine{
+      margin-top:1.25rem;
+      font-size:clamp(1.2rem,2.2vw,1.45rem);
+      line-height:1.3;
+      font-weight:400;
+      color:var(--cream);
+      letter-spacing:-.015em;
+    }
+    .metric-wine em{
+      display:block;
+      font-size:.83em;
+      color:#bdb7ac;
+      margin-top:.15rem;
+    }
+    .metric-note{
+      margin-top:.7rem;
+      font-size:.78rem;
+      line-height:1.7;
+      font-weight:300;
+      color:#918c83;
+      max-width:47ch;
+    }
+    .metric-gauge{ margin-top:1.35rem; }
+    .metric-gauge-track{
+      position:relative;
+      height:3px;
+      background:rgba(234,230,223,.09);
+      overflow:visible;
+    }
+    .metric-gauge-fill{
+      position:absolute;
+      inset:0 auto 0 0;
+      width:98.4%;
+      background:linear-gradient(90deg,#6d5418,#d4af37 70%,#f6e7b4);
+      transform:scaleX(0);
+      transform-origin:0 50%;
+      transition:transform 1.6s var(--out) .35s;
+      box-shadow:0 0 12px rgba(212,175,55,.45);
+    }
+    .metric-gauge-track i{
+      position:absolute;
+      top:-3px;
+      width:1px; height:9px;
+      background:rgba(234,230,223,.22);
+    }
+    .metric-gauge-labels{
+      display:flex;
+      justify-content:space-between;
+      margin-top:.45rem;
+      font-size:.4rem;
+      letter-spacing:.15em;
+      color:#6f6a62;
+    }
+    .reveal.is-in .metric-gauge-fill{ transform:scaleX(1); }
+    .metric-stats{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      margin-top:1.2rem;
+      border-top:1px solid rgba(234,230,223,.08);
+    }
+    .metric-stat{
+      display:flex;
+      flex-direction:column;
+      gap:.28rem;
+      padding:.75rem .9rem .75rem 0;
+      border-bottom:1px solid rgba(234,230,223,.07);
+    }
+    .metric-stat:nth-child(even){ padding-left:.9rem; border-left:1px solid rgba(234,230,223,.07); }
+    .metric-stat span:last-child{ font-size:.75rem; color:#d3cdc2; }
+    .metric-stat .micro{ font-size:.4rem; }
+    .vintage-block{
+      margin-top:1.1rem;
+      padding-top:1rem;
+      border-top:1px solid rgba(234,230,223,.08);
+    }
+    .vintage-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .vintage-head .micro{ font-size:.41rem; }
+    .vintage-bars{
+      display:flex;
+      align-items:flex-end;
+      gap:.45rem;
+      height:62px;
+      margin-top:.7rem;
+    }
+    .vbar{
+      flex:1;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      align-items:center;
+      gap:.4rem;
+    }
+    .vbar > span{
+      width:100%;
+      height:var(--h);
+      background:rgba(212,175,55,.18);
+      border-top:1px solid rgba(212,175,55,.3);
+      transform:scaleY(0);
+      transform-origin:50% 100%;
+      transition:transform 1s var(--spring);
+      transition-delay:var(--d,.1s);
+    }
+    .reveal.is-in .vbar > span{ transform:scaleY(1); }
+    .vbar.is-active > span{
+      background:linear-gradient(180deg,#f0dda3,#d4af37 60%,rgba(154,121,37,.6));
+      box-shadow:0 0 18px rgba(212,175,55,.3);
+      border-top-color:#f6e7b4;
+    }
+    .vbar small{ font-size:.4rem; letter-spacing:.08em; color:#6f6a62; }
+    .vbar.is-active small{ color:var(--gold); }
+    .metric-foot{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      margin-top:1.15rem;
+      padding-top:1.1rem;
+      border-top:1px solid rgba(234,230,223,.08);
+    }
+    .metric-tags{ display:flex; flex-wrap:wrap; gap:.32rem; }
+    .metric-tags span{
+      border:1px solid rgba(234,230,223,.1);
+      padding:.27rem .48rem;
+      font-size:.42rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:#8b867c;
+      border-radius:9999px;
+    }
+    .metric-foot .btn{ font-size:.48rem; padding:.72rem .85rem; letter-spacing:.16em; }
+
+    /* ---------- salon ---------- */
+    .salon-section{
+      position:relative;
+      background:
+        radial-gradient(ellipse 50% 50% at 30% 40%,rgba(212,175,55,.045),transparent 65%),
+        #0a0a0c;
+      border-top:1px solid rgba(234,230,223,.06);
+      overflow:hidden;
+    }
+    .salon-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:3rem;
+      align-items:center;
+    }
+    @media (min-width:1024px){
+      .salon-grid{ grid-template-columns:minmax(0,6fr) minmax(0,6fr); gap:5rem; }
+    }
+    .salon-stage{
+      position:relative;
+      display:flex;
+      justify-content:center;
+      padding:1rem 0 4rem;
+    }
+    .salon-arch{
+      position:relative;
+      width:100%;
+      max-width:390px;
+      aspect-ratio:3/4;
+      border-radius:999px 999px 2px 2px;
+      border:1px solid rgba(212,175,55,.24);
+      background:
+        radial-gradient(ellipse 70% 45% at 50% 16%,rgba(212,175,55,.12),transparent 60%),
+        radial-gradient(ellipse 90% 60% at 50% 100%,rgba(40,32,22,.5),transparent 70%),
+        linear-gradient(180deg,#15120e 0%,#0c0c0e 62%,#08080a 100%);
+      overflow:hidden;
+      box-shadow:0 60px 90px -50px rgba(0,0,0,.95),inset 0 1px 0 rgba(234,230,223,.08);
+    }
+    .salon-arch::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background-image:repeating-linear-gradient(90deg,rgba(234,230,223,.022) 0 1px,transparent 1px 74px);
+      pointer-events:none;
+    }
+    .arch-line{
+      position:absolute;
+      inset:11px;
+      border:1px solid rgba(212,175,55,.14);
+      border-radius:999px 999px 1px 1px;
+      pointer-events:none;
+    }
+    .arch-line-outer{ inset:24px; border-color:rgba(212,175,55,.08); }
+    .arch-inner{ position:absolute; inset:0; }
+    .arch-light{
+      position:absolute;
+      inset:0;
+      background:radial-gradient(ellipse 45% 32% at 50% 8%,rgba(240,220,166,.2),transparent 66%);
+      pointer-events:none;
+    }
+    .pendant{
+      position:absolute;
+      top:0; left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      z-index:2;
+    }
+    .cord{
+      width:1px;
+      height:clamp(64px,10vw,96px);
+      background:linear-gradient(180deg,rgba(212,175,55,.06),rgba(212,175,55,.5));
+    }
+    .bulb{
+      width:8px; height:8px;
+      border-radius:50%;
+      background:#f3e3ab;
+      box-shadow:0 0 22px 7px rgba(212,175,55,.4),0 0 60px 22px rgba(212,175,55,.14);
+      animation:bulbGlow 5.5s ease-in-out infinite;
+    }
+    @keyframes bulbGlow{
+      0%,100%{ opacity:.82; box-shadow:0 0 22px 7px rgba(212,175,55,.38),0 0 60px 22px rgba(212,175,55,.12); }
+      50%{ opacity:1; box-shadow:0 0 26px 9px rgba(212,175,55,.5),0 0 78px 30px rgba(212,175,55,.17); }
+    }
+    .table-scene{
+      position:absolute;
+      left:7%; right:7%;
+      bottom:15%;
+      height:44%;
+    }
+    .table-line{
+      position:absolute;
+      left:0; right:0; bottom:22%;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(212,175,55,.34),transparent);
+      box-shadow:0 20px 24px rgba(0,0,0,.6);
+    }
+    .table-line::before{
+      content:'';
+      position:absolute;
+      left:12%; right:12%;
+      bottom:-38px;
+      height:28px;
+      background:radial-gradient(ellipse at 50% 0%,rgba(212,175,55,.10),transparent 70%);
+    }
+    .candle{
+      position:absolute;
+      bottom:22%;
+      width:3px;
+      height:26px;
+      background:linear-gradient(180deg,#f6e8b8,#c9a43c);
+      border-radius:1px;
+    }
+    .candle::before{
+      content:'';
+      position:absolute;
+      top:-7px; left:50%;
+      width:5px; height:9px;
+      transform:translateX(-50%);
+      border-radius:50% 50% 45% 45%;
+      background:radial-gradient(circle at 50% 65%,#fff6cf,#e5b94b 55%,rgba(212,175,55,0));
+      filter:blur(.5px);
+      box-shadow:0 0 18px 6px rgba(212,175,55,.35);
+      animation:flame 3.2s ease-in-out infinite;
+    }
+    .candle-a{ left:30%; }
+    .candle-b{ left:66%; height:21px; }
+    .candle-b::before{ animation-delay:.7s; }
+    @keyframes flame{
+      0%,100%{ transform:translateX(-50%) scale(1) rotate(-2deg); opacity:.9; }
+      50%{ transform:translateX(-50%) scale(1.12,.92) rotate(2deg); opacity:1; }
+    }
+    .table-shadow{
+      position:absolute;
+      left:16%; right:16%;
+      bottom:0;
+      height:18%;
+      background:radial-gradient(ellipse at 50% 0%,rgba(0,0,0,.65),transparent 70%);
+    }
+    .arch-caption{
+      position:absolute;
+      left:0; right:0; bottom:1.7rem;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:.55rem;
+      z-index:3;
+    }
+    .arch-caption .micro{ font-size:.42rem; color:#8b867c; }
+    .arch-caption-rule{ width:26px; height:1px; background:rgba(212,175,55,.45); }
+    .arch-dot{
+      position:absolute;
+      width:4px; height:4px;
+      border-radius:50%;
+      background:var(--gold);
+      box-shadow:0 0 12px rgba(212,175,55,.7);
+      z-index:4;
+    }
+    .arch-dot-a{ left:11%; top:34%; }
+    .arch-dot-b{ right:11%; top:52%; opacity:.45; }
+    .salon-tag{
+      position:absolute;
+      left:-.25rem;
+      bottom:1.3rem;
+      z-index:5;
+      width:218px;
+      padding:1.15rem 1.2rem;
+      border-radius:2px;
+      box-shadow:0 30px 60px -28px rgba(0,0,0,.95);
+    }
+    @media (min-width:640px){ .salon-tag{ left:-1.8rem; bottom:1.6rem; width:230px; } }
+    .salon-tag-title{
+      font-family:'Playfair Display',serif;
+      font-size:1.32rem;
+      line-height:1.2;
+      letter-spacing:-.015em;
+      margin-top:.5rem;
+      color:var(--cream);
+    }
+    .salon-tag-foot{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:.5rem;
+      margin-top:.8rem;
+      padding-top:.7rem;
+      border-top:1px solid rgba(234,230,223,.1);
+      font-size:.44rem;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .salon-tag-price{
+      font-family:'Playfair Display',serif;
+      font-size:1.2rem;
+      letter-spacing:0;
+      color:var(--gold);
+      line-height:1;
+    }
+    .salon-tag-price small{ font-family:'Plus Jakarta Sans',sans-serif; font-size:.38rem; letter-spacing:.14em; color:var(--muted); margin-left:.25rem; }
+    .salon-vertical{
+      position:absolute;
+      right:-2.2rem;
+      top:50%;
+      transform:translateY(-50%) rotate(90deg);
+      transform-origin:center;
+      font-size:.42rem;
+      letter-spacing:.3em;
+      text-transform:uppercase;
+      color:#5f5b54;
+      white-space:nowrap;
+      display:none;
+    }
+    @media (min-width:1280px){ .salon-vertical{ display:block; } }
+    .salon-copy .section-title{ margin-bottom:1.6rem; }
+    .salon-lede{ max-width:32rem; }
+    .salon-list{
+      list-style:none;
+      margin:1.8rem 0 0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      max-width:33rem;
+    }
+    .salon-list li{
+      display:flex;
+      align-items:flex-start;
+      gap:.8rem;
+      padding:.82rem 0;
+      border-bottom:1px solid rgba(234,230,223,.07);
+      font-size:.82rem;
+      line-height:1.55;
+      color:#b8b2a8;
+      font-weight:300;
+    }
+    .salon-list .diamond{ margin-top:.42rem; }
+    .salon-actions{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:1.5rem;
+      margin-top:2rem;
+    }
+    .salon-call{
+      display:flex;
+      flex-direction:column;
+      gap:.18rem;
+      transition:color .3s;
+    }
+    .salon-call span:last-child{ font-family:'Playfair Display',serif; font-size:.98rem; letter-spacing:.02em; }
+    .salon-call:hover{ color:var(--gold); }
+    .salon-note{
+      margin-top:1.2rem;
+      font-size:.48rem;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:#6f6a62;
+    }
+
+    /* ---------- press ---------- */
+    .press-band{
+      position:relative;
+      padding-block:5rem;
+      border-top:1px solid rgba(234,230,223,.06);
+      border-bottom:1px solid rgba(234,230,223,.06);
+      background:
+        radial-gradient(ellipse 50% 80% at 50% 50%,rgba(212,175,55,.05),transparent 66%),
+        #0b0b0d;
+      overflow:hidden;
+    }
+    @media (min-width:768px){ .press-band{ padding-block:7rem; } }
+    .press-inner{ max-width:920px; margin-inline:auto; text-align:center; }
+    .press-inner blockquote{
+      margin:1.3rem 0 1.7rem;
+      font-family:'Playfair Display',serif;
+      font-size:clamp(1.75rem,4.1vw,3.3rem);
+      line-height:1.25;
+      letter-spacing:-.03em;
+      color:#e5e0d6;
+    }
+    .press-meta{ display:flex; align-items:center; justify-content:center; gap:.9rem; }
+    .press-meta .hairline{ width:clamp(22px,6vw,54px); }
+    .press-meta .micro{ font-size:.46rem; }
+
+    /* ---------- reserve band ---------- */
+    .reserve-band{
+      position:relative;
+      padding-block:4.5rem;
+      overflow:hidden;
+    }
+    @media (min-width:768px){ .reserve-band{ padding-block:6rem; } }
+    .reserve-panel{
+      position:relative;
+      display:grid;
+      gap:2rem;
+      padding:2rem 1.5rem;
+      border:1px solid rgba(212,175,55,.18);
+      background:
+        linear-gradient(120deg,rgba(212,175,55,.075),transparent 48%),
+        rgba(22,22,26,.5);
+      overflow:hidden;
+    }
+    @media (min-width:640px){ .reserve-panel{ padding:2.6rem 2.2rem; } }
+    @media (min-width:1024px){
+      .reserve-panel{ grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:3rem; padding:3rem; }
+    }
+    .reserve-panel::before{
+      content:'';
+      position:absolute;
+      top:0; left:0;
+      width:80px; height:1px;
+      background:var(--gold);
+    }
+    .reserve-title{
+      font-size:clamp(1.9rem,3.8vw,3.4rem);
+      line-height:1.03;
+      letter-spacing:-.035em;
+      font-weight:400;
+    }
+    .reserve-title em{ font-style:italic; letter-spacing:-.02em; }
+    .reserve-note{
+      margin-top:1.1rem;
+      max-width:34rem;
+      font-size:.84rem;
+      line-height:1.75;
+      font-weight:300;
+      color:#98938a;
+    }
+    .reserve-actions{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:1rem;
+      flex:none;
+    }
+    @media (min-width:1024px){ .reserve-actions{ align-items:flex-end; } }
+    .reserve-phone{
+      display:flex;
+      flex-direction:column;
+      gap:.24rem;
+      text-align:left;
+      transition:color .3s;
+    }
+    @media (min-width:1024px){ .reserve-phone{ text-align:right; } }
+    .reserve-phone span:last-child{ font-family:'Playfair Display',serif; font-size:1.02rem; }
+    .reserve-phone:hover{ color:var(--gold); }
+
+    /* ---------- footer ---------- */
+    .site-footer{
+      position:relative;
+      background:#08080a;
+      border-top:1px solid rgba(234,230,223,.07);
+      padding-top:3.5rem;
+      overflow:hidden;
+    }
+    @media (min-width:768px){ .site-footer{ padding-top:5rem; } }
+    .footer-top{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:2.6rem;
+      padding-bottom:2rem;
+    }
+    @media (min-width:640px){ .footer-top{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (min-width:1024px){
+      .footer-top{ grid-template-columns:1.55fr .75fr 1fr 1.25fr; gap:2rem; padding-bottom:3rem; }
+    }
+    .footer-tagline{
+      margin-top:1.5rem;
+      font-family:'Playfair Display',serif;
+      font-size:1.15rem;
+      line-height:1.45;
+      color:#cfc9bf;
+      letter-spacing:-.01em;
+    }
+    .footer-address{
+      margin-top:1.15rem;
+      font-size:.55rem;
+      line-height:1.9;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:#6f6a62;
+    }
+    .footer-heading{
+      font-size:.53rem;
+      letter-spacing:.28em;
+      text-transform:uppercase;
+      font-weight:600;
+      color:var(--gold);
+      margin-bottom:1.1rem;
+    }
+    .footer-col{ display:flex; flex-direction:column; align-items:flex-start; gap:.55rem; }
+    .footer-col a,
+    .footer-col p{ font-size:.76rem; line-height:1.65; color:#9a958b; transition:color .3s; font-weight:300; }
+    .footer-col a:hover{ color:var(--gold); }
+    .footer-col .footer-muted{ color:#615d56; }
+    .footer-news .footer-muted{ max-width:22rem; }
+    .news-form{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      width:100%;
+      max-width:19rem;
+      border-bottom:1px solid rgba(234,230,223,.16);
+      transition:border-color .4s var(--out);
+    }
+    .news-form:focus-within{ border-color:rgba(212,175,55,.6); }
+    .news-form input{
+      flex:1;
+      min-width:0;
+      background:transparent;
+      border:0;
+      outline:0;
+      padding:.65rem 0;
+      font-size:.78rem;
+      color:var(--cream);
+    }
+    .news-form input::placeholder{ color:#5f5b54; }
+    .news-form button{
+      width:34px; height:34px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(234,230,223,.12);
+      color:#a9a49a;
+      transition:background .35s,color .35s,border-color .35s,transform .5s var(--spring);
+      flex:none;
+    }
+    .news-form button:hover{ background:var(--gold); border-color:var(--gold); color:#0b0b0c; transform:translateY(-1px); }
+    .news-form button svg{ width:12px; height:12px; }
+    .news-message{
+      min-height:.85rem;
+      margin-top:.55rem;
+      font-size:.6rem;
+      letter-spacing:.08em;
+      color:var(--gold);
+    }
+    .footer-socials{
+      display:flex;
+      align-items:center;
+      gap:.65rem;
+      margin-top:1.5rem;
+      font-size:.48rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+    }
+    .footer-socials a{ color:#77726a; transition:color .3s; }
+    .footer-socials a:hover{ color:var(--gold); }
+    .footer-socials .diamond{ opacity:.45; }
+    .footer-watermark{
+      font-family:'Playfair Display',serif;
+      font-size:clamp(3.4rem,13vw,11.5rem);
+      line-height:.76;
+      letter-spacing:.045em;
+      text-align:center;
+      color:transparent;
+      -webkit-text-stroke:1px rgba(234,230,223,.075);
+      user-select:none;
+      pointer-events:none;
+      margin-top:2rem;
+      white-space:nowrap;
+    }
+    .footer-bottom{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:.8rem 1.5rem;
+      padding:1.3rem 0;
+      border-top:1px solid rgba(234,230,223,.07);
+      font-size:.58rem;
+      letter-spacing:.08em;
+      color:#615d56;
+    }
+    .footer-legal{ display:flex; flex-wrap:wrap; gap:1.15rem; }
+    .footer-legal a{ transition:color .3s; }
+    .footer-legal a:hover{ color:var(--cream); }
+
+    /* ---------- modal ---------- */
+    .modal{
+      position:fixed;
+      inset:0;
+      z-index:110;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:1rem;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:opacity .45s var(--out),visibility .45s;
+    }
+    .modal.is-open{ opacity:1; visibility:visible; pointer-events:auto; }
+    .modal-backdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(4,4,6,.72);
+      -webkit-backdrop-filter:blur(10px);
+      backdrop-filter:blur(10px);
+    }
+    .modal-panel{
+      position:relative;
+      z-index:2;
+      width:100%;
+      max-width:560px;
+      max-height:calc(100svh - 2rem);
+      overflow-y:auto;
+      padding:1.8rem 1.35rem 1.6rem;
+      background:
+        radial-gradient(ellipse 80% 40% at 50% 0%,rgba(212,175,55,.08),transparent 62%),
+        linear-gradient(180deg,#17171b 0%,#0e0e11 100%);
+      border:1px solid rgba(212,175,55,.23);
+      box-shadow:0 60px 120px -40px rgba(0,0,0,.98);
+      opacity:0;
+      transform:translateY(26px) scale(.95);
+      transition:transform .72s var(--spring),opacity .35s var(--out);
+      scrollbar-width:thin;
+    }
+    @media (min-width:640px){ .modal-panel{ padding:2.4rem 2.2rem 2rem; } }
+    .modal.is-open .modal-panel{ opacity:1; transform:none; }
+    .modal-panel::before{
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(212,175,55,.8),transparent);
+    }
+    .modal-close{
+      position:absolute;
+      top:1rem; right:1rem;
+      width:36px; height:36px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(234,230,223,.14);
+      color:#a9a49a;
+      transition:color .3s,border-color .3s,background .3s,transform .5s var(--spring);
+      z-index:3;
+    }
+    .modal-close:hover{ color:var(--cream); border-color:rgba(212,175,55,.5); background:rgba(212,175,55,.06); transform:rotate(90deg); }
+    .modal-close svg{ width:15px; height:15px; }
+    .modal-inner{ padding-top:.6rem; }
+    .modal-title{
+      font-size:clamp(1.95rem,5vw,2.7rem);
+      line-height:1.05;
+      letter-spacing:-.03em;
+      font-weight:400;
+      margin-top:.55rem;
+    }
+    .modal-sub{
+      margin-top:.65rem;
+      margin-bottom:1.5rem;
+      font-size:.79rem;
+      line-height:1.7;
+      font-weight:300;
+      color:#98938a;
+      max-width:40ch;
+    }
+    .modal-form{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:.8rem;
+    }
+    .field{ display:flex; flex-direction:column; gap:.4rem; min-width:0; }
+    .field-full{ grid-column:1/-1; }
+    .field label,
+    .field-label{
+      font-size:.49rem;
+      letter-spacing:.2em;
+      text-transform:uppercase;
+      color:#a8a297;
+      font-weight:500;
+    }
+    .optional{ color:#615d56; letter-spacing:.08em; text-transform:none; }
+    .input{
+      width:100%;
+      background:rgba(9,9,11,.68);
+      border:1px solid rgba(234,230,223,.13);
+      border-radius:2px;
+      padding:.78rem .85rem;
+      font-size:.79rem;
+      color:var(--cream);
+      outline:0;
+      transition:border-color .35s var(--out),box-shadow .35s var(--out),background .35s;
+      -webkit-appearance:none;
+      appearance:none;
+    }
+    .input::placeholder{ color:#5f5b54; }
+    .input:focus{
+      border-color:rgba(212,175,55,.7);
+      box-shadow:0 0 0 3px rgba(212,175,55,.10);
+      background:rgba(9,9,11,.9);
+    }
+    .select{
+      padding-right:2.1rem;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23918c83' stroke-width='1'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right .8rem center;
+      cursor:pointer;
+    }
+    .textarea{ resize:vertical; min-height:64px; }
+    input[type="date"]{ color-scheme:dark; }
+    .guest-chips{ display:flex; gap:.38rem; }
+    .guest-chip{
+      flex:1;
+      padding:.66rem 0;
+      border:1px solid rgba(234,230,223,.13);
+      border-radius:2px;
+      font-size:.7rem;
+      color:#a9a49a;
+      transition:background .35s,color .35s,border-color .35s,transform .45s var(--spring);
+    }
+    .guest-chip:hover{ border-color:rgba(212,175,55,.45); color:var(--cream); }
+    .guest-chip.is-active{ background:var(--gold); border-color:var(--gold); color:#0b0b0c; font-weight:600; }
+    .modal-submit{ grid-column:1/-1; margin-top:.25rem; width:100%; }
+    .modal-fineprint{
+      grid-column:1/-1;
+      font-size:.56rem;
+      line-height:1.65;
+      color:#615d56;
+      text-align:center;
+      margin-top:.1rem;
+    }
+    .modal-success{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      padding:1.5rem 0 .5rem;
+      gap:.55rem;
+    }
+    .modal-success[hidden]{ display:none; }
+    .success-mark{ width:62px; height:62px; margin-bottom:.4rem; }
+    .success-mark path{ stroke-dasharray:70; stroke-dashoffset:70; animation:checkDraw .9s var(--out) .3s forwards; }
+    @keyframes checkDraw{ to{ stroke-dashoffset:0; } }
+    .modal-success .modal-sub{ margin-bottom:1rem; max-width:26rem; }
+    .modal-success .modal-title{ margin-top:0; }
+    .modal-success .btn{ margin-top:.4rem; min-width:150px; }
+
+    /* ---------- responsive refinements ---------- */
+    .sr-only{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      white-space:nowrap;
+      border:0;
+    }
+    @media (max-width:479px){
+      .hero{ padding-top:6.7rem; padding-bottom:2.5rem; }
+      .hero-eyebrow{ margin-bottom:1.7rem; gap:.65rem; }
+      .hero-eyebrow .aside{ display:none; }
+      .hero-cta{ flex-direction:column; align-items:stretch; }
+      .hero-cta .btn{ width:100%; }
+      .hero-meta{ gap:.85rem; margin-top:2.4rem; }
+      .hero-meta-item + .hero-meta-item{ padding-left:.85rem; }
+      .hero-meta-value{ font-size:1.05rem; }
+      .hero-meta-label{ font-size:.39rem; letter-spacing:.16em; }
+      .hero-visual{ padding-inline:0; }
+      .plate-card{ width:min(240px,75%); }
+      .menu-card{ min-height:0; }
+      .menu-footnote .btn{ width:100%; }
+      .metric-foot .btn{ width:100%; }
+      .reserve-actions{ width:100%; }
+      .reserve-actions .btn{ width:100%; }
+      .footer-bottom{ justify-content:flex-start; }
+      .footer-credit{ width:100%; }
+      .modal-form{ grid-template-columns:1fr; }
+      .modal-form .field{ grid-column:1/-1; }
+      .guest-chips{ gap:.3rem; }
+      .salon-tag{ left:.15rem; bottom:1rem; width:206px; padding:1rem 1.05rem; }
+      .salon-tag-title{ font-size:1.18rem; }
+    }
+    @media (min-width:640px){
+      .hero-meta{ gap:1.5rem; }
+    }
+    html:not(.js) .vbar > span{ transform:scaleY(1); }
+    html:not(.js) .metric-gauge-fill{ transform:scaleX(1); }
+
+    /* reveal */
+    .js .reveal{
+      opacity:0;
+      transform:translateY(28px);
+      transition:opacity 1s var(--out),transform 1.1s var(--spring);
+      transition-delay:var(--rd,0s);
+    }
+    .js .reveal.is-in{ opacity:1; transform:none; }
+
+    @media (prefers-reduced-motion:reduce){
+      html{ scroll-behavior:auto; }
+      *,*::before,*::after{
+        animation-duration:.001ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="grain" aria-hidden="true"></div>
+  <div id="progress" aria-hidden="true"></div>
+
+  <!-- ══════════════════ NAV ══════════════════ -->
+  <header class="site-header" id="siteHeader">
+    <div class="shell">
+      <div class="nav-inner">
+        <a href="#top" class="brand" aria-label="Obsidian Reserve — home">
+          <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <path d="M24 2.5 45.5 24 24 45.5 2.5 24Z" stroke="#d4af37" stroke-width="1"/>
+            <path d="M24 8.5 39.5 24 24 39.5 8.5 24Z" stroke="#d4af37" stroke-opacity=".32" stroke-width=".8"/>
+            <text x="24" y="29.5" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="12" letter-spacing="1" fill="#d4af37">OR</text>
+          </svg>
+          <span>
+            <span class="brand-word">OBSIDIAN</span>
+            <span class="brand-sub">Reserve · Paris</span>
+          </span>
+        </a>
+
+        <nav class="nav-links" aria-label="Primary">
+          <a class="nav-link" href="#house">The House</a>
+          <a class="nav-link" href="#menu">The Menu</a>
+          <a class="nav-link" href="#cellar">The Cellar</a>
+          <a class="nav-link" href="#salon">Private Salon</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a class="nav-phone" href="tel:+33184001124">+33 1 84 00 11 24</a>
+          <button class="btn btn-sm btn-gold btn-sheen" data-open-modal data-variant="table" type="button">
+            <span>Reserve</span>
+          </button>
+          <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════ MOBILE MENU ══════════════════ -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu-head">
+      <span class="eyebrow" style="color:#918c83">Obsidian Reserve</span>
+      <button class="menu-toggle" id="menuClose" type="button" aria-label="Close menu">
+        <span style="transform:translateY(3px) rotate(45deg)"></span>
+        <span style="opacity:0"></span>
+        <span style="transform:translateY(-3px) rotate(-45deg)"></span>
+      </button>
+    </div>
+    <nav class="mobile-links" aria-label="Mobile">
+      <a class="mobile-link" href="#house"><span>The House</span><span class="idx">01</span></a>
+      <a class="mobile-link" href="#menu"><span>The Menu</span><span class="idx">02</span></a>
+      <a class="mobile-link" href="#cellar"><span>The Cellar</span><span class="idx">03</span></a>
+      <a class="mobile-link" href="#salon"><span>Private Salon</span><span class="idx">04</span></a>
+      <a class="mobile-link" href="#reserve"><span>Reservations</span><span class="idx">05</span></a>
+    </nav>
+    <div class="mobile-menu-foot">
+      <div class="hairline"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+        <a href="tel:+33184001124" class="micro" style="color:#eae6df">+33 1 84 00 11 24</a>
+        <span class="micro">18:30 — 23:00</span>
+      </div>
+      <button class="btn btn-gold btn-sheen w-full" data-open-modal data-variant="table" type="button">
+        <span>Reserve a Table</span>
+      </button>
+    </div>
+  </div>
+
+  <main id="main">
+    <!-- ══════════════════ HERO ══════════════════ -->
+    <section class="hero" id="top" aria-labelledby="heroTitle">
+      <div class="orb orb-a" style="width:42rem;height:42rem;top:-8rem;right:-6rem"></div>
+      <div class="orb orb-b" style="width:32rem;height:32rem;bottom:-10rem;left:-8rem"></div>
+      <div class="orb orb-c" style="width:22rem;height:22rem;top:32%;left:42%"></div>
+      <div class="hero-spot" aria-hidden="true"></div>
+
+      <div class="shell hero-content">
+        <div class="hero-grid">
+          <div>
+            <div class="hero-eyebrow hero-anim">
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">Michelin Guide · Two Stars</span>
+              <span class="diamond" aria-hidden="true"></span>
+              <span class="aside">Paris · Est. MMXIV</span>
+            </div>
+
+            <h1 id="heroTitle" class="display hero-anim">
+              <span class="hero-line"><span class="line-inner">An intimate</span></span>
+              <span class="hero-line"><span class="line-inner"><em class="gold-text">Michelin-starred</em></span></span>
+              <span class="hero-line"><span class="line-inner">culinary journey.</span></span>
+            </h1>
+
+            <p class="hero-sub hero-anim">
+              Eleven courses, twenty-four seats, one candlelit room. A study of fire, time and
+              terroir — served after dark, a quiet remove from the noise of the eighth.
+            </p>
+
+            <div class="hero-cta hero-anim">
+              <button class="btn btn-gold btn-sheen" data-open-modal data-variant="table" type="button">
+                <span>Reserve a Table</span>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <a class="btn btn-ghost btn-sheen" href="#menu">
+                <span>The Eleven Courses</span>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+
+            <div class="hero-meta hero-anim" aria-label="The house at a glance">
+              <div class="hero-meta-item">
+                <span class="hero-meta-value">XI</span>
+                <span class="hero-meta-label">Courses</span>
+              </div>
+              <div class="hero-meta-item">
+                <span class="hero-meta-value">XXIV</span>
+                <span class="hero-meta-label">Seats nightly</span>
+              </div>
+              <div class="hero-meta-item">
+                <span class="hero-meta-value">MMXIV</span>
+                <span class="hero-meta-label">Established</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-visual hero-anim">
+            <div class="plate-parallax">
+              <div class="plate-frame">
+                <div class="plate-ring-outer"></div>
+                <div class="plate-disc"></div>
+                <svg class="plate-ring-rotate" viewBox="0 0 500 500" aria-hidden="true">
+                  <defs>
+                    <path id="ringPath" d="M250,250 m-238,0 a238,238 0 1,1 476,0 a238,238 0 1,1 -476,0"></path>
+                  </defs>
+                  <text fill="rgba(212,175,55,.52)" font-size="9.5" letter-spacing="6.4" font-family="Plus Jakarta Sans, sans-serif" font-weight="500">
+                    <textPath href="#ringPath" startOffset="0%">OBSIDIAN RESERVE · ELEVEN COURSES · PARIS · EST. MMXIV · OBSIDIAN RESERVE · ELEVEN COURSES · PARIS · </textPath>
+                  </text>
+                </svg>
+                <div class="plate-mono">
+                  <span class="or gold-text">OR</span>
+                  <span class="rule" aria-hidden="true"></span>
+                  <span class="caption">Restaurant · Paris VIII</span>
+                </div>
+                <span class="plate-tick t1" aria-hidden="true"></span>
+                <span class="plate-tick t2" aria-hidden="true"></span>
+                <span class="plate-tick t3" aria-hidden="true"></span>
+                <span class="plate-tick t4" aria-hidden="true"></span>
+              </div>
+
+              <div class="plate-card">
+                <div class="pc-top">
+                  <span class="micro" style="color:#d4af37">Cellar Reserve · 01</span>
+                  <span class="diamond" aria-hidden="true"></span>
+                </div>
+                <p class="pc-title">Domaine de l’Obsidienne</p>
+                <p class="pc-sub">Échézeaux Grand Cru · 2016</p>
+                <div class="pc-rule"></div>
+                <div class="pc-foot">
+                  <span class="pc-score">98.4<small>/ 100</small></span>
+                  <span class="pc-decant">Decanted<br>90 minutes</span>
+                </div>
+              </div>
+
+              <span class="plate-caption" aria-hidden="true">Private dining · By reservation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-hint" aria-hidden="true">
+        <span class="line"></span>
+        <span>Descend</span>
+      </div>
+    </section>
+
+    <!-- ══════════════════ ACCOLADES ══════════════════ -->
+    <section class="accolades border-y border-line" aria-label="Accolades">
+      <div class="shell">
+        <div class="accolade-grid">
+          <div class="accolade">
+            <span class="accolade-mark" aria-hidden="true">✳</span>
+            <span class="accolade-name">Two Stars</span>
+            <span class="accolade-meta">Michelin Guide · 2026</span>
+          </div>
+          <div class="accolade">
+            <span class="accolade-mark" aria-hidden="true">◇</span>
+            <span class="accolade-name">Relais &amp; Châteaux</span>
+            <span class="accolade-meta">Member since 2019</span>
+          </div>
+          <div class="accolade">
+            <span class="accolade-mark" aria-hidden="true">№</span>
+            <span class="accolade-name">No. 14</span>
+            <span class="accolade-meta">The World’s 50 Best</span>
+          </div>
+          <div class="accolade">
+            <span class="accolade-mark" aria-hidden="true">◆</span>
+            <span class="accolade-name">Five Diamonds</span>
+            <span class="accolade-meta">Forbes Travel Guide</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THE HOUSE ══════════════════ -->
+    <section class="section overflow-hidden" id="house" aria-labelledby="houseTitle">
+      <span class="ghost-num" style="top:2rem;right:-2rem" aria-hidden="true">01</span>
+      <div class="orb orb-b" style="width:26rem;height:26rem;top:10%;left:-12rem;opacity:.22"></div>
+
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="grid lg:grid-cols-12 gap-y-12 lg:gap-x-16">
+          <div class="lg:col-span-5 reveal">
+            <div class="section-head">
+              <span class="num">01</span>
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">The House</span>
+            </div>
+            <h2 id="houseTitle" class="section-title">
+              A room of<br>
+              <em class="gold-text">quiet</em> extremity.
+            </h2>
+
+            <div class="house-signature">
+              <span class="diamond" aria-hidden="true"></span>
+              <span class="micro">24 covers · one sitting · no music above a whisper</span>
+            </div>
+
+            <div class="house-facts">
+              <div class="house-fact">
+                <span class="house-fact-value">18:30</span>
+                <span class="house-fact-label">First service</span>
+              </div>
+              <div class="house-fact">
+                <span class="house-fact-value">07</span>
+                <span class="house-fact-label">Metres to kitchen</span>
+              </div>
+              <div class="house-fact">
+                <span class="house-fact-value">1,400</span>
+                <span class="house-fact-label">Cellar references</span>
+              </div>
+              <div class="house-fact">
+                <span class="house-fact-value">XI</span>
+                <span class="house-fact-label">Movements</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6 lg:col-start-7 reveal" style="--rd:.12s">
+            <p class="house-lede">
+              Obsidian Reserve occupies what was once the strongroom of a private bank on
+              Rue de l’Obsidienne. The vault door remains. Beyond it: eleven tables, a single
+              open hearth, and a cellar that runs three metres deeper than the street.
+            </p>
+
+            <p class="body-copy">
+              Chef Ayaka Mori cooks with binchotan, aged sake lees and the discipline of a
+              Kyoto kaiseki kitchen — tempered by a very Parisian appetite for butter, Burgundy
+              and long conversations. Nothing arrives under a cloche. Nothing is explained twice.
+            </p>
+            <p class="body-copy">
+              Service is choreographed for twenty-four. There is no à la carte, no second sitting
+              and no clock on the table. The menu is written each morning, after the market and
+              before the first fire is lit.
+            </p>
+
+            <div class="chef-row">
+              <div class="chef-monogram" aria-hidden="true">AM</div>
+              <div>
+                <p class="chef-name">Ayaka Mori</p>
+                <p class="micro">Chef–Proprietor · Kyoto / Paris</p>
+              </div>
+              <span class="chef-rule" aria-hidden="true"></span>
+              <p class="chef-note">“The last course is silence.”</p>
+            </div>
+
+            <figure class="quote-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl">
+              <span class="quote-glyph" aria-hidden="true">“</span>
+              <blockquote>
+                Luxury is not what is added to a room. It is what the room allows to survive.
+              </blockquote>
+              <figcaption>
+                <span class="hairline" aria-hidden="true"></span>
+                <span class="micro">The house philosophy · MMXIV</span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THE MENU ══════════════════ -->
+    <section class="section menu-section" id="menu" aria-labelledby="menuTitle">
+      <div class="orb orb-a" style="width:30rem;height:30rem;top:5%;right:-10rem;opacity:.25"></div>
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="menu-head">
+          <div class="reveal">
+            <div class="section-head">
+              <span class="num">02</span>
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">The Menu</span>
+            </div>
+            <h2 id="menuTitle" class="section-title">
+              Eleven movements,<br>
+              <em>one</em> evening.
+            </h2>
+          </div>
+          <div class="menu-intro reveal" style="--rd:.1s">
+            <p class="body-copy">
+              A single menu, rewritten at dawn. The eight courses below are its fixed
+              constellations; three further movements remain a secret until the table is set.
+            </p>
+            <div class="menu-price">
+              <span><strong>385</strong> per guest</span>
+              <span class="diamond" aria-hidden="true"></span>
+              <span>Pairing <strong>+220</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-toolbar reveal" style="--rd:.06s">
+          <div class="tabs" role="tablist" aria-label="Filter the menu by category">
+            <button class="tab" type="button" role="tab" aria-selected="true" data-filter="all">All courses <span>08</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="raw">Raw &amp; iced <span>03</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="fire">Fire &amp; ember <span>03</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="pasta">Pasta &amp; truffle <span>01</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="dessert">Dessert <span>01</span></button>
+          </div>
+          <p class="menu-count" id="menuCount" aria-live="polite">08 courses</p>
+        </div>
+
+        <div class="menu-grid" id="menuGrid" role="tabpanel" aria-label="Menu courses">
+          <!-- VIII · signature -->
+          <article class="menu-card lux-card is-featured backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="raw">
+            <span class="card-watermark" aria-hidden="true">VIII</span>
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>VIII</span>
+              <span class="card-tag">Raw &amp; Iced</span>
+            </div>
+            <div class="menu-card-body">
+              <p class="signature-line">Chef’s signature <span class="diamond" aria-hidden="true"></span></p>
+              <h3 class="menu-card-title">A5 Miyazaki Wagyu Tartare</h3>
+              <p class="menu-card-desc">
+                Hand-cut to order, cured egg yolk, smoked bone marrow, winter black truffle,
+                a single leaf of gold. Served at eleven degrees.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Krug Grande Cuvée · 171ème</span>
+            </div>
+          </article>
+
+          <!-- VI -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="raw" style="--rd:.05s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>VI</span>
+              <span class="card-tag">Raw &amp; Iced</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Hokkaido Scallop Crudo</h3>
+              <p class="menu-card-desc">
+                Yuzu kosho, cucumber oil, frozen buttermilk, finger lime, shiso blossom.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Chablis Grand Cru · Les Clos 2019</span>
+            </div>
+          </article>
+
+          <!-- IV -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="fire" style="--rd:.1s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>IV</span>
+              <span class="card-tag">Fire &amp; Ember</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Dry-Aged Duck Breast</h3>
+              <p class="menu-card-desc">
+                Aged twenty-one days, binchotan-roasted, burnt honey, black garlic, blood orange.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Volnay 1er Cru · Clos des Ducs 2017</span>
+            </div>
+          </article>
+
+          <!-- II -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="pasta" style="--rd:.15s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>II</span>
+              <span class="card-tag">Pasta &amp; Truffle</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Black Winter Truffle Agnolotti</h3>
+              <p class="menu-card-desc">
+                Thirty-six-month Parmigiano, brown butter, toasted hazelnut, Périgord truffle.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Barolo Riserva · Monprivato 2014</span>
+            </div>
+          </article>
+
+          <!-- I -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="raw" style="--rd:.2s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>I</span>
+              <span class="card-tag">Raw &amp; Iced</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Oscietra Caviar</h3>
+              <p class="menu-card-desc">
+                Koshihikari rice, smoked crème fraîche, chive oil, gold leaf, warm kombu broth.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Salon · Le Mesnil 2013</span>
+            </div>
+          </article>
+
+          <!-- III -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="fire" style="--rd:.05s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>III</span>
+              <span class="card-tag">Fire &amp; Ember</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Binchotan Lobster</h3>
+              <p class="menu-card-desc">
+                Grilled over white charcoal, kombu butter, saffron, fermented tomato, sea aster.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Meursault Perrières 2018</span>
+            </div>
+          </article>
+
+          <!-- V -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="fire" style="--rd:.1s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>V</span>
+              <span class="card-tag">Fire &amp; Ember</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">72-Hour Short Rib</h3>
+              <p class="menu-card-desc">
+                Aged sake lees, charred leek, bone-marrow jus, fermented black pepper.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Hermitage Rouge · Le Pavillon 2016</span>
+            </div>
+          </article>
+
+          <!-- VII -->
+          <article class="menu-card lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" data-cat="dessert" style="--rd:.15s">
+            <div class="menu-card-top">
+              <span class="course-no"><small>Course</small>VII</span>
+              <span class="card-tag">Dessert</span>
+            </div>
+            <div class="menu-card-body">
+              <h3 class="menu-card-title">Yuzu Mille-Feuille</h3>
+              <p class="menu-card-desc">
+                Yuzu curd, toasted buckwheat, crème fraîche ice, twenty-four-karat leaf.
+              </p>
+            </div>
+            <div class="menu-card-foot">
+              <span class="pairing-label">Sommelier pairing</span>
+              <span class="pairing-name">Château d’Yquem · 2009</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="menu-footnote reveal">
+          <p>Three additional courses remain undisclosed until service. Dietary compositions by prior arrangement only.</p>
+          <button class="btn btn-ghost btn-sheen" data-open-modal data-variant="table" type="button">
+            <span>Reserve the Tasting</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THE CELLAR ══════════════════ -->
+    <section class="section cellar-section" id="cellar" aria-labelledby="cellarTitle">
+      <div class="orb orb-a" style="width:28rem;height:28rem;top:20%;left:-12rem;opacity:.22"></div>
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="cellar-head">
+          <div class="reveal">
+            <div class="section-head">
+              <span class="num">03</span>
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">The Cellar</span>
+            </div>
+            <h2 id="cellarTitle" class="section-title">
+              The quietest<br>
+              room <em>in Paris.</em>
+            </h2>
+          </div>
+          <p class="body-copy cellar-intro reveal" style="--rd:.1s">
+            Three metres beneath the dining room, behind a door with no handle, lie 1,400
+            references and a private reserve of thirty-six bottles. Our sommelier, Élodie
+            Marchand, opens them only for the Salon — and only when the room has earned it.
+          </p>
+        </div>
+
+        <div class="cellar-grid">
+          <!-- bottle -->
+          <div class="bottle-stage reveal">
+            <div class="bottle-glow" aria-hidden="true"></div>
+            <div class="bottle-plinth" aria-hidden="true"></div>
+
+            <svg class="bottle-svg" viewBox="0 0 220 620" role="img" aria-label="A bottle of Domaine de l’Obsidienne Échézeaux Grand Cru 2016">
+              <defs>
+                <linearGradient id="glassBody" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#0a100d"/>
+                  <stop offset="18%" stop-color="#18241d"/>
+                  <stop offset="42%" stop-color="#24342a"/>
+                  <stop offset="62%" stop-color="#101a15"/>
+                  <stop offset="100%" stop-color="#050807"/>
+                </linearGradient>
+                <linearGradient id="capsuleGold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f3e2a7"/>
+                  <stop offset="38%" stop-color="#d4af37"/>
+                  <stop offset="72%" stop-color="#9c7a25"/>
+                  <stop offset="100%" stop-color="#e4c878"/>
+                </linearGradient>
+                <linearGradient id="labelCream" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f0eadb"/>
+                  <stop offset="55%" stop-color="#ded5c2"/>
+                  <stop offset="100%" stop-color="#c9bea7"/>
+                </linearGradient>
+                <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,.28)"/>
+                  <stop offset="45%" stop-color="rgba(255,255,255,.06)"/>
+                  <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                </linearGradient>
+                <radialGradient id="waxGold" cx="35%" cy="30%" r="80%">
+                  <stop offset="0%" stop-color="#f8e9b4"/>
+                  <stop offset="55%" stop-color="#d4af37"/>
+                  <stop offset="100%" stop-color="#8d6c1e"/>
+                </radialGradient>
+              </defs>
+
+              <ellipse cx="110" cy="602" rx="78" ry="11" fill="#000" opacity=".55"/>
+
+              <path d="M98 18 L122 18 L122 104 C122 117 127 125 137 138 C154 159 166 186 166 222 L166 556 C166 584 148 598 110 598 C72 598 54 584 54 556 L54 222 C54 186 66 159 83 138 C93 125 98 117 98 104 Z"
+                fill="url(#glassBody)" stroke="rgba(234,230,223,.16)" stroke-width="1.2"/>
+
+              <path d="M103 28 L103 106 C103 121 97 131 87 145 C72 166 63 190 63 224 L63 548 C63 566 72 577 88 582"
+                fill="none" stroke="url(#shine)" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+              <path d="M154 250 L154 548" stroke="rgba(255,255,255,.06)" stroke-width="2"/>
+
+              <!-- capsule -->
+              <path d="M94 10 L126 10 L126 100 C126 107 120 112 110 112 C100 112 94 107 94 100 Z" fill="url(#capsuleGold)"/>
+              <path d="M94 26 L126 26 M94 40 L126 40 M94 54 L126 54" stroke="rgba(60,45,10,.35)" stroke-width=".8"/>
+              <path d="M94 88 L126 88" stroke="rgba(255,255,255,.35)" stroke-width=".8"/>
+              <text x="110" y="74" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="5.4" letter-spacing="1.4" fill="#3a2c0b">OBSIDIENNE</text>
+
+              <!-- label -->
+              <rect x="60" y="326" width="100" height="158" fill="url(#labelCream)" stroke="rgba(80,66,38,.45)" stroke-width=".7"/>
+              <rect x="65" y="331" width="90" height="148" fill="none" stroke="rgba(70,55,30,.35)" stroke-width=".5"/>
+              <text x="110" y="352" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="6.2" letter-spacing="2.4" fill="#3c3222">DOMAINE DE L’</text>
+              <text x="110" y="369" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="12.5" letter-spacing="1.1" fill="#211b12">OBSIDIENNE</text>
+              <path d="M82 378 L138 378" stroke="#8d7434" stroke-width=".6"/>
+              <text x="110" y="398" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="12" letter-spacing=".6" fill="#2b2418">ÉCHÉZEAUX</text>
+              <text x="110" y="412" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="5.4" letter-spacing="1.8" fill="#5b4c33">GRAND CRU</text>
+              <path d="M96 420 L124 420" stroke="#8d7434" stroke-width=".5"/>
+              <text x="110" y="449" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="25" letter-spacing="1" fill="#211b12">2016</text>
+              <text x="110" y="464" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="4.9" letter-spacing="1.4" fill="#6a5b41">CÔTE DE NUITS · BURGUNDY</text>
+              <circle cx="110" cy="520" r="13.5" fill="url(#waxGold)"/>
+              <text x="110" y="524" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="11" fill="#33270b">O</text>
+
+              <path d="M60 326 L60 484" stroke="rgba(50,38,18,.25)" stroke-width=".8"/>
+            </svg>
+
+            <div class="bottle-tag lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10">
+              <span class="micro" style="color:#d4af37">Decant</span>
+              <p class="bottle-tag-value">90<span>min</span></p>
+              <span class="micro">Serve 16–17 °C</span>
+            </div>
+
+            <div class="bottle-caption">
+              <span class="diamond" aria-hidden="true"></span>
+              <span>Lot 014 · 312 bottles remaining</span>
+            </div>
+          </div>
+
+          <!-- metric card -->
+          <div class="metric-card lux-card reveal backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl" style="--rd:.1s">
+            <div class="metric-top">
+              <span class="metric-eyebrow"><span class="live-dot" aria-hidden="true"></span> Sommelier Reserve</span>
+              <span class="micro">Lot 014 — 312</span>
+            </div>
+
+            <div class="metric-score-row">
+              <div>
+                <div class="metric-score">
+                  <span class="metric-number" data-count="98.4">98.4</span>
+                  <span class="metric-denom">/ 100</span>
+                </div>
+                <p class="metric-score-label">Cellar score · vintage 2016</p>
+              </div>
+              <div class="metric-stamp" aria-hidden="true">
+                <span class="stamp-top">SR</span>
+                <span class="stamp-line"></span>
+                <span class="stamp-bottom">Reserve</span>
+              </div>
+            </div>
+
+            <h3 class="metric-wine">Domaine de l’Obsidienne <em>Échézeaux Grand Cru</em></h3>
+            <p class="metric-note">
+              A wine of unusual quiet. Black cherry and cocoa nib give way to forest floor,
+              crushed violet and a mineral finish that lasts longer than the conversation.
+            </p>
+
+            <div class="metric-gauge" aria-hidden="true">
+              <div class="metric-gauge-track">
+                <span class="metric-gauge-fill"></span>
+                <i style="left:90%"></i>
+                <i style="left:95%"></i>
+                <i style="left:100%"></i>
+              </div>
+              <div class="metric-gauge-labels"><span>90</span><span>95</span><span>100</span></div>
+            </div>
+
+            <div class="metric-stats">
+              <div class="metric-stat"><span class="micro">Vintage</span><span>2016</span></div>
+              <div class="metric-stat"><span class="micro">Appellation</span><span>Vosne-Romanée</span></div>
+              <div class="metric-stat"><span class="micro">Élevage</span><span>18 months</span></div>
+              <div class="metric-stat"><span class="micro">Format</span><span>75 cl · 1 of 312</span></div>
+            </div>
+
+            <div class="vintage-block">
+              <div class="vintage-head">
+                <span class="micro">Vintage vertical · 2012—2018</span>
+                <span class="micro">Avg. 96.8</span>
+              </div>
+              <div class="vintage-bars" aria-hidden="true">
+                <div class="vbar"><span style="--h:70%;--d:.02s"></span><small>’12</small></div>
+                <div class="vbar"><span style="--h:78%;--d:.08s"></span><small>’13</small></div>
+                <div class="vbar"><span style="--h:82%;--d:.14s"></span><small>’14</small></div>
+                <div class="vbar"><span style="--h:90%;--d:.2s"></span><small>’15</small></div>
+                <div class="vbar is-active"><span style="--h:100%;--d:.26s"></span><small>’16</small></div>
+                <div class="vbar"><span style="--h:87%;--d:.32s"></span><small>’17</small></div>
+                <div class="vbar"><span style="--h:80%;--d:.38s"></span><small>’18</small></div>
+              </div>
+            </div>
+
+            <div class="metric-foot">
+              <div class="metric-tags"><span>Black cherry</span><span>Cocoa nib</span><span>Forest floor</span></div>
+              <button class="btn btn-sm btn-ghost btn-sheen" data-open-modal data-variant="cellar" type="button">
+                <span>Request the Cellar List</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ PRIVATE SALON ══════════════════ -->
+    <section class="section salon-section overflow-hidden" id="salon" aria-labelledby="salonTitle">
+      <div class="orb orb-c" style="width:30rem;height:30rem;bottom:-6rem;right:-6rem;opacity:.26"></div>
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="salon-grid">
+          <div class="salon-stage reveal">
+            <div class="salon-arch">
+              <div class="arch-line arch-line-outer" aria-hidden="true"></div>
+              <div class="arch-inner">
+                <div class="arch-light" aria-hidden="true"></div>
+                <div class="pendant" aria-hidden="true">
+                  <span class="cord"></span>
+                  <span class="bulb"></span>
+                </div>
+                <div class="table-scene" aria-hidden="true">
+                  <span class="table-line"></span>
+                  <span class="candle candle-a"></span>
+                  <span class="candle candle-b"></span>
+                  <span class="table-shadow"></span>
+                </div>
+                <div class="arch-caption">
+                  <span class="micro">The Salon</span>
+                  <span class="arch-caption-rule" aria-hidden="true"></span>
+                  <span class="micro">XII seats</span>
+                </div>
+              </div>
+              <span class="arch-dot arch-dot-a" aria-hidden="true"></span>
+              <span class="arch-dot arch-dot-b" aria-hidden="true"></span>
+            </div>
+
+            <div class="salon-tag lux-card backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10">
+              <span class="micro" style="color:#d4af37">By enquiry only</span>
+              <p class="salon-tag-title">One table.<br>Twelve seats.</p>
+              <div class="salon-tag-foot">
+                <span>From</span>
+                <span class="salon-tag-price">$1,250<small>/ guest</small></span>
+              </div>
+            </div>
+
+            <p class="salon-vertical" aria-hidden="true">Private entrance · Rue de l’Obsidienne</p>
+          </div>
+
+          <div class="salon-copy reveal" style="--rd:.12s">
+            <div class="section-head">
+              <span class="num">04</span>
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">Private Salon</span>
+            </div>
+            <h2 id="salonTitle" class="section-title">
+              Behind the<br>
+              <em class="gold-text">black door.</em>
+            </h2>
+            <p class="body-copy salon-lede">
+              A twelve-seat room, a single table of petrified oak, and a door that closes on
+              the rest of the world. The Salon is available for one sitting each evening —
+              with its own brigade, its own sommelier and a service of four.
+            </p>
+
+            <ul class="salon-list">
+              <li><span class="diamond" aria-hidden="true"></span><span>Eleven courses composed with the Chef, that morning</span></li>
+              <li><span class="diamond" aria-hidden="true"></span><span>Dedicated sommelier &amp; private cellar tour</span></li>
+              <li><span class="diamond" aria-hidden="true"></span><span>Private entrance on Rue de l’Obsidienne</span></li>
+              <li><span class="diamond" aria-hidden="true"></span><span>Service of four, from 19:00 until midnight</span></li>
+            </ul>
+
+            <div class="salon-actions">
+              <button class="btn btn-gold btn-sheen" data-open-modal data-variant="salon" type="button">
+                <span>Enquire About the Salon</span>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <a href="tel:+33184001124" class="salon-call">
+                <span class="micro">Maître d’</span>
+                <span>+33 1 84 00 11 24</span>
+              </a>
+            </div>
+            <p class="salon-note">Tuesday – Saturday · 21 days’ notice · maximum twelve guests</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ PRESS ══════════════════ -->
+    <section class="press-band" aria-label="Press">
+      <div class="orb orb-c" style="width:24rem;height:24rem;top:0;left:38%;opacity:.22"></div>
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="press-inner reveal">
+          <p class="eyebrow">Le Figaro · Restaurant of the Year</p>
+          <blockquote>“A restaurant that behaves like a secret<br class="hidden sm:block"> and cooks like a cathedral.”</blockquote>
+          <div class="press-meta">
+            <span class="hairline" aria-hidden="true"></span>
+            <span class="micro">Paris · MMXXVI</span>
+            <span class="hairline" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ RESERVATIONS ══════════════════ -->
+    <section class="reserve-band" id="reserve" aria-labelledby="reserveTitle">
+      <div class="orb orb-a" style="width:34rem;height:22rem;top:-4rem;right:10%;opacity:.2"></div>
+      <div class="shell" style="position:relative;z-index:1">
+        <div class="reserve-panel reveal">
+          <div class="reserve-copy">
+            <div class="section-head" style="margin-bottom:1.6rem">
+              <span class="num">05</span>
+              <span class="line" aria-hidden="true"></span>
+              <span class="eyebrow">Reservations</span>
+            </div>
+            <h2 id="reserveTitle" class="reserve-title">
+              December is open.<br>
+              <em class="gold-text">January is a rumour.</em>
+            </h2>
+            <p class="reserve-note">
+              Twenty-four seats each evening, released thirty days in advance. The counter
+              holds seven. Requests are answered personally, in the order they arrive.
+            </p>
+          </div>
+          <div class="reserve-actions">
+            <button class="btn btn-gold btn-sheen" data-open-modal data-variant="table" type="button">
+              <span>Reserve a Table</span>
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <a href="tel:+33184001124" class="reserve-phone">
+              <span class="micro">Or call the maître d’</span>
+              <span>+33 1 84 00 11 24</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══════════════════ FOOTER ══════════════════ -->
+  <footer class="site-footer">
+    <div class="shell">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#top" class="brand" aria-label="Obsidian Reserve — back to top">
+            <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M24 2.5 45.5 24 24 45.5 2.5 24Z" stroke="#d4af37" stroke-width="1"/>
+              <path d="M24 8.5 39.5 24 24 39.5 8.5 24Z" stroke="#d4af37" stroke-opacity=".32" stroke-width=".8"/>
+              <text x="24" y="29.5" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-size="12" letter-spacing="1" fill="#d4af37">OR</text>
+            </svg>
+            <span>
+              <span class="brand-word">OBSIDIAN</span>
+              <span class="brand-sub">Reserve · Paris</span>
+            </span>
+          </a>
+          <p class="footer-tagline">An intimate Michelin-starred<br>culinary journey.</p>
+          <p class="footer-address">11 Rue de l’Obsidienne<br>75008 Paris, France</p>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-heading">Explore</h3>
+          <a href="#house">The House</a>
+          <a href="#menu">The Menu</a>
+          <a href="#cellar">The Cellar</a>
+          <a href="#salon">Private Salon</a>
+          <a href="#reserve">Reservations</a>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-heading">Visit</h3>
+          <p>Tuesday — Saturday</p>
+          <p>18:30 — 23:00</p>
+          <p class="footer-muted">Closed Sunday &amp; Monday</p>
+          <p class="footer-muted">Jacket preferred</p>
+          <a href="tel:+33184001124">+33 1 84 00 11 24</a>
+          <a href="mailto:reserve@obsidianreserve.paris">reserve@obsidianreserve.paris</a>
+        </div>
+
+        <div class="footer-col footer-news">
+          <h3 class="footer-heading">The Letter</h3>
+          <p class="footer-muted" style="margin-bottom:1.2rem">Four dispatches a year. Menus, cellar releases, and the occasional empty table.</p>
+          <form class="news-form" id="newsForm" novalidate>
+            <label for="newsEmail" class="sr-only">Email address</label>
+            <input id="newsEmail" name="email" type="email" placeholder="Email address" autocomplete="email" required>
+            <button type="submit" aria-label="Subscribe to the letter">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 13 13 3M5.5 3H13v7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
+          <p class="news-message" id="newsMessage" aria-live="polite"></p>
+          <div class="footer-socials">
+            <a href="#" aria-label="Obsidian Reserve on Instagram">Instagram</a>
+            <span class="diamond" aria-hidden="true"></span>
+            <a href="#" aria-label="Obsidian Reserve on Pinterest">Pinterest</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-watermark" aria-hidden="true">OBSIDIAN</div>
+
+      <div class="footer-bottom">
+        <p>© <span id="year">2026</span> Obsidian Reserve. All rights reserved.</p>
+        <div class="footer-legal">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Allergens</a>
+          <a href="#">Careers</a>
+        </div>
+        <p class="footer-credit">Designed in the dark · Paris</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ══════════════════ RESERVATION MODAL ══════════════════ -->
+  <div class="modal" id="reserveModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true" inert>
+    <div class="modal-backdrop" data-close aria-hidden="true"></div>
+
+    <div class="modal-panel" role="document">
+      <button class="modal-close" type="button" data-close aria-label="Close reservation dialog">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      </button>
+
+      <div class="modal-inner">
+        <div id="modalFormWrap">
+          <p class="eyebrow" id="modalEyebrow">Reservations · Winter 2026</p>
+          <h2 class="modal-title" id="modalTitle">Reserve a table</h2>
+          <p class="modal-sub">Requests are answered personally within one business day. No card is required to enquire.</p>
+
+          <form id="reserveForm" class="modal-form">
+            <div class="field field-full">
+              <label for="fullName">Full name</label>
+              <input class="input" id="fullName" name="name" type="text" placeholder="Your name" autocomplete="name" required>
+            </div>
+            <div class="field field-full">
+              <label for="email">Email</label>
+              <input class="input" id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="date">Date</label>
+              <input class="input" id="date" name="date" type="date" required>
+            </div>
+            <div class="field">
+              <label for="time">Time</label>
+              <select class="input select" id="time" name="time">
+                <option>18:30</option>
+                <option>19:00</option>
+                <option>20:00</option>
+                <option>21:15</option>
+              </select>
+            </div>
+            <div class="field field-full">
+              <span class="field-label">Guests</span>
+              <div class="guest-chips" role="group" aria-label="Number of guests">
+                <button type="button" class="guest-chip is-active" data-guests="2" aria-pressed="true">2</button>
+                <button type="button" class="guest-chip" data-guests="4" aria-pressed="false">4</button>
+                <button type="button" class="guest-chip" data-guests="6" aria-pressed="false">6</button>
+                <button type="button" class="guest-chip" data-guests="8" aria-pressed="false">8</button>
+                <button type="button" class="guest-chip" data-guests="12" aria-pressed="false">12</button>
+              </div>
+            </div>
+            <div class="field field-full">
+              <label for="experience">Experience</label>
+              <select class="input select" id="experience" name="experience">
+                <option value="eleven">The Eleven-Course Menu · 385</option>
+                <option value="cellar">Tasting with Cellar Pairing · 605</option>
+                <option value="counter">The Counter · Seven seats · 465</option>
+                <option value="salon">The Private Salon · from 1,250</option>
+              </select>
+            </div>
+            <div class="field field-full">
+              <label for="notes">Notes <span class="optional">(optional)</span></label>
+              <textarea class="input textarea" id="notes" name="notes" rows="2" placeholder="Allergies, occasions, anything we should know."></textarea>
+            </div>
+            <button class="btn btn-gold btn-sheen modal-submit" type="submit">
+              <span>Send Request</span>
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <p class="modal-fineprint">By submitting, you agree to be contacted about this request. We never share your details.</p>
+          </form>
+        </div>
+
+        <div class="modal-success" id="modalSuccess" hidden>
+          <span class="success-mark" aria-hidden="true">
+            <svg viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="27" stroke="rgba(212,175,55,.35)" stroke-width="1"/>
+              <path d="M18 28.5 24.5 35 38 21.5" stroke="#d4af37" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <p class="eyebrow">Request received</p>
+          <h3 class="modal-title" style="font-size:clamp(1.9rem,5vw,2.7rem)">Your request is with us.</h3>
+          <p class="modal-sub" id="successCopy">Our maître d’ will reply within one business day. For same-day requests, please call +33 1 84 00 11 24.</p>
+          <button class="btn btn-ghost btn-sheen" type="button" data-close>
+            <span>Close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js" onerror="document.documentElement.classList.remove('js')"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var $ = function (sel, ctx) { return (ctx || document).querySelector(sel); };
+      var $$ = function (sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); };
+      var hasAnime = function () { return typeof window.anime === 'function'; };
+
+      /* ---------- header, progress, year ---------- */
+      var header = $('#siteHeader');
+      var progress = $('#progress');
+
+      function onScroll() {
+        var y = window.scrollY || window.pageYOffset;
+        if (header) header.classList.toggle('is-scrolled', y > 22);
+        if (progress) {
+          var max = document.documentElement.scrollHeight - window.innerHeight;
+          progress.style.transform = 'scaleX(' + (max > 0 ? Math.min(y / max, 1) : 0) + ')';
+        }
+      }
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      var year = $('#year');
+      if (year) year.textContent = new Date().getFullYear();
+
+      /* ---------- hero: pointer light + parallax ---------- */
+      var hero = $('.hero');
+      var plate = $('.plate-parallax');
+      var finePointer = window.matchMedia('(pointer: fine)').matches;
+
+      if (hero && plate && finePointer && !reduceMotion) {
+        hero.addEventListener('pointermove', function (e) {
+          var r = hero.getBoundingClientRect();
+          var x = (e.clientX - r.left) / r.width - 0.5;
+          var y = (e.clientY - r.top) / r.height - 0.5;
+          hero.style.setProperty('--px', (e.clientX - r.left) + 'px');
+          hero.style.setProperty('--py', (e.clientY - r.top) + 'px');
+          plate.style.transform = 'translate3d(' + (x * 16).toFixed(2) + 'px,' + (y * 16).toFixed(2) + 'px,0)';
+        }, { passive: true });
+
+        hero.addEventListener('pointerleave', function () {
+          plate.style.transform = '';
+        });
+      }
+
+      /* ---------- anime.js hero reveal ---------- */
+      function introHero() {
+        if (!hasAnime() || reduceMotion) return;
+        var tl = hasAnime() ? anime.timeline({ easing: 'easeOutExpo' }) : null;
+        tl.add({
+          targets: '.hero-eyebrow',
+          opacity: [0, 1],
+          translateY: [14, 0],
+          duration: 950
+        }, 120)
+        .add({
+          targets: '.hero-line > .line-inner',
+          translateY: ['112%', '0%'],
+          duration: 1350,
+          delay: anime.stagger(115)
+        }, 240)
+        .add({
+          targets: '.hero-sub',
+          opacity: [0, 1],
+          translateY: [22, 0],
+          duration: 1000
+        }, 720)
+        .add({
+          targets: '.hero-cta',
+          opacity: [0, 1],
+          translateY: [20, 0],
+          duration: 1000
+        }, 850)
+        .add({
+          targets: '.hero-meta',
+          opacity: [0, 1],
+          translateY: [16, 0],
+          duration: 1000
+        }, 980)
+        .add({
+          targets: '.hero-visual',
+          opacity: [0, 1],
+          scale: [0.94, 1],
+          duration: 1550,
+          easing: 'easeOutQuint'
+        }, 330);
+      }
+      introHero();
+
+      /* ---------- section reveals ---------- */
+      var revealEls = $$('.reveal');
+      if ('IntersectionObserver' in window) {
+        var revealIO = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-in');
+              revealIO.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+        revealEls.forEach(function (el) { revealIO.observe(el); });
+      } else {
+        revealEls.forEach(function (el) { el.classList.add('is-in'); });
+      }
+
+      /* ---------- menu filtering ---------- */
+      var tabs = $$('.tab');
+      var cards = $$('.menu-card');
+      var menuGrid = $('#menuGrid');
+      var menuCount = $('#menuCount');
+      var menuRevealed = false;
+
+      function clearCardStyles() {
+        cards.forEach(function (card) {
+          card.style.removeProperty('opacity');
+          card.style.removeProperty('transform');
+        });
+      }
+
+      function revealMenu() {
+        if (menuRevealed) return;
+        menuRevealed = true;
+        var visible = cards.filter(function (c) { return c.style.display !== 'none'; });
+        if (hasAnime() && !reduceMotion) {
+          anime.remove(visible);
+          anime({
+            targets: visible,
+            opacity: [0, 1],
+            translateY: [26, 0],
+            scale: [0.985, 1],
+            duration: 900,
+            delay: anime.stagger(65),
+            easing: 'easeOutExpo',
+            complete: clearCardStyles
+          });
+        } else {
+          clearCardStyles();
+        }
+      }
+
+      function animateFiltered(visible) {
+        if (hasAnime() && !reduceMotion) {
+          anime.remove(visible);
+          anime({
+            targets: visible,
+            opacity: [0, 1],
+            translateY: [18, 0],
+            scale: [0.985, 1],
+            duration: 680,
+            delay: anime.stagger(55),
+            easing: 'easeOutExpo',
+            complete: clearCardStyles
+          });
+        } else {
+          clearCardStyles();
+        }
+      }
+
+      function setFilter(filter) {
+        var visible = [];
+        cards.forEach(function (card) {
+          var show = filter === 'all' || card.getAttribute('data-cat') === filter;
+          card.style.display = show ? '' : 'none';
+          if (show) visible.push(card);
+        });
+        if (menuCount) {
+          menuCount.textContent = String(visible.length).padStart(2, '0') + ' ' + (visible.length === 1 ? 'course' : 'courses');
+        }
+        menuRevealed = true;
+        animateFiltered(visible);
+      }
+
+      function activateTab(tab) {
+        tabs.forEach(function (t) {
+          var active = t === tab;
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+          t.tabIndex = active ? 0 : -1;
+        });
+        setFilter(tab.getAttribute('data-filter'));
+      }
+
+      if (tabs.length) {
+        tabs.forEach(function (tab, index) {
+          tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
+          tab.addEventListener('click', function () { activateTab(tab); });
+          tab.addEventListener('keydown', function (e) {
+            var next = null;
+            if (e.key === 'ArrowRight') next = (index + 1) % tabs.length;
+            if (e.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+            if (e.key === 'Home') next = 0;
+            if (e.key === 'End') next = tabs.length - 1;
+            if (next === null) return;
+            e.preventDefault();
+            tabs[next].focus();
+            activateTab(tabs[next]);
+          });
+        });
+      }
+
+      if (menuGrid) {
+        if (hasAnime() && !reduceMotion) {
+          anime.set(cards, { opacity: 0, translateY: 26 });
+        }
+        if ('IntersectionObserver' in window) {
+          var menuIO = new IntersectionObserver(function (entries) {
+            if (entries.some(function (en) { return en.isIntersecting; })) {
+              menuIO.disconnect();
+              revealMenu();
+            }
+          }, { threshold: 0.06 });
+          menuIO.observe(menuGrid);
+        } else {
+          revealMenu();
+        }
+        window.setTimeout(revealMenu, 9000);
+      }
+
+      /* ---------- sommelier score counter ---------- */
+      var metricNumber = $('[data-count]');
+      if (metricNumber) {
+        var counterStarted = false;
+        var runCounter = function () {
+          if (counterStarted) return;
+          counterStarted = true;
+          if (!hasAnime() || reduceMotion) {
+            metricNumber.textContent = '98.4';
+            return;
+          }
+          var obj = { v: 0 };
+          anime({
+            targets: obj,
+            v: 98.4,
+            duration: 1900,
+            easing: 'easeOutExpo',
+            update: function () { metricNumber.textContent = obj.v.toFixed(1); }
+          });
+        };
+
+        if ('IntersectionObserver' in window) {
+          var metricIO = new IntersectionObserver(function (entries) {
+            if (entries.some(function (en) { return en.isIntersecting; })) {
+              runCounter();
+              metricIO.disconnect();
+            }
+          }, { threshold: 0.35 });
+          metricIO.observe(metricNumber);
+        } else {
+          runCounter();
+        }
+      }
+
+      /* ---------- mobile menu ---------- */
+      var mobileMenu = $('#mobileMenu');
+      var menuToggle = $('#menuToggle');
+      var menuClose = $('#menuClose');
+
+      function openMenu() {
+        if (!mobileMenu) return;
+        mobileMenu.classList.add('is-open');
+        mobileMenu.setAttribute('aria-hidden', 'false');
+        if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('is-locked');
+      }
+      function closeMenu() {
+        if (!mobileMenu) return;
+        mobileMenu.classList.remove('is-open');
+        mobileMenu.setAttribute('aria-hidden', 'true');
+        if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+        if (!document.querySelector('.modal.is-open')) document.body.classList.remove('is-locked');
+      }
+      if (menuToggle) menuToggle.addEventListener('click', openMenu);
+      if (menuClose) menuClose.addEventListener('click', closeMenu);
+      $$('.mobile-link, #mobileMenu [data-open-modal]').forEach(function (el) {
+        el.addEventListener('click', closeMenu);
+      });
+
+      /* ---------- reservation modal ---------- */
+      var modal = $('#reserveModal');
+      var formWrap = $('#modalFormWrap');
+      var reserveForm = $('#reserveForm');
+      var successState = $('#modalSuccess');
+      var modalTitle = $('#modalTitle');
+      var modalEyebrow = $('#modalEyebrow');
+      var modalSub = $('#modalFormWrap .modal-sub');
+      var experienceSelect = $('#experience');
+      var dateInput = $('#date');
+      var fullNameInput = $('#fullName');
+      var emailInput = $('#email');
+      var successCopy = $('#successCopy');
+      var guestChips = $$('.guest-chip');
+      var lastFocus = null;
+
+      var modalCopy = {
+        table: {
+          eyebrow: 'Reservations · Winter 2026',
+          title: 'Reserve a table',
+          sub: 'Requests are answered personally within one business day. No card is required to enquire.',
+          experience: 'eleven',
+          guests: '2'
+        },
+        salon: {
+          eyebrow: 'Private Salon · By enquiry',
+          title: 'Enquire about the Salon',
+          sub: 'Tell us the date and the occasion. Our maître d’ will reply with availability and the Salon menu.',
+          experience: 'salon',
+          guests: '8'
+        },
+        cellar: {
+          eyebrow: 'The Cellar · Private reserve',
+          title: 'Request the cellar list',
+          sub: 'Our sommelier will send the current reserve list and arrange a private tasting beneath the dining room.',
+          experience: 'cellar',
+          guests: '2'
+        }
+      };
+
+      function setGuests(n) {
+        guestChips.forEach(function (chip) {
+          var active = chip.getAttribute('data-guests') === String(n);
+          chip.classList.toggle('is-active', active);
+          chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      }
+
+      function focusables() {
+        return $$('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])', modal)
+          .filter(function (el) { return el.offsetParent !== null; });
+      }
+
+      function openModal(variant) {
+        if (!modal) return;
+        variant = modalCopy[variant] ? variant : 'table';
+        closeMenu();
+        lastFocus = document.activeElement;
+
+        if (formWrap) formWrap.hidden = false;
+        if (successState) successState.hidden = true;
+        if (reserveForm) reserveForm.reset();
+        setGuests(modalCopy[variant].guests);
+
+        if (modalTitle) modalTitle.textContent = modalCopy[variant].title;
+        if (modalEyebrow) modalEyebrow.textContent = modalCopy[variant].eyebrow;
+        if (modalSub) modalSub.textContent = modalCopy[variant].sub;
+        if (experienceSelect) experienceSelect.value = modalCopy[variant].experience;
+
+        if (dateInput) {
+          var today = new Date();
+          var local = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+          dateInput.min = local.toISOString().slice(0, 10);
+        }
+
+        modal.classList.add('is-open');
+        modal.removeAttribute('inert');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('is-locked');
+
+        window.setTimeout(function () {
+          if (fullNameInput) fullNameInput.focus();
+        }, 420);
+      }
+
+      function closeModal() {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+        if (!mobileMenu || !mobileMenu.classList.contains('is-open')) {
+          document.body.classList.remove('is-locked');
+        }
+        if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      }
+
+      $$('[data-open-modal]').forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+          openModal(trigger.getAttribute('data-variant') || 'table');
+        });
+      });
+
+      if (modal) {
+        $$('[data-close]', modal).forEach(function (btn) {
+          btn.addEventListener('click', closeModal);
+        });
+
+        document.addEventListener('keydown', function (e) {
+          if (!modal.classList.contains('is-open')) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeModal();
+            return;
+          }
+          if (e.key !== 'Tab') return;
+          var list = focusables();
+          if (!list.length) return;
+          var first = list[0];
+          var last = list[list.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        });
+      }
+
+      guestChips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          setGuests(chip.getAttribute('data-guests'));
+        });
+      });
+
+      if (reserveForm) {
+        reserveForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          if (!reserveForm.checkValidity()) {
+            reserveForm.reportValidity();
+            return;
+          }
+          var name = fullNameInput ? fullNameInput.value.trim() : '';
+          var first = name ? name.split(/\s+/)[0] : 'guest';
+          var email = emailInput ? emailInput.value.trim() : '';
+          if (successCopy) {
+            successCopy.textContent = 'Thank you, ' + first + '. Our maître d’ will reply within one business day' +
+              (email ? ' at ' + email : '') + '. For same-day requests, please call +33 1 84 00 11 24.';
+          }
+          if (formWrap) formWrap.hidden = true;
+          if (successState) successState.hidden = false;
+          var successButton = successState ? successState.querySelector('button') : null;
+          if (successButton) successButton.focus();
+        });
+      }
+
+      /* ---------- newsletter ---------- */
+      var newsForm = $('#newsForm');
+      var newsMessage = $('#newsMessage');
+      if (newsForm) {
+        newsForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var input = $('#newsEmail');
+          if (!input) return;
+          if (!input.checkValidity() || !input.value.trim()) {
+            if (newsMessage) newsMessage.textContent = 'Please enter a valid email address.';
+            input.focus();
+            return;
+          }
+          if (newsMessage) newsMessage.textContent = 'You are on the list. The next letter arrives in winter.';
+          newsForm.reset();
+        });
+      }
+
+      /* ---------- escape closes mobile menu ---------- */
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && mobileMenu && mobileMenu.classList.contains('is-open')) {
+          closeMenu();
+          if (menuToggle) menuToggle.focus();
+        }
+      });
+
+      /* ---------- final motion fallback ---------- */
+      window.addEventListener('load', function () {
+        if (!hasAnime()) document.documentElement.classList.remove('js');
+      });
+    })();
+  </script>
+</body>
+</html>

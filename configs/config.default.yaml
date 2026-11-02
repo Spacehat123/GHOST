@@ -1,0 +1,24 @@
+# Ghost Configuration
+server:
+  host: "127.0.0.1"
+  port: 8765
+  debug: true
+
+agent:
+  name: "Ghost"
+  system_prompt: |
+    You are Ghost, an elite autonomous voice assistant and runtime engineering companion.
+    You communicate with concise, natural spoken phrasing.
+    You possess capabilities for system automation, web intelligence, and binary reverse engineering via REA.
+  model: "gpt-4o"
+  temperature: 0.7
+
+tools:
+  shell:
+    enabled: true
+    timeout_seconds: 30
+  brave:
+    enabled: true
+  rea:
+    enabled: true
+    path: "/home/pranc/projects/rea"
