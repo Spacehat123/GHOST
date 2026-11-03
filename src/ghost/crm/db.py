@@ -184,6 +184,8 @@ class CRMDatabase:
 
         table_content = "\n".join(interaction_rows) if interaction_rows else "| *No interactions logged yet* | | | |"
 
+        deal_val = client.get("deal_value")
+        deal_val_display = f"${deal_val:,.2f}" if (deal_val is not None and deal_val > 0) else "Unset"
         content = f"""---
 slug: "{client.get('slug')}"
 business_name: "{client.get('business_name')}"
@@ -192,7 +194,7 @@ email: "{client.get('email') or ''}"
 phone: "{client.get('phone') or ''}"
 preferred_channel: "{client.get('preferred_channel') or 'email'}"
 status: "{client.get('status') or 'unscouted'}"
-deal_value: {client.get('deal_value') or 0.0}
+deal_value: {deal_val if deal_val is not None else 0.0}
 created: "{created_str}"
 updated: "{updated_str}"
 tags:
@@ -210,7 +212,7 @@ tags:
 - **Phone**: {client.get('phone') or 'N/A'}
 - **Preferred Channel**: `{client.get('preferred_channel')}`
 - **Pipeline Stage**: **{client.get('status')}**
-- **Deal Value**: **${client.get('deal_value', 0):,.2f}**
+- **Deal Value**: **{deal_val_display}**
 
 ## Recon Notes & Strategic Brief
 {client.get('notes') or 'No recon notes recorded.'}

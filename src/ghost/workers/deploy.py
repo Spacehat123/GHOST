@@ -2,11 +2,13 @@
 
 Allows zero-configuration deployment of prospect demo packages or production client sites
 via `bunx vercel`. Gated by VERCEL_TOKEN from `configs/vercel.json` (or environment).
+Uses neutral project naming and requires Tactical Authorization before cloud dispatch.
 """
 import asyncio
 import os
 import json
 import logging
+import shutil
 from typing import Dict, Any, Optional
 from ghost.mcp.bridge import ShellExecutor, request_tactical_authorization
 
@@ -14,7 +16,9 @@ logger = logging.getLogger("ghost.workers.deploy")
 
 CONFIGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../configs"))
 VERCEL_CONFIG_PATH = os.path.join(CONFIGS_DIR, "vercel.json")
-DEMOS_DIR = "/home/pranc/projects/ghost/demos"
+DEFAULT_DEMOS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../demos"))
+DEMOS_DIR = os.environ.get("GHOST_DEMOS_DIR") or DEFAULT_DEMOS_DIR
+
 
 class VercelDeployer:
     """Manages deployments of static demos and projects to Vercel."""
@@ -115,6 +119,7 @@ class VercelDeployer:
     async def deploy_demo(cls, slug: str, project_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Deploys a demo directory (`demos/<slug>`) to Vercel production using bunx vercel.
+        Uses neutral project naming ({slug}-concept) without internal branding.
         Requires Tactical Authorization before cloud dispatch.
         """
         demo_dir = os.path.join(DEMOS_DIR, slug)
@@ -123,42 +128,42 @@ class VercelDeployer:
 
         token = cls.get_token()
         if not token:
-            # Provide clear setup instructions
             return {
                 "status": "config_required",
                 "message": (
-                    f"Vercel deployment token missing, sir. "
+                    f"Vercel deployment token missing. "
                     f"To enable one-click cloud deployment, generate a Personal Access Token at https://vercel.com/account/tokens "
                     f"and store it in '{VERCEL_CONFIG_PATH}' as {{\"vercel_token\": \"<TOKEN>\"}} or set VERCEL_TOKEN env."
                 ),
                 "config_path": VERCEL_CONFIG_PATH,
-                "local_demo_path": f"file://{os.path.abspath(os.path.join(demo_dir, 'index.html'))}"
+                "url": None
             }
 
-        p_name = project_name or f"ghost-demo-{slug}"
+        # Neutral project name: never leak 'ghost' into client-facing URLs
+        p_name = project_name or f"{slug}-concept"
 
         # Require tactical authorization before dispatching public deployment
         allowed = await request_tactical_authorization(
             f"Deploy live public demo '{slug}' to Vercel production (Project: {p_name})"
         )
         if not allowed:
-            return {"status": "denied", "message": "Vercel deployment aborted per operator orders, sir."}
+            return {"status": "denied", "message": "Vercel deployment aborted per operator orders.", "url": None}
 
-        bunx_bin = "/home/pranc/.bun/bin/bunx"
-        if not os.path.exists(bunx_bin):
-            bunx_bin = "bunx"
+        # Resolve bunx binary dynamically
+        bunx_bin = shutil.which("bunx")
+        if not bunx_bin:
+            home_bunx = os.path.expanduser("~/.bun/bin/bunx")
+            bunx_bin = home_bunx if os.path.exists(home_bunx) else "bunx"
 
         cmd = f'cd "{demo_dir}" && {bunx_bin} --yes vercel deploy --prod --yes --token "{token}" --name "{p_name}"'
-        logger.info(f"Executing Vercel deployment for '{slug}'...")
+        logger.info(f"Executing Vercel deployment for '{slug}' (Project: {p_name})...")
 
         res = await ShellExecutor.run(cmd, timeout=90.0)
         if res.get("success"):
-            # Extract deployed URL from stdout
             stdout = res.get("stdout", "")
             urls = [line.strip() for line in stdout.splitlines() if line.strip().startswith("https://")]
             deploy_url = urls[-1] if urls else stdout.strip()
 
-            # Record in CRM if client exists
             try:
                 from ghost.crm.db import CRMDatabase
                 crm = CRMDatabase.get_instance()
@@ -182,5 +187,6 @@ class VercelDeployer:
             return {
                 "status": "error",
                 "message": f"Vercel deployment failed: {res.get('stderr') or res.get('stdout')}",
-                "raw": res
+                "raw": res,
+                "url": None
             }

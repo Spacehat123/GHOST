@@ -136,21 +136,25 @@ class DemoBuilderWorker:
             logger.warning(f"OpenCode binary not found at {OPENCODE_BIN}. Using internal luxury generator.")
             return False
 
+        from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS, DOMAIN_COPY
+        domain = detect_domain_profile(restaurant_name, contact.get("address", ""), "")
+        assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
+        copy_set = DOMAIN_COPY.get(domain, DOMAIN_COPY["general_services"])
+
         # Inject Premium Design & Motion Resources into prompt
         prompt = (
-            f"Generate an ultra-luxury, high-ticket single-page responsive HTML website with Tailwind CSS for high-end dining establishment '{restaurant_name}'.\n"
+            f"Generate an ultra-luxury, high-ticket single-page responsive HTML website with Tailwind CSS for {domain.replace('_', ' ')} establishment '{restaurant_name}'.\n"
             f"Style Archetype {archetype_id}: {style['name']}.\n"
             f"Palette: Background {style['bg']}, Surface {style['surface']}, Accent {style['accent']}, Text {style['text']}, Border {style['border']}.\n"
             f"Fonts: Headers {style['font_head']}, Body {style['font_body']}.\n"
             f"Tagline: {tagline}\n"
-            f"Menu Highlights: {', '.join([i['title'] + ' (' + i['price'] + ')' for i in items[:4]])}.\n\n"
+            f"Offerings Highlights: {', '.join([i['title'] + (' (' + str(i['price']) + ')' if i.get('price') else '') for i in items[:4]])}.\n\n"
             f"MANDATORY PREMIUM MOTION & COMPONENT INJECTION (Eliminate generic AI look):\n"
             f"1. KokonutUI Liquid Glass / GlassPanel: Use frosted glass cards (backdrop-blur-xl bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10 shadow-2xl) with @supports fallback.\n"
-            f"2. Magic UI Shimmer CTAs: Include animated conical border sheen buttons for reservations and tasting experiences.\n"
+            f"2. Magic UI Shimmer CTAs: Include animated conical border sheen buttons for {copy_set.get('cta_primary', 'inquiries')}.\n"
             f"3. React Bits Living Ambient Mesh: Render luxury background radial gradient orbs (blur-[140px] with slow pulsation).\n"
-            f"4. Anime.js Staggered Entry: Load Anime.js via CDN (https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js) and stagger menu and hero headline reveals.\n"
-            f"5. Motion Springs: Use spring easing cubic-bezier(0.34, 1.56, 0.64, 1) for cards and hover states.\n"
-            f"6. Bklit Sommelier Data Metric: Include a styled dark-mode vintage scoring card (e.g. 98.4 Pts / Sommelier Reserve).\n\n"
+            f"4. Anime.js Staggered Entry: Load Anime.js via CDN (https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js) and stagger offerings and hero headline reveals.\n"
+            f"5. Motion Springs: Use spring easing cubic-bezier(0.34, 1.56, 0.64, 1) for cards and hover states.\n\n"
             f"Strict Sectional Flow per Website Build Guide: Nav -> Hero -> Social Proof Marquee -> BentoFeatures Grid -> How It Works (3 steps) -> FAQ Accordion -> Final CTA & Conversion Footer with removable 'Concept design' note.\n"
             f"Requirements: Zero generic bootstrap/stock buttons. Mobile-first responsive layout (360px to 1920px).\n"
             f"MANDATORY THEME REQUIREMENT: The website MUST be LIGHT MODE by default (clean editorial palette background {style['bg']}, surface {style['surface']}). It MUST also include a DARK MODE and a functional theme switcher toggle button in the navigation header with class 'dark' toggled on document.documentElement and preference persisted in localStorage.\n"
@@ -212,18 +216,18 @@ class DemoBuilderWorker:
         os.makedirs(out_dir, exist_ok=True)
         html_path = os.path.join(out_dir, "index.html")
 
-        from ghost.workers.demo_state_machine import infer_location_and_phone, detect_domain_profile, DOMAIN_CURATED_ASSETS
+        from ghost.workers.demo_state_machine import infer_location_and_phone, detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS
         raw_loc = contact_info.get("address") if contact_info else None
         inferred_loc, inferred_phone = infer_location_and_phone(restaurant_name, raw_loc)
         domain = detect_domain_profile(restaurant_name, inferred_loc, "")
-        assets = DOMAIN_CURATED_ASSETS.get(domain, DOMAIN_CURATED_ASSETS["fine_dining"])
+        assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
 
         style = ARCHETYPE_STYLES.get(archetype, ARCHETYPE_STYLES[1])
-        tag = tagline or f"An Unrivaled Gastronomic & Hospitality Experience in {inferred_loc.split(',')[0]}."
-        contact = contact_info or {"phone": inferred_phone, "email": f"reservations@{slug}.com", "address": inferred_loc}
+        tag = tagline or f"Professional Service & Uncompromising Standards in {inferred_loc.split(',')[0]}."
+        contact = contact_info or {"phone": inferred_phone or "", "email": f"contact@{slug}.com", "address": inferred_loc}
 
-        # Default sample menu if none provided, using domain curated items
-        items = menu_items or [dict(it) for it in assets["menu"]]
+        # Default sample offerings if none provided, using domain curated items
+        items = menu_items or [dict(it) for it in assets.get("services", [])]
 
         # Verify client status if registered in CRM:
         # Pre-contract / pitch prospects (status != 'closed_won') receive ONLY lightweight single-page static HTML demos.
@@ -329,9 +333,9 @@ class DemoBuilderWorker:
         border_color = style["border"]
         muted_color = style.get("muted", "#888")
 
-        from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS
+        from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS
         domain = detect_domain_profile(restaurant_name, contact.get("address", ""), "")
-        assets = DOMAIN_CURATED_ASSETS.get(domain, DOMAIN_CURATED_ASSETS["fine_dining"])
+        assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
         hero_img = assets.get("hero_bg", "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85")
         bento_img1 = assets.get("bento_img1", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80")
 
@@ -356,6 +360,7 @@ class DemoBuilderWorker:
                   <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface)] via-transparent to-transparent"></div>
                 </div>
                 '''
+            price_display = str(item['price']) if item.get('price') else '[Inquire for quotation]'
             menu_cards.append(f'''
             <div class="menu-card spring-card backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 relative overflow-hidden group" 
                  style="background: var(--surface); border: 1px solid var(--border);" 
@@ -363,7 +368,7 @@ class DemoBuilderWorker:
               {card_img_html}
               <div class="flex justify-between items-baseline mb-2 relative z-10">
                 <h3 class="text-lg font-semibold tracking-wide" style="font-family: {style['font_head']}; color: var(--text);">{item['title']}</h3>
-                <span class="text-sm font-bold tracking-wider" style="color: var(--accent);">{item['price']}</span>
+                <span class="text-sm font-bold tracking-wider" style="color: var(--accent);">{price_display}</span>
               </div>
               <p class="text-xs leading-relaxed relative z-10" style="color: var(--muted);">{item['desc']}</p>
             </div>

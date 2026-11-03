@@ -1,5 +1,6 @@
 """Basic system environment and user identity."""
 USER = "pranc"
+NAME = "Pranav"
 HOME = "/home/pranc"
 OS = "Arch Linux"
 COMPOSITOR = "Hyprland v0.56.2"
