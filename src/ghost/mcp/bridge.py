@@ -4,11 +4,14 @@ import os
 import json
 import base64
 import re
+import logging
 import urllib.request
 import urllib.parse
 from typing import Dict, Any, List, Optional, Tuple, Union
 import aiohttp
 import websockets
+
+logger = logging.getLogger(__name__)
 
 REA_PATH = "/home/pranc/projects/rea"
 REA_BIN = os.path.join(REA_PATH, "scripts/rea.mjs")

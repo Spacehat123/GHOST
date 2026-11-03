@@ -128,6 +128,7 @@ class VercelDeployer:
 
         token = cls.get_token()
         if not token:
+            preview_file = f"file://{os.path.abspath(demo_dir)}/index.html"
             return {
                 "status": "config_required",
                 "message": (
@@ -136,7 +137,8 @@ class VercelDeployer:
                     f"and store it in '{VERCEL_CONFIG_PATH}' as {{\"vercel_token\": \"<TOKEN>\"}} or set VERCEL_TOKEN env."
                 ),
                 "config_path": VERCEL_CONFIG_PATH,
-                "url": None
+                "url": None,
+                "internal_preview_path": preview_file
             }
 
         # Neutral project name: never leak 'ghost' into client-facing URLs

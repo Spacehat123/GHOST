@@ -44,6 +44,8 @@ BANNED_OUTBOUND_TERMS = [
     "file://",
     "/home/",
     "\\home\\",
+    "internal_preview_path",
+    "local_demo_path",
     "sir",
     "mate",
     "boss",
@@ -116,11 +118,26 @@ GOOGLE_CATEGORY_MAP = {
     "handyman": "home_trade_services",
     "roofing contractor": "home_trade_services",
     "locksmith": "home_trade_services",
+    "carpenter": "home_trade_services",
+    "joiner": "home_trade_services",
+    "glazier": "home_trade_services",
+    "painter": "home_trade_services",
+    "house painter": "home_trade_services",
+    "flooring contractor": "home_trade_services",
+    "tile contractor": "home_trade_services",
+    "landscaping": "home_trade_services",
+    "tree service": "home_trade_services",
+    "pest control service": "home_trade_services",
+    "cleaning service": "home_trade_services",
+    "window cleaning service": "home_trade_services",
+    "carpet cleaning service": "home_trade_services",
     "pet groomer": "home_trade_services",
     "pet groomers": "home_trade_services",
     "pet grooming service": "home_trade_services",
     "dog groomer": "home_trade_services",
     "dog groomers": "home_trade_services",
+    "cat groomer": "home_trade_services",
+    "mobile pet groomer": "home_trade_services",
     "pet care service": "home_trade_services",
     "dog day care center": "home_trade_services",
 
@@ -140,23 +157,32 @@ GOOGLE_CATEGORY_MAP = {
     "wine bar": "restaurants_cafes",
     "sports bar": "restaurants_cafes",
     "irish pub": "restaurants_cafes",
+    "traditional pub": "restaurants_cafes",
     "lounge bar": "restaurants_cafes",
     "tavern": "restaurants_cafes",
     "inn": "restaurants_cafes",
     "brewery": "restaurants_cafes",
     "brewpub": "restaurants_cafes",
     "taproom": "restaurants_cafes",
+    "beer garden": "restaurants_cafes",
+    "gastropub": "restaurants_cafes",
     "diner": "restaurants_cafes",
+    "eatery": "restaurants_cafes",
     "italian restaurant": "restaurants_cafes",
     "french restaurant": "restaurants_cafes",
     "japanese restaurant": "restaurants_cafes",
     "sushi restaurant": "restaurants_cafes",
     "steak house": "restaurants_cafes",
+    "seafood restaurant": "restaurants_cafes",
+    "tapas restaurant": "restaurants_cafes",
+    "brasserie": "restaurants_cafes",
+    "noodle shop": "restaurants_cafes",
 
     # 2. Salons & Spas (Beauty, Hair, Wellness)
     "hair salon": "salons_spas",
     "hairdresser": "salons_spas",
     "barber shop": "salons_spas",
+    "barbershop": "salons_spas",
     "barber": "salons_spas",
     "beauty salon": "salons_spas",
     "beauty parlour": "salons_spas",
@@ -165,15 +191,23 @@ GOOGLE_CATEGORY_MAP = {
     "spa": "salons_spas",
     "day spa": "salons_spas",
     "nail salon": "salons_spas",
+    "manicurist": "salons_spas",
+    "pedicurist": "salons_spas",
     "facial spa": "salons_spas",
     "massage therapist": "salons_spas",
+    "massage spa": "salons_spas",
     "skin care clinic": "salons_spas",
     "wellness center": "salons_spas",
     "cosmetics store": "salons_spas",
     "aesthetic clinic": "salons_spas",
     "eyelash salon": "salons_spas",
+    "eyebrow bar": "salons_spas",
     "waxing hair removal service": "salons_spas",
+    "laser hair removal service": "salons_spas",
     "permanent make-up clinic": "salons_spas",
+    "tanning salon": "salons_spas",
+    "make-up artist": "salons_spas",
+    "hair extension technician": "salons_spas",
 
     # 3. Gyms & Fitness
     "gym": "gyms_fitness",
@@ -184,27 +218,39 @@ GOOGLE_CATEGORY_MAP = {
     "crossfit gym": "gyms_fitness",
     "boxing gym": "gyms_fitness",
     "martial arts club": "gyms_fitness",
+    "fitness boot camp": "gyms_fitness",
+    "gymnastics center": "gyms_fitness",
 
     # 4. Dental & Medical
     "dentist": "dental_medical",
     "dental clinic": "dental_medical",
     "cosmetic dentist": "dental_medical",
     "orthodontist": "dental_medical",
+    "pediatric dentist": "dental_medical",
     "doctor": "dental_medical",
     "medical clinic": "dental_medical",
     "physiotherapist": "dental_medical",
     "physiotherapy clinic": "dental_medical",
     "chiropractor": "dental_medical",
+    "osteopath": "dental_medical",
+    "optician": "dental_medical",
+    "optometrist": "dental_medical",
+    "eye care center": "dental_medical",
+    "podiatrist": "dental_medical",
     "dermatologist": "dental_medical",
+    "acupuncture clinic": "dental_medical",
 
     # 5. Boutiques & Retail (Fashion, Tailors, Jewelers)
     "clothing store": "boutiques_retail",
     "boutique": "boutiques_retail",
+    "fashion boutique": "boutiques_retail",
+    "designer clothing store": "boutiques_retail",
     "tailor": "boutiques_retail",
     "custom tailor": "boutiques_retail",
     "men's tailor": "boutiques_retail",
     "dressmaker": "boutiques_retail",
     "clothing alteration service": "boutiques_retail",
+    "sewing shop": "boutiques_retail",
     "haute couture fashion house": "boutiques_retail",
     "fashion designer": "boutiques_retail",
     "bridal shop": "boutiques_retail",
@@ -213,10 +259,16 @@ GOOGLE_CATEGORY_MAP = {
     "jeweler": "boutiques_retail",
     "shoe store": "boutiques_retail",
     "fashion accessories store": "boutiques_retail",
+    "watch store": "boutiques_retail",
+    "leather goods store": "boutiques_retail",
 
     # 6. Real Estate
     "real estate agency": "real_estate",
     "real estate agents": "real_estate",
+    "estate agent": "real_estate",
+    "estate agents": "real_estate",
+    "letting agent": "real_estate",
+    "letting agency": "real_estate",
     "real estate consultant": "real_estate",
     "commercial real estate agency": "real_estate",
     "property management company": "real_estate",
@@ -226,6 +278,7 @@ GOOGLE_CATEGORY_MAP = {
     "photography studio": "photographers",
     "wedding photographer": "photographers",
     "commercial photographer": "photographers",
+    "portrait studio": "photographers",
     "video production service": "photographers",
 
     # 8. Hotels & Stays
@@ -236,33 +289,48 @@ GOOGLE_CATEGORY_MAP = {
     "motel": "hotels_stays",
     "villa": "hotels_stays",
     "holiday home": "hotels_stays",
+    "guest house": "hotels_stays",
 
     # 9. Bakeries
     "bakery": "bakeries",
     "pastry shop": "bakeries",
     "cake shop": "bakeries",
     "patisserie": "bakeries",
+    "cupcake shop": "bakeries",
+    "donut shop": "bakeries",
 
     # 11. Coaches & Consultants
     "business management consultant": "coaches",
     "consultant": "coaches",
     "life coach": "coaches",
     "executive search firm": "coaches",
+    "career guidance service": "coaches",
 
     # 12. Legal & Accounting
     "law firm": "legal_accounting",
     "lawyer": "legal_accounting",
     "attorney": "legal_accounting",
+    "solicitor": "legal_accounting",
+    "solicitors": "legal_accounting",
+    "barrister": "legal_accounting",
+    "notary public": "legal_accounting",
     "accounting firm": "legal_accounting",
     "accountant": "legal_accounting",
+    "accountants": "legal_accounting",
     "certified public accountant": "legal_accounting",
+    "chartered accountant": "legal_accounting",
+    "accounting service": "legal_accounting",
+    "bookkeeping service": "legal_accounting",
     "tax consultant": "legal_accounting",
 
     # 13. Wedding & Florists
     "wedding planner": "wedding_florists",
     "event planner": "wedding_florists",
     "florist": "wedding_florists",
+    "florists": "wedding_florists",
     "flower designer": "wedding_florists",
+    "flower delivery": "wedding_florists",
+    "wedding venue": "wedding_florists",
 
     # 14. Tutors & Academies
     "tutoring service": "tutors",
@@ -271,83 +339,174 @@ GOOGLE_CATEGORY_MAP = {
     "learning center": "tutors",
     "music school": "tutors",
     "language school": "tutors",
+    "driving school": "tutors",
+    "driving instructor": "tutors",
 }
 
 REGEX_DOMAIN_RULES: List[Tuple[str, str]] = [
-    ("home_trade_services", r"\b(detail(ing|er)?|ceramic coating|paint protection|paint correction|ppf|valet(ing)?|autocare|auto care|car care|mechanic|auto repair|motor repair|body shop|car wash|garage|plumb(ing|er)?|electric(ian|al)?|hvac|handyman|roof(ing|er)?|locksmith|carpenter|landscaping|pest control|pet groom(ing|er|ers)?|dog groom(ing|er|ers)?|pet care)\b"),
-    ("dental_medical", r"\b(dental|dentist|orthodont(ic|ist)|teeth|smile makeover|implant|doctor|physio(therapy|therapist)?|chiropract(ic|or)?|dermatolog(y|ist)|clinic)\b"),
-    ("salons_spas", r"\b(barber(shop)?|hairstylist|hair salon|haircut|hairdresser|salon|spa|beauty studio|beauty salon|beauty|beautician|cosmetic(s)?|massage|facial|skincare|esthetician|nail salon|wellness sanctuary)\b"),
+    ("home_trade_services", r"\b(detail(ing|er|ers)?|ceramic coating|paint protection|paint correction|ppf|valet(ing)?|autocare|auto care|car care|mechanic|auto repair|motor repair|body shop|car wash|garage|plumb(ing|er|ers)?|electric(ian|ians|al)?|hvac|handyman|roof(ing|er|ers)?|locksmith|carpenter|landscaping|pest control|pet groom(ing|er|ers)?|dog groom(ing|er|ers)?|pet care|groomer|groomers|grooming|carpet clean(ing)?|clean(ing|er|ers)?)\b"),
+    ("salons_spas", r"\b(barber(shop)?|hairstylist|hair salon|hair studio|haircut|hairdresser|hair|salon|spa|beauty studio|beauty salon|beauty|beautician|cosmetic(s)?|aesthetic(s)?|aesthetic clinic|massage|facial|skincare|skin care|skin clinic|esthetician|nail salon|nails?|nail studio|nail artist|lashes?|eyelashes?|lash studio|lash artist|wellness sanctuary)\b"),
+    ("dental_medical", r"\b(dental|dentist|orthodont(ic|ist)|teeth|smile makeover|implant|doctor|physio(therapy|therapist)?|physio|chiropract(ic|or)?|dermatolog(y|ist)|medical clinic|dental clinic|eye clinic|clinic|optician|optometrist|eyecare)\b"),
     ("gyms_fitness", r"\b(gym|crossfit|fitness|pilates|yoga|athletic club|workout|strength training|personal train(ing|er))\b"),
     ("bakeries", r"\b(bakery|patisserie|pastry|croissant|sourdough|cake studio|artisan bakery|bakeshop)\b"),
-    ("restaurants_cafes", r"\b(pub|pubs|public house|tavern|inn|brewpub|taproom|gastropub|cocktail bar|wine bar|bar|bars|restaurant|bistro|cafe|coffee|espresso|roastery|diner|trattoria|brasserie|eatery|omakase|tasting menu)\b"),
+    ("restaurants_cafes", r"\b(pub|pubs|public house|tavern|inn|brewpub|taproom|gastropub|cocktail bar|wine bar|speakeasy|bar|bars|restaurant|bistro|cafe|coffee|espresso|roastery|diner|trattoria|brasserie|eatery|omakase|tasting menu|steak house|steakhouse|steak|pizzeria|pizza|grill)\b"),
     ("boutiques_retail", r"\b(boutique|couture|haute couture|bespoke suiting|tailor(ing|s)?|dressmaker|alterations?|jewel(ry|er)?|atelier|ready-to-wear|lookbook|apparel|menswear|womenswear)\b"),
-    ("real_estate", r"\b(real estate|realty|property|brokerage|penthouse|villas|condos|apartments|realtor)\b"),
-    ("photographers", r"\b(photograph(y|er)?|cinematograph(y|er)?|portrait studio|photo shoot|videograph(y|er)?)\b"),
+    ("real_estate", r"\b(real estate|estate agent(s)?|realty|property|brokerage|penthouse|villas|condos|apartments|realtor)\b"),
+    ("photographers", r"\b(photograph(y|er|ers)?|cinematograph(y|er)?|portrait studio|photo shoot|videograph(y|er)?)\b"),
     ("hotels_stays", r"\b(hotel|resort|boutique stay|homestay|luxury suite|bungalow|villa rental)\b"),
     ("coaches", r"\b(executive coach|life coach|mentorship|career mentor|keynote speaker|consulting)\b"),
-    ("legal_accounting", r"\b(law|legal|law firm|lawyer|attorney|solicitor|barrister|cpa|chartered accountant|accounting|tax advisor|tax advisory|litigation)\b"),
-    ("wedding_florists", r"\b(wedding planner|bridal stylist|florist|floral studio|botanical stylist)\b"),
-    ("tutors", r"\b(tutor(ing)?|test prep|sat prep|academy|learning center|math coaching)\b"),
+    ("legal_accounting", r"\b(law|legal|law firm|lawyer|attorney|solicitor|solicitors|barrister|cpa|chartered accountant|accountant|accountants|accounting|tax advisor|tax advisory|litigation)\b"),
+    ("wedding_florists", r"\b(wedding planner|bridal stylist|florist|florists|floristry|floral studio|botanical stylist)\b"),
+    ("tutors", r"\b(tutor(ing|s)?|test prep|sat prep|academy|learning center|math coaching|driving school|driving instructor)\b"),
 ]
 
-SNIPPET_ANCHOR_PATTERNS: List[Tuple[str, str]] = [
-    ("restaurants_cafes", r"\b(our menu|tasting menu|dine-?in|reservations? accepted|book a table|serves (lunch|dinner|breakfast|brunch)|our dishes|our kitchen|table reservation)\b"),
-    ("home_trade_services", r"\b(emergency plumbing|book an electrician|our repair services|scheduled maintenance|service van|certified technician|paint correction package)\b"),
-    ("salons_spas", r"\b(book a haircut|our stylists|spa treatments|hair appointments|book appointment with stylist)\b"),
-    ("dental_medical", r"\b(book patient consultation|accepting new patients|dental surgery|our clinic)\b"),
-    ("gyms_fitness", r"\b(gym membership|free trial pass|personal training sessions|our coaches)\b"),
-    ("bakeries", r"\b(freshly baked daily|custom cakes for order|our bakery)\b"),
-    ("boutiques_retail", r"\b(bespoke tailoring appointment|clothing collection|ready-to-wear line)\b"),
-]
+DOMAIN_SNIPPET_KEYWORDS: Dict[str, List[str]] = {
+    "restaurants_cafes": ["menu", "dining", "reservations", "chef", "table", "tasting", "lunch", "dinner", "cocktails", "wine", "dishes", "cuisine", "pub", "beer", "coffee"],
+    "salons_spas": ["haircut", "styling", "stylist", "facial", "massage", "skincare", "barber", "lashes", "manicure", "pedicure", "salon", "spa"],
+    "dental_medical": ["dental", "dentist", "teeth", "clinic", "doctor", "patients", "consultation", "implants", "physio", "chiropractor", "optician"],
+    "gyms_fitness": ["fitness", "gym", "workout", "training", "coaching", "membership", "pilates", "yoga", "classes", "athletic"],
+    "home_trade_services": ["detailing", "plumbing", "electrician", "contractor", "repair", "handyman", "installation", "maintenance", "roofing", "grooming"],
+    "boutiques_retail": ["boutique", "fashion", "collection", "tailoring", "alterations", "apparel", "designer", "couture", "jeweler"],
+    "real_estate": ["real estate", "property", "broker", "listings", "apartments", "realty", "estate agent", "tenants"],
+    "photographers": ["photography", "photoshoot", "portraits", "photographer", "studio", "wedding photography"],
+    "hotels_stays": ["hotel", "resort", "rooms", "suites", "accommodation", "stay", "booking"],
+    "bakeries": ["bakery", "pastries", "baked daily", "cakes", "croissants", "sourdough", "patisserie"],
+    "coaches": ["executive coaching", "mentor", "life coaching", "consulting", "keynote"],
+    "legal_accounting": ["attorney", "lawyer", "legal", "cpa", "accounting", "tax", "litigation", "solicitor"],
+    "wedding_florists": ["florist", "bouquets", "floral", "wedding planner", "flowers"],
+    "tutors": ["tutoring", "tutor", "test prep", "sat prep", "learning center", "classes", "driving school"]
+}
 
 
-def classify_business(category: Optional[str], name: str, snippets: str = "") -> Tuple[str, float, bool]:
+def classify_business(category: Optional[str], name: str, snippets: str = "") -> Tuple[str, float, bool, List[Dict[str, Any]]]:
     """
     Classifies a business into one of the 14 catalog industries.
-    Returns: (domain, confidence, needs_confirmation)
+    Returns: (domain, confidence, needs_confirmation, candidates)
 
     Strict Priority Hierarchy:
     1. Google Category direct mapping or category regex (confidence 0.95 / 0.90)
     2. Business Name ALONE evaluated via word-boundary regex (confidence 0.85).
        CRITICAL: Snippets are NEVER mixed with business name here to prevent nearby
        business mentions from poisoning classification (e.g. 'Autocare' near a restaurant).
-    3. Snippets ALONE as weak signal requiring first-person anchor phrases (confidence 0.60, needs_confirmation=True).
-       Casual mentions of 'coffee' or 'restaurant' in area snippets are strictly ignored.
+    3. Snippets ALONE as weak signal requiring >= 2 distinct keyword hits (confidence 0.60, needs_confirmation=True).
+       Single casual mentions of 'coffee' or 'restaurant' in area snippets are strictly ignored.
     4. Fail closed: fallback to 'general_services' and mark needs_confirmation=True (confidence 0.20).
        NEVER default to fine_dining or food/drink!
     """
+    candidates_dict: Dict[str, Dict[str, Any]] = {}
+
+    name_clean = name.strip().lower().replace("’", "'") if name else ""
+    snippets_clean = snippets.strip().lower() if snippets and isinstance(snippets, str) else ""
+
+    matched_domain: Optional[str] = None
+    matched_conf: float = 0.20
+    needs_conf: bool = True
+
     # 1. Google Category
     if category and isinstance(category, str):
         cat_clean = category.strip().lower()
         if cat_clean in GOOGLE_CATEGORY_MAP:
-            return GOOGLE_CATEGORY_MAP[cat_clean], 0.95, False
-        for k, dom in GOOGLE_CATEGORY_MAP.items():
-            if re.search(r'\b' + re.escape(k) + r'\b', cat_clean):
-                return dom, 0.90, False
-        for dom, pattern in REGEX_DOMAIN_RULES:
-            if re.search(pattern, cat_clean, flags=re.IGNORECASE):
-                return dom, 0.90, False
+            matched_domain = GOOGLE_CATEGORY_MAP[cat_clean]
+            matched_conf = 0.95
+            needs_conf = False
+            candidates_dict[matched_domain] = {
+                "domain": matched_domain,
+                "score": 0.95,
+                "reason": f"Google category '{category}' directly mapped to {matched_domain}"
+            }
+        else:
+            for k, dom in GOOGLE_CATEGORY_MAP.items():
+                if re.search(r'\b' + re.escape(k) + r'\b', cat_clean):
+                    matched_domain = dom
+                    matched_conf = 0.90
+                    needs_conf = False
+                    candidates_dict[dom] = {
+                        "domain": dom,
+                        "score": 0.90,
+                        "reason": f"Google category '{category}' matched keyword '{k}'"
+                    }
+                    break
+            if not matched_domain:
+                for dom, pattern in REGEX_DOMAIN_RULES:
+                    if re.search(pattern, cat_clean, flags=re.IGNORECASE):
+                        matched_domain = dom
+                        matched_conf = 0.90
+                        needs_conf = False
+                        candidates_dict[dom] = {
+                            "domain": dom,
+                            "score": 0.90,
+                            "reason": f"Google category '{category}' matched rule for {dom}"
+                        }
+                        break
 
     # 2. Business Name ALONE (no snippet mixing)
-    name_clean = name.strip().lower()
-    for dom, pattern in REGEX_DOMAIN_RULES:
-        if re.search(pattern, name_clean, flags=re.IGNORECASE):
-            return dom, 0.85, False
+    if not matched_domain and name_clean:
+        for dom, pattern in REGEX_DOMAIN_RULES:
+            m = re.search(pattern, name_clean, flags=re.IGNORECASE)
+            if m:
+                matched_domain = dom
+                matched_conf = 0.85
+                needs_conf = False
+                candidates_dict[dom] = {
+                    "domain": dom,
+                    "score": 0.85,
+                    "reason": f"Business name matched keyword '{m.group(0)}'"
+                }
+                break
 
-    # 3. Snippets ALONE (Weak signal requiring specific first-person anchors)
-    if snippets and isinstance(snippets, str):
-        snippets_clean = snippets.strip().lower()
-        for dom, pattern in SNIPPET_ANCHOR_PATTERNS:
-            if re.search(pattern, snippets_clean, flags=re.IGNORECASE):
-                return dom, 0.60, True
+    # 3. Snippets ALONE (Weak signal requiring >= 2 distinct keyword hits)
+    snippet_candidates = []
+    if snippets_clean:
+        for dom, kw_list in DOMAIN_SNIPPET_KEYWORDS.items():
+            hits = [kw for kw in kw_list if re.search(r'\b' + re.escape(kw) + r'\b', snippets_clean)]
+            if len(hits) >= 2:
+                snippet_candidates.append((dom, 0.60, f"Snippets matched keywords: {', '.join(hits[:3])}"))
+            elif len(hits) == 1:
+                snippet_candidates.append((dom, 0.35, f"Weak snippet signal (1 keyword: {hits[0]})"))
 
-    # 4. Fail closed: neutral service template, pause for human confirmation
-    return "general_services", 0.20, True
+        snippet_candidates.sort(key=lambda x: x[1], reverse=True)
+
+        for dom, sc, rsn in snippet_candidates:
+            if dom not in candidates_dict:
+                candidates_dict[dom] = {"domain": dom, "score": sc, "reason": rsn}
+
+        if not matched_domain and snippet_candidates and snippet_candidates[0][1] >= 0.60:
+            top_snippet = snippet_candidates[0]
+            matched_domain = top_snippet[0]
+            matched_conf = top_snippet[1]
+            needs_conf = True
+
+    # 4. Fail closed: fallback to general_services with needs_confirmation=True
+    if not matched_domain:
+        matched_domain = "general_services"
+        matched_conf = 0.20
+        needs_conf = True
+        if "general_services" not in candidates_dict:
+            candidates_dict["general_services"] = {
+                "domain": "general_services",
+                "score": 0.20,
+                "reason": "Default neutral service template"
+            }
+
+    if "general_services" not in candidates_dict:
+        candidates_dict["general_services"] = {
+            "domain": "general_services",
+            "score": 0.20,
+            "reason": "Default neutral fallback"
+        }
+
+    # Construct top 3 candidates, ensuring matched_domain is first
+    ordered_candidates = [candidates_dict[matched_domain]]
+    remaining = [c for d, c in sorted(candidates_dict.items(), key=lambda item: item[1]["score"], reverse=True) if d != matched_domain]
+    ordered_candidates.extend(remaining)
+    candidates = ordered_candidates[:3]
+
+    return matched_domain, matched_conf, needs_conf, candidates
 
 
 def detect_domain_profile(business_name: str, location: str = "", text: str = "") -> str:
     """Compatibility shim for existing callers."""
-    dom, _, _ = classify_business(None, business_name, text)
+    dom, _, _, _ = classify_business(None, business_name, text)
     return dom
 
 
@@ -375,10 +534,10 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Multi-Stage Paint Correction", "price": None, "desc": "Microscopic machine polishing eliminating swirl marks, holograms, and surface defects.", "category": "Surface Restoration"},
-            {"title": "Ceramic Coating Protection", "price": None, "desc": "Hydrophobic nano-ceramic bond shielding clear coats from UV degradation and road contaminants.", "category": "Protection Systems"},
-            {"title": "Interior Deep Restoration", "price": None, "desc": "Steam purification, leather condition balance, and bespoke interior cabin detailing.", "category": "Interior Refinement"},
-            {"title": "Paint Protection Film (PPF)", "price": None, "desc": "Self-healing thermoplastic urethane barrier guarding high-impact panels against stone chips.", "category": "Protection Systems"}
+            {"title": "Surface Restoration", "category": "Surface Restoration", "price": None, "desc": None},
+            {"title": "Protection Systems", "category": "Protection Systems", "price": None, "desc": None},
+            {"title": "Interior Refinement", "category": "Interior Refinement", "price": None, "desc": None},
+            {"title": "Specialist Treatment", "category": "Specialist Treatment", "price": None, "desc": None}
         ]
     },
     "dental_medical": {
@@ -389,9 +548,9 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Comprehensive Clinical Assessment", "price": None, "desc": "Digital diagnostic imaging and personalized treatment architecture.", "category": "Clinical Diagnostics"},
-            {"title": "Precision Restorative Treatment", "price": None, "desc": "Minimally invasive restorative care engineered for long-term health and aesthetics.", "category": "Treatment Solutions"},
-            {"title": "Advanced Preventive Care", "price": None, "desc": "Thorough hygiene protocols and protective maintenance for ongoing wellbeing.", "category": "Preventive Care"}
+            {"title": "Clinical Diagnostics", "category": "Clinical Diagnostics", "price": None, "desc": None},
+            {"title": "Treatment Solutions", "category": "Treatment Solutions", "price": None, "desc": None},
+            {"title": "Preventive Care", "category": "Preventive Care", "price": None, "desc": None}
         ]
     },
     "salons_spas": {
@@ -402,9 +561,9 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Master Cut & Precision Styling", "price": None, "desc": "Architectural hair styling tailored to individual bone structure and personal presence.", "category": "Styling Suite"},
-            {"title": "Restorative Scalp & Treatment Protocol", "price": None, "desc": "Nutrient infusion and deep conditioning therapy for sustained hair vitality.", "category": "Hair Health"},
-            {"title": "Bespoke Color Balancing", "price": None, "desc": "Custom dimensional tones using low-ammonia botanical formulations.", "category": "Color Mastery"}
+            {"title": "Styling Suite", "category": "Styling Suite", "price": None, "desc": None},
+            {"title": "Hair & Scalp Care", "category": "Hair & Scalp Care", "price": None, "desc": None},
+            {"title": "Color Treatments", "category": "Color Treatments", "price": None, "desc": None}
         ]
     },
     "gyms_fitness": {
@@ -415,9 +574,9 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Comprehensive Biomechanical Assessment", "price": None, "desc": "Initial movement screen, joint capacity evaluation, and custom training programming.", "category": "Performance Intake"},
-            {"title": "1-on-1 Performance Coaching", "price": None, "desc": "Dedicated coach guidance focusing on power output, mobility, and structural resilience.", "category": "Private Coaching"},
-            {"title": "Athletic Conditioning Cohort", "price": None, "desc": "High-intensity small group coaching built around periodized strength protocols.", "category": "Group Cohorts"}
+            {"title": "Performance Assessment", "category": "Performance Assessment", "price": None, "desc": None},
+            {"title": "Coaching Programs", "category": "Coaching Programs", "price": None, "desc": None},
+            {"title": "Group Conditioning", "category": "Group Conditioning", "price": None, "desc": None}
         ]
     },
     "general_services": {
@@ -428,9 +587,9 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Comprehensive Service Consultation", "price": None, "desc": "In-depth project evaluation and tailored scope formulation.", "category": "Consultation"},
-            {"title": "Precision Service Delivery", "price": None, "desc": "Direct professional execution conforming to strict quality standards.", "category": "Core Service"},
-            {"title": "Ongoing Quality Assurance", "price": None, "desc": "Dedicated review, documentation, and long-term client support.", "category": "Client Support"}
+            {"title": "Consultation", "category": "Consultation", "price": None, "desc": None},
+            {"title": "Core Service Delivery", "category": "Core Service Delivery", "price": None, "desc": None},
+            {"title": "Client Support", "category": "Client Support", "price": None, "desc": None}
         ]
     },
     "restaurants_cafes": {
@@ -441,9 +600,9 @@ DOMAIN_CURATED_ASSETS = {
         "gallery_2": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80",
         "gallery_3": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
         "services": [
-            {"title": "Signature Tasting Menu", "price": None, "desc": "Multi-course seasonal progression crafted with local artisanal ingredients.", "category": "Tasting Menus"},
-            {"title": "Executive Lunch Selection", "price": None, "desc": "Curated lunch offerings prepared fresh daily for unhurried midday dining.", "category": "Midday Menu"},
-            {"title": "Craft Beverage Program", "price": None, "desc": "Small-batch botanical infusions and curated pairings.", "category": "Beverage Program"}
+            {"title": "Tasting Menus", "category": "Tasting Menus", "price": None, "desc": None},
+            {"title": "Midday Menu", "category": "Midday Menu", "price": None, "desc": None},
+            {"title": "Beverage Program", "category": "Beverage Program", "price": None, "desc": None}
         ]
     }
 }
@@ -549,7 +708,7 @@ DOMAIN_COPY = {
         ]
     },
     "restaurants_cafes": {
-        "tagline_template": "Seasonal dining and warm hospitality in {location}.",
+        "tagline_template": "{name} in {location}.",
         "offering_title": "Curated Offerings",
         "offering_kicker": "Artisanal Precision",
         "cta_primary": "Reserve Table",
@@ -558,7 +717,7 @@ DOMAIN_COPY = {
         "banner_sub": "Instant booking confirmation via WhatsApp concierge with zero third-party commissions.",
         "philosophy_kicker": "Philosophy & Provenance",
         "philosophy_title": "Architectural Flavor & Uncompromising Standards",
-        "philosophy_body_1": "At {business_name}, every detail is calibrated to provide an exceptional sensory escape in {location}.",
+        "philosophy_body_1": "At {business_name}, every detail is calibrated to provide a memorable dining experience in {location}.",
         "philosophy_body_2": "We reject automated mediocrity. Our team pairs artisanal heritage with warm hospitality.",
         "quote_attribution": "Head Concierge",
         "quote_text": "Hospitality crafted with discipline, warmth, and unhurried composure.",
@@ -661,11 +820,29 @@ class AutonomousDemoStateMachine:
         self.domain: str = "general_services"
         self.confidence: float = 0.5
         self.needs_confirmation: bool = False
+        self.candidates: List[Dict[str, Any]] = []
+        self.show_sample_services: Optional[bool] = None
         self.brand_data: Dict[str, Any] = {}
         self.archetype_id: int = 5
         self.design_tokens: Dict[str, Any] = {}
         self.audit_results: Dict[str, Any] = {}
         self.deployed_url: Optional[str] = None
+
+    @classmethod
+    def get_show_sample_services(cls) -> bool:
+        """Returns True if sample services placeholder block should be rendered when no real services are found."""
+        env_val = os.environ.get("GHOST_DEMO_SHOW_SAMPLE_SERVICES", "").lower()
+        if env_val in ("1", "true", "yes"):
+            return True
+        config_file = os.path.join(os.path.dirname(__file__), "../../../configs/demo.json")
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    return bool(cfg.get("show_sample_services", False))
+            except Exception:
+                pass
+        return False
 
     @staticmethod
     def slugify(text: str) -> str:
@@ -722,10 +899,11 @@ class AutonomousDemoStateMachine:
         snippets_text = " ".join([r.get("snippet", "") + " " + r.get("title", "") for r in results])
 
         # 5. Classify business
-        domain, conf, needs_conf = classify_business(category_hint, self.business_name, snippets_text)
+        domain, conf, needs_conf, candidates = classify_business(category_hint, self.business_name, snippets_text)
         self.domain = domain
         self.confidence = conf
         self.needs_confirmation = needs_conf
+        self.candidates = candidates
         logger.info(f"Classified '{self.business_name}' -> domain: '{domain}' (confidence: {conf:.2f}, needs_confirmation: {needs_conf})")
 
         # 6. Select assets and copy system
@@ -762,7 +940,7 @@ class AutonomousDemoStateMachine:
         for r in scraped_reviews[:4]:
             t = r.get("text", "").strip()
             if len(t) >= 15:
-                auth = r.get("author") or "Google review"
+                auth = r.get("author") or "Google reviewer"
                 reviews.append({
                     "quote": t,
                     "author": auth,
@@ -770,7 +948,7 @@ class AutonomousDemoStateMachine:
                 })
 
         city_part = self.location.split(',')[0].strip()
-        tagline = copy_set["tagline_template"].format(location=city_part)
+        tagline = copy_set["tagline_template"].format(location=city_part, name=self.business_name, business_name=self.business_name)
 
         # Services: verify if scraped, else record as unverified concept samples
         scraped_services = scout_data.get("services", [])
@@ -786,9 +964,19 @@ class AutonomousDemoStateMachine:
                 verified=False,
                 notes="Sample Concept Architecture • Not Scraped from Listing"
             )
-            services_list = assets.get("services", [])
+            services_list = []
             services_verified = False
         self.ledger.save(self.sources_path)
+
+        # Save recon artifacts
+        try:
+            with open(os.path.join(self.out_dir, "SCOUT.json"), "w", encoding="utf-8") as f:
+                json.dump(scout_data, f, indent=2)
+            if audit_data:
+                with open(os.path.join(self.out_dir, "AUDIT.json"), "w", encoding="utf-8") as f:
+                    json.dump(audit_data, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Note saving recon JSON artifacts: {e}")
 
         self.brand_data = {
             "business_name": self.ledger.get("business_name") or self.business_name,
@@ -813,6 +1001,12 @@ class AutonomousDemoStateMachine:
             "audit_data": audit_data,
             "needs_confirmation": needs_conf
         }
+
+        try:
+            with open(os.path.join(self.out_dir, "BRAND.json"), "w", encoding="utf-8") as f:
+                json.dump(self.brand_data, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Note saving BRAND.json: {e}")
 
         logger.info(f"Phase 1 Complete: Scraped '{self.brand_data['business_name']}' ({domain}).")
         return self.brand_data
@@ -849,9 +1043,9 @@ class AutonomousDemoStateMachine:
             self.brand_data["archetype_id"] = self.archetype_id
             self.brand_data["archetype_name"] = ARCHETYPE_MAP[self.archetype_id]["name"]
             city_part = self.location.split(',')[0].strip()
-            self.brand_data["tagline"] = copy_set["tagline_template"].format(location=city_part)
+            self.brand_data["tagline"] = copy_set["tagline_template"].format(location=city_part, name=self.brand_data.get("business_name") or self.business_name, business_name=self.brand_data.get("business_name") or self.business_name)
             if not self.brand_data.get("services_verified"):
-                self.brand_data["services"] = assets.get("services", [])
+                self.brand_data["services"] = []
             self.brand_data["needs_confirmation"] = False
 
     # =========================================================================
@@ -955,6 +1149,14 @@ class AutonomousDemoStateMachine:
         main_title, sub_title = split_business_name(b["business_name"])
         curr = infer_currency_symbol(b["location"])
 
+        # Determine whether services section will be rendered
+        services_list = b.get("services", [])
+        is_sample_services = not b.get("services_verified", False)
+        show_sample = getattr(self, "show_sample_services", None)
+        if show_sample is None:
+            show_sample = self.get_show_sample_services()
+        has_services_section = bool(services_list) if not is_sample_services else bool(show_sample)
+
         # Determine phone status and format
         raw_phone = b.get("phone")
         has_phone = bool(raw_phone and raw_phone.strip())
@@ -971,7 +1173,7 @@ class AutonomousDemoStateMachine:
         {main_title}
       </a>
       <div class="hidden md:flex items-center gap-8 text-xs uppercase tracking-wider font-mono" style="color: var(--muted-color);">
-        <a href="#services" class="hover:text-black dark:hover:text-white transition-colors">Services</a>
+        {f'<a href="#services" class="hover:text-black dark:hover:text-white transition-colors">Services</a>' if has_services_section else ''}
         <a href="#philosophy" class="hover:text-black dark:hover:text-white transition-colors">Standards</a>
         <a href="#gallery" class="hover:text-black dark:hover:text-white transition-colors">Facility</a>
         <a href="#reserve" class="hover:text-black dark:hover:text-white transition-colors">Booking</a>
@@ -1024,10 +1226,7 @@ class AutonomousDemoStateMachine:
            style="background: var(--accent-color); color: var(--on-accent);">
           {c['cta_primary']}
         </a>
-        <a href="#services" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-all backdrop-blur-md"
-           style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">
-          {c['cta_secondary']}
-        </a>
+        {f'<a href="#services" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-all backdrop-blur-md" style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">{c["cta_secondary"]}</a>' if has_services_section else ''}
       </div>
     </div>
   </section>
@@ -1090,41 +1289,62 @@ class AutonomousDemoStateMachine:
 
         # Bento Grid Offerings
         services_list = b.get("services", [])
-        if not services_list:
-            services_list = assets.get("services", [])
-
         is_sample_services = not b.get("services_verified", False)
-        sample_badge = ""
-        sample_disclaimer = ""
-        if is_sample_services:
-            sample_badge = """
-        <div class="mb-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-mono tracking-wider uppercase backdrop-blur-md" 
-             style="background: var(--surface-card); border: 1px solid var(--border-color); color: var(--muted-color);">
-          <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-          Sample Concept Architecture • Not Scraped from Listing
-        </div>
-"""
-            sample_disclaimer = """
-      <p class="text-center text-xs mt-8 font-mono" style="color: var(--muted-color); opacity: 0.8;">
-        * Illustrative concept packages designed for demonstration architecture. Exact service specifications and pricing subject to consultation.
-      </p>
-"""
+        show_sample = getattr(self, "show_sample_services", None)
+        if show_sample is None:
+            show_sample = self.get_show_sample_services()
 
-        bento_cards_html = ""
-        for idx, it in enumerate(services_list[:4]):
-            price_display = f"{curr}{it['price']}" if it.get("price") else "[Inquire for quotation]"
-            placeholder_tag = ""
-            if is_sample_services:
-                placeholder_tag = """<span class="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded" style="background: var(--border-color); color: var(--muted-color);">[Sample Scope Placeholder]</span>"""
-            bento_cards_html += f"""
+        if is_sample_services and not show_sample:
+            # Omit services section entirely per requirement 1.2
+            bento_html = ""
+        elif is_sample_services and show_sample:
+            # Render clearly labelled block titled "Example service layout (replace with your real services)"
+            # with generic category names and NO descriptions or prices
+            sample_items = assets.get("services", [])
+            bento_cards_html = ""
+            for it in sample_items[:4]:
+                bento_cards_html += f"""
         <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between" 
              style="background: var(--surface-card); border: 1px solid var(--border-color);">
           <div>
             <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
               <h4 class="text-lg font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">{it['title']}</h4>
-              {placeholder_tag}
             </div>
-            <p class="text-xs leading-relaxed mb-6" style="color: var(--muted-color);">{it['desc']}</p>
+          </div>
+          <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
+            <span style="color: var(--muted-color);">{it.get('category', 'Category')}</span>
+          </div>
+        </div>
+"""
+            bento_html = f"""
+  <!-- SERVICES BENTO GRID (SAMPLE) -->
+  <section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Sample Layout</p>
+        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">Example service layout (replace with your real services)</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {bento_cards_html}
+      </div>
+    </div>
+  </section>
+"""
+        else:
+            # Verified real scraped services
+            bento_cards_html = ""
+            for idx, it in enumerate(services_list[:4]):
+                price_display = f"{curr}{it['price']}" if it.get("price") else ""
+                desc_html = f'<p class="text-xs leading-relaxed mb-6" style="color: var(--muted-color);">{it["desc"]}</p>' if it.get("desc") else ""
+                bento_cards_html += f"""
+        <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between" 
+             style="background: var(--surface-card); border: 1px solid var(--border-color);">
+          <div>
+            <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
+              <h4 class="text-lg font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">{it['title']}</h4>
+            </div>
+            {desc_html}
           </div>
           <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
             <span class="font-bold" style="color: var(--accent-color);">{price_display}</span>
@@ -1132,13 +1352,11 @@ class AutonomousDemoStateMachine:
           </div>
         </div>
 """
-
-        bento_html = f"""
+            bento_html = f"""
   <!-- SERVICES BENTO GRID -->
   <section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto">
       <div class="text-center max-w-2xl mx-auto mb-16">
-        {sample_badge}
         <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">{c['offering_kicker']}</p>
         <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">{c['offering_title']}</h2>
       </div>
@@ -1146,7 +1364,6 @@ class AutonomousDemoStateMachine:
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         {bento_cards_html}
       </div>
-      {sample_disclaimer}
     </div>
   </section>
 """
@@ -1277,21 +1494,28 @@ class AutonomousDemoStateMachine:
 
         # Interactive Booking Module with Live JavaScript Link Updates
         booking_type = c.get("booking_fields", "general")
-        if booking_type == "automotive":
-            input_fields_html = """
+        if services_list and not is_sample_services:
+            svc_opts = "".join([f"<option>{s.get('title')}</option>" for s in services_list if s.get('title')])
+            service_field_html = f"""
         <div>
           <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Service Package</label>
           <select id="booking-service" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
-            <option>Ceramic Coating Protection</option>
-            <option>Multi-Stage Paint Correction</option>
-            <option>Interior Deep Restoration</option>
-            <option>Paint Protection Film (PPF)</option>
-            <option>Maintenance Detailing</option>
+            {svc_opts}
           </select>
-        </div>
+        </div>"""
+        else:
+            service_field_html = """
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Service Required</label>
+          <input id="booking-service" type="text" placeholder="e.g. Service inquiry" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+        </div>"""
+
+        if booking_type == "automotive":
+            input_fields_html = f"""
+        {service_field_html}
         <div>
           <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Vehicle Model</label>
-          <input id="booking-detail" type="text" placeholder="e.g. Porsche 911 / Tesla Model S" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+          <input id="booking-detail" type="text" placeholder="e.g. Vehicle make and model" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
         </div>
         <div>
           <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Date</label>
@@ -1301,12 +1525,8 @@ class AutonomousDemoStateMachine:
         elif booking_type == "dining":
             input_fields_html = """
         <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Experience</label>
-          <select id="booking-service" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
-            <option>Tasting Table (2-4 Guests)</option>
-            <option>Private Dining Suite</option>
-            <option>Bar & Lounge Seating</option>
-          </select>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Seating / Table</label>
+          <input id="booking-service" type="text" placeholder="e.g. Standard / Counter / Private" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
         </div>
         <div>
           <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Party Size</label>
@@ -1318,11 +1538,8 @@ class AutonomousDemoStateMachine:
         </div>
 """
         else:
-            input_fields_html = """
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Service Required</label>
-          <input id="booking-service" type="text" placeholder="e.g. Initial Consultation" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
+            input_fields_html = f"""
+        {service_field_html}
         <div>
           <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Details / Scope</label>
           <input id="booking-detail" type="text" placeholder="e.g. Project overview" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
@@ -1958,28 +2175,165 @@ Drag and drop the `demos/{self.slug}` folder directly into Netlify Drop.
 
         # Fail-closed gate: Pause execution if classification needs confirmation
         if self.needs_confirmation:
-            msg = (
-                f"Classification uncertain for '{self.business_name}' (domain: '{self.domain}', "
-                f"confidence: {self.confidence:.2f}). Please confirm domain before proceeding."
-            )
-            logger.warning(f"Pipeline paused: {msg}")
-            authorized = await request_tactical_authorization(msg, action_type="confirmation")
-            if not authorized:
-                logger.info(f"Operator confirmation required for '{self.business_name}'. Pausing pipeline.")
-                return {
-                    "status": "needs_confirmation",
-                    "slug": self.slug,
-                    "business_name": self.business_name,
-                    "domain": self.domain,
-                    "confidence": self.confidence,
-                    "reason": "Classification confidence low. Paused for operator confirmation.",
-                    "ledger_path": self.sources_path
-                }
-            self.needs_confirmation = False
-            if self.brand_data:
-                self.brand_data["needs_confirmation"] = False
+            confirm_path = os.path.join(self.out_dir, "CONFIRM.json")
+            confirm_data = {
+                "slug": self.slug,
+                "name": self.business_name,
+                "google_category": self.brand_data.get("category", "") if self.brand_data else "",
+                "suggested_domain": self.domain,
+                "candidates": getattr(self, "candidates", [])
+            }
+            with open(confirm_path, "w", encoding="utf-8") as f:
+                json.dump(confirm_data, f, indent=2)
+
+            # Update CRM status
+            try:
+                from ghost.crm.db import CRMDatabase
+                crm = CRMDatabase.get_instance()
+                crm.update_lead_status(self.slug, "needs_confirmation")
+            except Exception:
+                pass
+
+            logger.info(f"Operator confirmation required for '{self.business_name}'. Wrote CONFIRM.json. Pausing pipeline.")
+            return {
+                "status": "needs_confirmation",
+                "slug": self.slug,
+                "business_name": self.business_name,
+                "google_category": confirm_data["google_category"],
+                "suggested_domain": self.domain,
+                "candidates": confirm_data["candidates"],
+                "confirm_path": confirm_path,
+                "ledger_path": self.sources_path
+            }
 
         await self.run_phase2_design_brief()
         await self.run_phase3_build_sections()
         await self.run_phase4_visual_verification()
         return await self.run_phase5_preview_handover()
+
+    @classmethod
+    async def resume(cls, slug: str, confirmed_domain: str) -> Dict[str, Any]:
+        """
+        Resumes a paused demo run from Phase 2 with the operator-confirmed domain.
+        Loads state from demos/<slug>/SOURCES.json and SCOUT.json, clears CONFIRM.json,
+        and completes Phases 2 through 5.
+        """
+        out_dir = os.path.join(DEMOS_DIR, slug)
+        sources_path = os.path.join(out_dir, "SOURCES.json")
+        if not os.path.exists(sources_path):
+            raise FileNotFoundError(f"Cannot resume demo for '{slug}': {sources_path} does not exist.")
+
+        from ghost.workers.source_ledger import SourceLedger
+        ledger = SourceLedger.load(sources_path)
+        business_name = ledger.get("business_name") or slug.replace("-", " ").title()
+        location = ledger.get("address") or ""
+
+        sm = cls(business_name=business_name, location=location, slug=slug)
+        sm.ledger = ledger
+
+        # Load cached SCOUT.json and AUDIT.json if available
+        scout_path = os.path.join(out_dir, "SCOUT.json")
+        scout_data = {}
+        if os.path.exists(scout_path):
+            try:
+                with open(scout_path, "r", encoding="utf-8") as f:
+                    scout_data = json.load(f)
+            except Exception:
+                pass
+
+        audit_path = os.path.join(out_dir, "AUDIT.json")
+        audit_data = {}
+        if os.path.exists(audit_path):
+            try:
+                with open(audit_path, "r", encoding="utf-8") as f:
+                    audit_data = json.load(f)
+            except Exception:
+                pass
+
+        # Load BRAND.json if saved, else reconstruct brand_data
+        brand_path = os.path.join(out_dir, "BRAND.json")
+        if os.path.exists(brand_path):
+            try:
+                with open(brand_path, "r", encoding="utf-8") as f:
+                    sm.brand_data = json.load(f)
+            except Exception:
+                sm.brand_data = None
+
+        if not sm.brand_data:
+            category_hint = scout_data.get("category") or ""
+            assets = DOMAIN_CURATED_ASSETS.get(confirmed_domain, GENERAL_SERVICES_ASSETS).copy()
+            copy_set = DOMAIN_COPY.get(confirmed_domain, DOMAIN_COPY["general_services"])
+
+            scraped_photos = scout_data.get("photos", [])
+            if len(scraped_photos) >= 3:
+                assets["hero_bg"] = scraped_photos[0]["url"] if isinstance(scraped_photos[0], dict) else scraped_photos[0]
+                assets["bento_img1"] = scraped_photos[1]["url"] if isinstance(scraped_photos[1], dict) else scraped_photos[1]
+                assets["bento_img2"] = scraped_photos[2]["url"] if isinstance(scraped_photos[2], dict) else scraped_photos[2]
+
+            scraped_reviews = scout_data.get("reviews", [])
+            reviews = []
+            for r in scraped_reviews[:4]:
+                t = r.get("text", "").strip()
+                if len(t) >= 15:
+                    auth = r.get("author") or "Google reviewer"
+                    reviews.append({
+                        "quote": t,
+                        "author": auth,
+                        "source": f"Google Review • {r.get('stars', '5.0★')}"
+                    })
+
+            city_part = sm.location.split(',')[0].strip()
+            tagline = copy_set["tagline_template"].format(location=city_part, name=business_name, business_name=business_name)
+
+            scraped_services = scout_data.get("services", [])
+            services_verified = bool(scraped_services)
+            services_list = scraped_services if services_verified else []
+
+            sm.brand_data = {
+                "business_name": sm.ledger.get("business_name") or sm.business_name,
+                "location": sm.ledger.get("address") or sm.location,
+                "slug": sm.slug,
+                "domain": confirmed_domain,
+                "category": category_hint,
+                "assets": assets,
+                "copy": copy_set,
+                "archetype_id": 1,
+                "archetype_name": ARCHETYPE_MAP[1]["name"],
+                "tagline": tagline,
+                "services": services_list,
+                "services_verified": services_verified,
+                "reviews": reviews,
+                "phone": sm.ledger.get("phone"),
+                "email": None,
+                "hours": sm.ledger.get("hours"),
+                "rating": sm.ledger.get("rating"),
+                "review_count": sm.ledger.get("review_count"),
+                "scouted_photos": scraped_photos,
+                "audit_data": audit_data,
+                "needs_confirmation": False
+            }
+
+        # Apply confirmed domain
+        sm.confirm_domain(confirmed_domain)
+
+        # Remove CONFIRM.json
+        confirm_path = os.path.join(out_dir, "CONFIRM.json")
+        if os.path.exists(confirm_path):
+            try:
+                os.remove(confirm_path)
+            except OSError:
+                pass
+
+        # Update CRM status to building
+        try:
+            from ghost.crm.db import CRMDatabase
+            crm = CRMDatabase.get_instance()
+            crm.update_lead_status(slug, "building")
+        except Exception:
+            pass
+
+        # Execute remaining phases 2-5
+        await sm.run_phase2_design_brief()
+        await sm.run_phase3_build_sections()
+        await sm.run_phase4_visual_verification()
+        return await sm.run_phase5_preview_handover()

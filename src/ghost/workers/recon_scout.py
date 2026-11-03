@@ -337,6 +337,22 @@ class ReconScout:
                         }}
                     }}
 
+                    // Scrape Explicit Services if listed in Maps panel
+                    res.services = [];
+                    const serviceNodes = Array.from(document.querySelectorAll('div[jsaction*="service"], div.m6QErb div.fontTitleSmall, div[aria-label*="Services"] button, div[role="listitem"] div.fontHeadlineSmall'));
+                    for (const node of serviceNodes) {{
+                        const title = node.innerText ? node.innerText.trim() : '';
+                        if (title && title.length >= 3 && title.length <= 60 && !res.services.some(s => s.title === title)) {{
+                            res.services.push({{
+                                title: title,
+                                price: null,
+                                desc: null,
+                                category: "Services"
+                            }});
+                            if (res.services.length >= 6) break;
+                        }}
+                    }}
+
                     return res;
                 }})()
                 """
@@ -400,6 +416,7 @@ class ReconScout:
                                 "text": text
                             })
                     result_data["reviews"] = cleaned_reviews
+                    result_data["services"] = data_obj.get("services", [])
                     result_data["status"] = "scouted"
 
         except Exception as e:

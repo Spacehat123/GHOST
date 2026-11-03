@@ -125,6 +125,21 @@ class CRMDatabase:
 
         return client_data
 
+    def update_lead_status(self, slug: str, status: str) -> bool:
+        """Updates the status of a lead/client by slug."""
+        clean_slug = slug.strip().lower()
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE clients SET status = ?, updated_at = ? WHERE slug = ?", (status, now, clean_slug))
+            conn.commit()
+            updated = cur.rowcount > 0
+        if updated:
+            client_data = self.get_client(clean_slug)
+            if client_data:
+                self._sync_to_obsidian(client_data)
+        return updated
+
     def get_client(self, slug: str) -> Optional[Dict[str, Any]]:
         """Retrieve client and their interaction history."""
         clean_slug = slug.strip().lower()

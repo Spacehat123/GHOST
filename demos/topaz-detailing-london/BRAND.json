@@ -1,0 +1,105 @@
+{
+  "business_name": "Topaz Detailing London",
+  "location": "London, UK",
+  "slug": "topaz-detailing-london",
+  "domain": "home_trade_services",
+  "category": "",
+  "assets": {
+    "hero_bg": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1600&q=85",
+    "bento_img1": "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=800&q=80",
+    "bento_img2": "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=800&q=80",
+    "gallery_1": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80",
+    "gallery_2": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
+    "gallery_3": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80",
+    "services": [
+      {
+        "title": "Surface Restoration",
+        "category": "Surface Restoration",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Protection Systems",
+        "category": "Protection Systems",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Interior Refinement",
+        "category": "Interior Refinement",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Specialist Treatment",
+        "category": "Specialist Treatment",
+        "price": null,
+        "desc": null
+      }
+    ]
+  },
+  "copy": {
+    "tagline_template": "Engineered Precision & Technical Detailing in {location}.",
+    "offering_title": "Services & Packages",
+    "offering_kicker": "Technical Standards",
+    "cta_primary": "Book Service",
+    "cta_secondary": "Explore Services",
+    "banner_headline": "Direct Service Protocol \u2022 Zero Delay",
+    "banner_sub": "Instant service request via WhatsApp concierge. Direct confirmation with technician.",
+    "philosophy_kicker": "Discipline & Standards",
+    "philosophy_title": "Meticulous Craftsmanship & Lasting Protection",
+    "philosophy_body_1": "At {business_name}, every vehicle and project is treated with uncompromising technical rigor in {location}.",
+    "philosophy_body_2": "We reject rushed work and substandard materials. Our technicians utilize precision multi-stage methodology to deliver lasting surface protection and aesthetic perfection.",
+    "quote_attribution": "Senior Specialist",
+    "quote_text": "True perfection lies in microscopic surface refinement and uncompromising patience.",
+    "atmosphere_title": "Studio & Facility",
+    "atmosphere_kicker": "Technical Facility",
+    "gallery_1": "Main Detailing Bay",
+    "gallery_2": "Curing & Inspection Suite",
+    "gallery_3": "Client Consultation Area",
+    "how_it_works_steps": [
+      [
+        "Step 01",
+        "Select Service",
+        "Choose your required detailing package, ceramic protection, or custom treatment."
+      ],
+      [
+        "Step 02",
+        "Confirm Details",
+        "Share your vehicle model and preferred date directly via WhatsApp or call."
+      ],
+      [
+        "Step 03",
+        "Precision Execution",
+        "Drop off your vehicle for dedicated multi-stage treatment by certified specialists."
+      ]
+    ],
+    "booking_title": "Book Your Service Appointment",
+    "booking_sub": "Select your service scope and initiate direct confirmation with our technical team.",
+    "booking_fields": "automotive",
+    "faqs": [
+      [
+        "What is the typical turnaround time for treatments?",
+        "Standard multi-stage treatments require 1 to 3 days depending on vehicle condition and curing requirements."
+      ],
+      [
+        "Do you provide documentation on protection packages?",
+        "Yes. All professional coating applications include documented maintenance guidance and warranty records."
+      ]
+    ]
+  },
+  "archetype_id": 5,
+  "archetype_name": "Clean Service & Modern Precision",
+  "tagline": "Engineered Precision & Technical Detailing in London.",
+  "services": [],
+  "services_verified": false,
+  "reviews": [],
+  "phone": null,
+  "email": null,
+  "hours": null,
+  "rating": null,
+  "review_count": null,
+  "scouted_photos": [],
+  "audit_data": null,
+  "needs_confirmation": false
+}
