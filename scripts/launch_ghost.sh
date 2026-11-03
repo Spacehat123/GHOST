@@ -44,9 +44,13 @@ fi
 
 # 2. Verify Ghost Server (Port 8765)
 if ! curl -s --max-time 2 "http://127.0.0.1:8765/" >/dev/null 2>&1; then
-    echo "[Ghost Launcher] Ghost server not detected on 8765. Launching Uvicorn daemon..."
+    echo "[Ghost Launcher] Ghost server not detected on 8765. Launching Uvicorn daemon with CUDA GPU speech..."
     cd "${GHOST_ROOT}"
-    PYTHONPATH="${GHOST_ROOT}/src" setsid python3 -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
+    if [ -f "/home/pranc/kokoro-gpu/run_ghost_gpu.sh" ]; then
+        setsid /home/pranc/kokoro-gpu/run_ghost_gpu.sh -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
+    else
+        PYTHONPATH="${GHOST_ROOT}/src" setsid python3 -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
+    fi
     
     echo "[Ghost Launcher] Waiting for Ghost HTTP endpoint..."
     for i in {1..30}; do
