@@ -1,0 +1,12 @@
+{
+  "operator_name": "Pranav",
+  "operator_business_name": null,
+  "operator_email": null,
+  "operator_phone": null,
+  "postal_address": null,
+  "include_unsubscribe_line": true,
+  "followup_after_days": 3,
+  "max_followups": 1,
+  "do_not_contact_unknown_entity_email": true,
+  "max_sends_per_day": 20
+}

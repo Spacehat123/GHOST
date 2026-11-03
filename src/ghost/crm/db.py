@@ -806,7 +806,7 @@ class CRMDatabase:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (did, lead_id, channel, subject, body, link, status, now))
             conn.commit()
-        return {"id": did, "lead_id": lead_id, "channel": channel, "status": status, "body": body}
+        return {"id": did, "lead_id": lead_id, "channel": channel, "subject": subject, "body": body, "link": link, "status": status}
 
     def get_drafts_for_lead(self, lead_id: str) -> List[Dict[str, Any]]:
         """Retrieve all drafts for a lead."""
