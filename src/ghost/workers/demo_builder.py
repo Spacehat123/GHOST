@@ -24,9 +24,10 @@ DEMOS_DIR = "/home/pranc/projects/ghost/demos"
 OPENCODE_BIN = "/home/pranc/.opencode/bin/opencode"
 
 # Model selection hierarchy:
-# Active designated: opencode/mimo-v2.6-flash-free (verified live, responds in <2s)
-# Fallbacks: opencode/muse-spark-1.3, opencode/deepseek-v4.1-flash-free
+# Active designated default: opencode/glm-5.3-flash-free (high reasoning, ultra-fast)
+# Fallbacks: opencode/mimo-v2.6-flash-free, opencode/deepseek-v4.1-flash-free
 OPENCODE_MODELS = [
+    "opencode/glm-5.3-flash-free",
     "opencode/mimo-v2.6-flash-free",
     "opencode/deepseek-v4.1-flash-free"
 ]
@@ -128,7 +129,7 @@ class DemoBuilderWorker:
         html_path: str
     ) -> bool:
         """
-        Executes OpenCode CLI with `--auto -m opencode/mimo-v2.6-flash-free` to generate
+        Executes OpenCode CLI with `--auto -m opencode/glm-5.3-flash-free` to generate
         or refine the bespoke luxury static HTML demo.
         Falls back down OPENCODE_MODELS if a provider rate-limits.
         """

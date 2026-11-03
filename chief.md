@@ -54,7 +54,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Director Core & Comms** | User-configured via OmniRoute / local config | Orchestrator, client conversationalist, tool caller. |
 | **Recon & Web Research** | **Gemini Web** | Deep research, menu extraction, Google Maps/Instagram recon. |
-| **Demo Generation (Parallel)** | **OpenCode (`opencode/mimo-v2.6-flash-free` / `muse-spark-1.3`)** | Runs 2 worker builders in parallel to scaffold demo pages without burning director tokens. |
+| **Demo Generation (Parallel)** | **OpenCode (`opencode/glm-5.3-flash-free` / `mimo-v2.6-flash-free`)** | Runs 2 worker builders in parallel to scaffold demo pages without burning director tokens. |
 | **New Company & Growth Ideation** | **Grok** | Ideation for new ventures, agency models, and scaling strategy. |
 | *Other Tasks* | *Pending User Assignment* | Only assigned when user designates the exact model. |
 

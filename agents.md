@@ -56,7 +56,7 @@ flowchart TD
 
 ### Agent 3: Artisan (High-End Demo Builder Swarm)
 - **Role:** Parallel demo production.
-- **Engine:** OpenCode CLI (`opencode/mimo-v2.6-flash-free`), 2 builds concurrently.
+- **Engine:** OpenCode CLI (`opencode/glm-5.3-flash-free`), 2 builds concurrently.
 - **Design Guidelines:** Follows the 4 Luxury Archetypes in `chief.md` (no stock AI buttons, mobile category pills, subtle 1px borders, high-end typography, lazy-loaded media).
 - **Verification:** Headless Brave CDP smoke test to ensure 0 console errors and clean mobile responsiveness.
 - **Output:** Local path: `/home/pranc/projects/ghost/demos/<slug>/index.html`.
