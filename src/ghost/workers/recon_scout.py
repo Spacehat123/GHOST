@@ -116,7 +116,7 @@ class ReconScout:
 
                     // Rating & Reviews Count
                     const ratingEl = document.querySelector('span.ceNzKf, span[aria-hidden="true"]');
-                    if (ratingEl && /^[0-9]\.[0-9]$/.test(ratingEl.innerText.trim())) {
+                    if (ratingEl && /^[0-9]\\.[0-9]$/.test(ratingEl.innerText.trim())) {
                         res.rating = ratingEl.innerText.trim();
                     }
                     const countEl = document.querySelector('span[aria-label*="reviews"], button[aria-label*="reviews"]');
@@ -215,20 +215,6 @@ class ReconScout:
             if tab_id:
                 await cls.close_recon_tab(tab_id)
 
-        # Fallback curated assets if scraping returns limited pictures
-        if not result_data["photos"]:
-            result_data["photos"] = [
-                "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85",
-                "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1600&q=85"
-            ]
-
-        if not result_data["reviews"]:
-            result_data["reviews"] = [
-                {"author": "Arjun Menon", "stars": "5 stars", "text": "Unrivaled culinary execution. The tasting menu and ambient craftsmanship redefine hospitality in Bengaluru."},
-                {"author": "Priya Sundaram", "stars": "5 stars", "text": "Exceptional private dining experience. Attentive staff, impeccable cocktail curation, and stunning interior acoustics."},
-                {"author": "Vikramaditya Rao", "stars": "5 stars", "text": "The signature small plates and curated wine list set an impossible benchmark. Worth every rupee."}
-            ]
-
+        # ZERO-INVENTION RULE: If reviews are not found, leave list empty. Do NOT inject synthetic reviews.
+        # Reviews remain [] so the demo builder omits the reviews section per operator directives.
         return result_data

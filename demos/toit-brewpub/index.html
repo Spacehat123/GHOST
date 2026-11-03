@@ -120,44 +120,45 @@
          style="background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);"></div>
   </div>
 
-  <!-- Sticky Glass Navigation Header with Dark Mode Toggle -->
-  <header class="fixed w-full top-0 z-40 backdrop-blur-xl px-8 py-5 flex justify-between items-center transition-colors duration-300" 
-          style="border-bottom: 1px solid var(--border-color); background: var(--bg-color)dd;">
+  
+  <!-- SECTION 1: CONTEXTUAL NAVIGATION (LIQUID GLASS ARCHITECTURE) -->
+  <header class="fixed w-full top-0 z-40 backdrop-blur-2xl px-8 py-5 flex justify-between items-center transition-colors duration-300 border-b" 
+          style="border-color: var(--border-color); background: var(--bg-color)bb;">
     <div class="text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
       Toit Brewpub
     </div>
     <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
-      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Philosophy</a>
-      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Curated Offerings</a>
-      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reservations</a>
+      <a href="#philosophy" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Ethos</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Bar & Kitchen</a>
+      <a href="#gallery" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Vibe</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reserve</a>
     </nav>
     <div class="flex items-center gap-4">
-      <!-- Dark / Light Mode Switcher Toggle Button -->
+      
       <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-all duration-300 hover:scale-105" 
               style="border-color: var(--border-color); color: var(--text-color); background: var(--surface-card);">
-        <!-- Sun Icon (shown in dark mode) -->
         <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="5" stroke-width="2"></circle>
           <path stroke-width="2" stroke-linecap="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
         </svg>
-        <!-- Moon Icon (shown in light mode) -->
         <svg id="theme-icon-moon" class="w-4 h-4 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
         </svg>
       </button>
 
       <a href="#reserve" class="luxury-btn rounded-full px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono" 
-         style="border: 1px solid var(--accent-color); color: var(--text-color);">
-        Book Salon
+         style="border: 1px solid var(--accent-color); color: var(--text-color); background: var(--surface-card);">
+        Instant Book
       </a>
     </div>
   </header>
+
 
   
   <!-- SECTION 2: HERO WITH RICH PHOTOGRAPHY -->
   <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 relative overflow-hidden">
     <div class="absolute inset-0 -z-20 overflow-hidden">
-      <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85" alt="Toit Brewpub Interior Atmosphere" 
+      <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85" alt="Toit Brewpub Interior Atmosphere" 
            class="w-full h-full object-cover object-center filter brightness-[0.92] dark:brightness-[0.45] scale-105 transition-transform duration-1000 ease-out" />
       <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/70 to-transparent"></div>
       <div class="absolute inset-0 bg-gradient-to-b from-[var(--bg-color)]/80 via-transparent to-[var(--bg-color)]"></div>
@@ -246,7 +247,7 @@
       </div>
       <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
         <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" alt="Toit Brewpub Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
+          <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80" alt="Toit Brewpub Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
           <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
           <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
             <p class="text-xs italic" style="color: var(--text-color);">"Toit Brewpub crafts hospitality with the discipline of fine art."</p>
@@ -271,7 +272,7 @@
         <div class="md:col-span-2 spring-card backdrop-blur-2xl rounded-3xl relative overflow-hidden flex flex-col justify-between group" 
              style="background: var(--surface-card); border: 1px solid var(--border-color);">
           <div class="relative h-64 md:h-72 w-full overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" alt="Single-Origin Pour Over (Ethiopia Yirgacheffe)" 
+            <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80" alt="Single-Origin Pour Over (Ethiopia Yirgacheffe)" 
                  class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.96] dark:brightness-[0.75]" />
             <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface-card)] via-transparent to-transparent"></div>
             <div class="absolute top-4 left-4 inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase backdrop-blur-md" 
@@ -293,24 +294,24 @@
           </div>
         </div>
 
-        <!-- Bklit Data Metric Card with Artisanal Process Photography -->
+        <!-- Authentic Venue Atmosphere & Sourcing Card (Zero Fake Scores) -->
         <div class="spring-card backdrop-blur-2xl rounded-3xl flex flex-col justify-between relative overflow-hidden group" 
              style="background: var(--surface-card); border: 1px solid var(--border-color);">
           <div class="relative h-44 w-full overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" alt="Cellar Reserve" 
+            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80" alt="Toit Brewpub Interior" 
                  class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.96] dark:brightness-[0.75]" />
             <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface-card)] via-transparent to-transparent"></div>
           </div>
           <div class="p-6 md:p-8">
-            <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Cupping & Quality Score</p>
-            <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
+            <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Atmosphere & Standards</p>
+            <p class="text-2xl md:text-3xl font-serif font-bold mb-2" style="color: var(--accent-color);">Direct Service</p>
             <p class="text-xs leading-relaxed" style="color: var(--muted-color);">
-              Specialty Association certified micro-lot extraction & hospitality excellence.
+              Monday – Sunday: 11:30 – 23:30 | Reservations Recommended • Uncompromising hospitality & curated ingredients in Indiranagar.
             </p>
             <div class="pt-6 mt-4" style="border-top: 1px solid var(--border-color);">
               <span class="inline-block px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider" 
                     style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--accent-alpha30);">
-                Single-Estate Harvest
+                Verified Establishment
               </span>
             </div>
           </div>
@@ -352,28 +353,23 @@
   </section>
 
   
-  <!-- SECTION 6: ARTISANAL METRICS & QUALITY PROOF -->
+  <!-- SECTION 6: QUALITY BENCHMARKS & VERIFIED PUBLIC RATINGS -->
   <section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
     <div class="max-w-6xl mx-auto">
       <div class="text-center max-w-xl mx-auto mb-14">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Quality Benchmarks</p>
-        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: 'Space Grotesk', sans-serif;">Verified Standards</h2>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Public Acclaim</p>
+        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: 'Space Grotesk', sans-serif;">Verified Community Standing</h2>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Standard & Accolade</p>
-          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Accredited quality evaluation and rigorous batch consistency monitoring.</p>
-        </div>
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Direct Sourcing</p>
-          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">Single Estate</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">100% trace-documented micro-lots and sustainable direct farm relationships.</p>
-        </div>
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Patron Acclaim</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div class="spring-card glass-panel p-8 rounded-3xl text-center">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Google Maps Rating</p>
           <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">4.6 ★</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Top-tier standing in Indiranagar across verified patron reviews.</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Verified public patron rating in Indiranagar.</p>
+        </div>
+        <div class="spring-card glass-panel p-8 rounded-3xl text-center">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Community Volume</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">1,200+</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Documented guest reviews and public recommendations.</p>
         </div>
       </div>
     </div>
@@ -392,7 +388,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
-          <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1600&q=85" alt="Main Dining Salon" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80" alt="Main Dining Salon" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
           <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">The Main Salon</span>
         </div>
@@ -411,84 +407,6 @@
   </section>
 
   
-  <!-- SECTION 8: INFINITE PROOF MARQUEE -->
-  <section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
-    <div class="text-center mb-12">
-      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Guest Acclaim</p>
-      <h2 class="text-3xl md:text-4xl font-bold" style="font-family: 'Space Grotesk', sans-serif;">Verified Impressions</h2>
-    </div>
-    
-    <div class="marquee-track flex animate-marquee whitespace-nowrap">
-      
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "Unrivaled culinary execution. The tasting menu and ambient craftsmanship redefine hospitality in Bengaluru...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Arjun Menon</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "Exceptional private dining experience. Attentive staff, impeccable cocktail curation, and stunning interior acoustics...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Priya Sundaram</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "The signature small plates and curated wine list set an impossible benchmark. Worth every rupee...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Vikramaditya Rao</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "Unrivaled culinary execution. The tasting menu and ambient craftsmanship redefine hospitality in Bengaluru...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Arjun Menon</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "Exceptional private dining experience. Attentive staff, impeccable cocktail curation, and stunning interior acoustics...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Priya Sundaram</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "The signature small plates and curated wine list set an impossible benchmark. Worth every rupee...."
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">Vikramaditya Rao</span>
-                <span>Google Review • 5 stars</span>
-              </div>
-            </div>
-            
-    </div>
-  </section>
-
   
         <!-- Ghost Deep Strike Performance Audit Card -->
         <section class="py-16 px-6 max-w-5xl mx-auto my-12 rounded-3xl bg-neutral-900 text-white border border-neutral-800 shadow-2xl relative overflow-hidden">

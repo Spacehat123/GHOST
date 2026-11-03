@@ -297,9 +297,9 @@ class AutonomousDemoStateMachine:
 
         extracted_menu = [dict(it) for it in assets["menu"]]
 
-        # Use actual scraped Google Reviews if available, otherwise domain quotes
+        # ZERO FAKE REVIEWS: Use actual scraped Google Reviews if available; otherwise empty
         scraped_reviews = scout_data.get("reviews", [])
-        if scraped_reviews and len(scraped_reviews) >= 2:
+        if scraped_reviews and len(scraped_reviews) >= 1:
             reviews = [
                 {
                     "quote": r.get("text", "")[:180] + "...",
@@ -309,23 +309,8 @@ class AutonomousDemoStateMachine:
                 for r in scraped_reviews[:3]
             ]
         else:
-            reviews = [
-                {
-                    "quote": f"Unrivaled culinary execution. The tasting menu and ambient craftsmanship at {self.business_name} redefine hospitality in {self.location.split(',')[0]}.",
-                    "author": "Arjun Menon",
-                    "source": "Google Review • 5.0★"
-                },
-                {
-                    "quote": f"Exceptional dining experience. Attentive staff, impeccable cocktail curation, and stunning architectural acoustics.",
-                    "author": "Priya Sundaram",
-                    "source": "Verified Diner • 5.0★"
-                },
-                {
-                    "quote": f"The signature offerings and cellar reserve set an impossible benchmark. A genuine hospitality masterclass.",
-                    "author": "Vikramaditya Rao",
-                    "source": "Local Guide • 5.0★"
-                }
-            ]
+            # Zero fake reviews: do not invent quotes or reviewers if unverified
+            reviews = []
 
         phone = scout_data.get("phone") or self.default_phone
         hours = "Monday – Sunday: 11:30 – 23:30 | Reservations Recommended"
@@ -436,6 +421,127 @@ class AutonomousDemoStateMachine:
         logger.info(f"Phase 2 Complete: Written to {self.brief_path}")
         return brief_content
 
+    def generate_contextual_navigation(self, arch: Dict[str, Any], b: Dict[str, Any]) -> str:
+        """
+        Dynamically selects the navigation architecture and materials based on the archetype.
+        Not every business needs glass navigation:
+          - Archetype 1 (Michelin & Fine Dining Editorial): Solid minimalist editorial bar with hairline border
+          - Archetype 2 (Boutique Resort & Coastal Minimalist): Floating pill container with subtle shadow
+          - Archetype 3 (Heritage Luxury & Grand Hotel): Classic stately traditional bar with double border
+          - Archetype 4 (High-Energy Bistro & Cocktail Lounge): Translucent liquid glass with backdrop blur
+        """
+        arch_id = self.archetype_id
+
+        theme_toggle_btn = f"""
+      <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-all duration-300 hover:scale-105" 
+              style="border-color: var(--border-color); color: var(--text-color); background: var(--surface-card);">
+        <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5" stroke-width="2"></circle>
+          <path stroke-width="2" stroke-linecap="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+        <svg id="theme-icon-moon" class="w-4 h-4 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </button>
+"""
+
+        if arch_id == 2:
+            # Floating Pill Navigation for Coastal & Boutique Resorts
+            return f"""
+  <!-- SECTION 1: CONTEXTUAL NAVIGATION (FLOATING PILL ARCHITECTURE) -->
+  <header class="fixed top-5 left-1/2 -translate-x-1/2 w-[92%] max-w-5xl z-40 px-6 py-3.5 rounded-full flex justify-between items-center transition-all duration-300 shadow-lg backdrop-blur-md" 
+          style="border: 1px solid var(--border-color); background: var(--surface-card);">
+    <div class="text-base md:text-lg font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
+      {b['business_name']}
+    </div>
+    <nav class="hidden md:flex gap-7 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
+      <a href="#philosophy" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Philosophy</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Offerings</a>
+      <a href="#gallery" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Atmosphere</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Book</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      {theme_toggle_btn}
+      <a href="#reserve" class="luxury-btn rounded-full px-5 py-2 text-[11px] uppercase tracking-widest font-mono font-semibold" 
+         style="border: 1px solid var(--accent-color); color: var(--text-color); background: var(--bg-color);">
+        Reserve Table
+      </a>
+    </div>
+  </header>
+"""
+        elif arch_id == 3:
+            # Classic Stately Traditional Bar for Heritage Grand Hotels
+            return f"""
+  <!-- SECTION 1: CONTEXTUAL NAVIGATION (CLASSIC STATELY TRADITIONAL ARCHITECTURE) -->
+  <header class="fixed w-full top-0 z-40 px-8 py-4 flex justify-between items-center transition-colors duration-300 border-b" 
+          style="border-color: var(--border-color); background: var(--surface-color);">
+    <div class="text-lg md:text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
+      {b['business_name']}
+    </div>
+    <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
+      <a href="#philosophy" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Heritage</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Cellar & Menu</a>
+      <a href="#gallery" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Estate Spaces</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Private Salons</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      {theme_toggle_btn}
+      <a href="#reserve" class="luxury-btn rounded-none px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono border" 
+         style="border-color: var(--accent-color); color: var(--text-color); background: var(--bg-color);">
+        Concierge
+      </a>
+    </div>
+  </header>
+"""
+        elif arch_id == 4:
+            # Liquid Glass for High-Energy Bistros & Cocktail Lounges
+            return f"""
+  <!-- SECTION 1: CONTEXTUAL NAVIGATION (LIQUID GLASS ARCHITECTURE) -->
+  <header class="fixed w-full top-0 z-40 backdrop-blur-2xl px-8 py-5 flex justify-between items-center transition-colors duration-300 border-b" 
+          style="border-color: var(--border-color); background: var(--bg-color)bb;">
+    <div class="text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
+      {b['business_name']}
+    </div>
+    <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
+      <a href="#philosophy" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Ethos</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Bar & Kitchen</a>
+      <a href="#gallery" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Vibe</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reserve</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      {theme_toggle_btn}
+      <a href="#reserve" class="luxury-btn rounded-full px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono" 
+         style="border: 1px solid var(--accent-color); color: var(--text-color); background: var(--surface-card);">
+        Instant Book
+      </a>
+    </div>
+  </header>
+"""
+        else:
+            # Minimalist Solid Editorial Header for Michelin & Fine Dining
+            return f"""
+  <!-- SECTION 1: CONTEXTUAL NAVIGATION (MINIMALIST SOLID EDITORIAL ARCHITECTURE) -->
+  <header class="fixed w-full top-0 z-40 px-8 py-5 flex justify-between items-center transition-colors duration-300 border-b" 
+          style="border-color: var(--border-color); background: var(--bg-color);">
+    <div class="text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
+      {b['business_name']}
+    </div>
+    <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
+      <a href="#philosophy" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Philosophy</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Curated Courses</a>
+      <a href="#gallery" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Spaces</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reservations</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      {theme_toggle_btn}
+      <a href="#reserve" class="luxury-btn rounded-full px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono" 
+         style="border: 1px solid var(--accent-color); color: var(--text-color);">
+        Reserve Table
+      </a>
+    </div>
+  </header>
+"""
+
     # =========================================================================
     # Phase 3: Sectional Component Building (Anti-Lazy Loop)
     # =========================================================================
@@ -459,6 +565,7 @@ class AutonomousDemoStateMachine:
         gallery_2 = assets.get("gallery_2", "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80")
         gallery_3 = assets.get("gallery_3", "https://images.unsplash.com/photo-1497636577773-f1231844b336?auto=format&fit=crop&w=800&q=80")
         wa_phone = re.sub(r'[^0-9]', '', b['phone'])
+        nav_html = self.generate_contextual_navigation(arch, b)
 
         # 2. Hero Section with Rich Photography Backdrop
         hero_badge = f"Serving {self.location.split(',')[0]} • {b.get('rating', '4.9')}★ Gastronomic & Hospitality Excellence"
@@ -626,24 +733,24 @@ class AutonomousDemoStateMachine:
           </div>
         </div>
 
-        <!-- Bklit Data Metric Card with Artisanal Process Photography -->
+        <!-- Authentic Venue Atmosphere & Sourcing Card (Zero Fake Scores) -->
         <div class="spring-card backdrop-blur-2xl rounded-3xl flex flex-col justify-between relative overflow-hidden group" 
              style="background: var(--surface-card); border: 1px solid var(--border-color);">
           <div class="relative h-44 w-full overflow-hidden">
-            <img src="{bento_img2}" alt="Cellar Reserve" 
+            <img src="{bento_img2}" alt="{b['business_name']} Interior" 
                  class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.96] dark:brightness-[0.75]" />
             <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface-card)] via-transparent to-transparent"></div>
           </div>
           <div class="p-6 md:p-8">
-            <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Cupping & Quality Score</p>
-            <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
+            <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Atmosphere & Standards</p>
+            <p class="text-2xl md:text-3xl font-serif font-bold mb-2" style="color: var(--accent-color);">Direct Service</p>
             <p class="text-xs leading-relaxed" style="color: var(--muted-color);">
-              Specialty Association certified micro-lot extraction & hospitality excellence.
+              {b.get('hours', 'Open Daily')} • Uncompromising hospitality & curated ingredients in {self.location.split(',')[0]}.
             </p>
             <div class="pt-6 mt-4" style="border-top: 1px solid var(--border-color);">
               <span class="inline-block px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider" 
                     style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--accent-alpha30);">
-                Single-Estate Harvest
+                Verified Establishment
               </span>
             </div>
           </div>
@@ -658,35 +765,33 @@ class AutonomousDemoStateMachine:
   </section>
 """
 
-        # 6. Artisanal Metrics & Quality Proof Section
-        metrics_html = f"""
-  <!-- SECTION 6: ARTISANAL METRICS & QUALITY PROOF -->
+        # 6. Quality Proof & Accreditations (ZERO FAKE SCORES: Render only verified Google data, else omit)
+        if b.get("rating") and b.get("review_count"):
+            metrics_html = f"""
+  <!-- SECTION 6: QUALITY BENCHMARKS & VERIFIED PUBLIC RATINGS -->
   <section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
     <div class="max-w-6xl mx-auto">
       <div class="text-center max-w-xl mx-auto mb-14">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Quality Benchmarks</p>
-        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {arch['font_head']};">Verified Standards</h2>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Public Acclaim</p>
+        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {arch['font_head']};">Verified Community Standing</h2>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Standard & Accolade</p>
-          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Accredited quality evaluation and rigorous batch consistency monitoring.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div class="spring-card glass-panel p-8 rounded-3xl text-center">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Google Maps Rating</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">{b['rating']} ★</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Verified public patron rating in {self.location.split(',')[0]}.</p>
         </div>
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Direct Sourcing</p>
-          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">Single Estate</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">100% trace-documented micro-lots and sustainable direct farm relationships.</p>
-        </div>
-        <div class="spring-card glass-panel p-8 rounded-3xl">
-          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Patron Acclaim</p>
-          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">{b.get('rating', '4.9')} ★</p>
-          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Top-tier standing in {self.location.split(',')[0]} across verified patron reviews.</p>
+        <div class="spring-card glass-panel p-8 rounded-3xl text-center">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Community Volume</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">{b['review_count']}</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Documented guest reviews and public recommendations.</p>
         </div>
       </div>
     </div>
   </section>
 """
+        else:
+            metrics_html = ""
 
         # 7. Atmosphere & Space Gallery Section
         gallery_html = f"""
@@ -721,24 +826,25 @@ class AutonomousDemoStateMachine:
   </section>
 """
 
-        # 8. Verified Social Proof Infinite Marquee
-        marquee_cards = "".join([
-            f"""
-            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                "{rev['quote']}"
-              </p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">{rev['author']}</span>
-                <span>{rev['source']}</span>
-              </div>
-            </div>
-            """
-            for rev in b.get("reviews", [])
-        ]) * 2
+        # 8. Verified Social Proof (ZERO FAKE REVIEWS: Render only if real scraped reviews exist)
+        if b.get("reviews") and len(b["reviews"]) > 0:
+            marquee_cards = "".join([
+                f"""
+                <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                     style="background: var(--surface-card); border: 1px solid var(--border-color);">
+                  <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                    "{rev['quote']}"
+                  </p>
+                  <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                    <span class="font-bold" style="color: var(--accent-color);">{rev['author']}</span>
+                    <span>{rev['source']}</span>
+                  </div>
+                </div>
+                """
+                for rev in b["reviews"]
+            ]) * 2
 
-        proof_html = f"""
+            proof_html = f"""
   <!-- SECTION 8: INFINITE PROOF MARQUEE -->
   <section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
     <div class="text-center mb-12">
@@ -751,6 +857,9 @@ class AutonomousDemoStateMachine:
     </div>
   </section>
 """
+        else:
+            # Zero fake reviews: do not put anything at all
+            proof_html = ""
 
         # 9. Deep-Strike Performance Audit Comparison Component
         audit_card_html = PerformanceAuditor.generate_benchmark_html(
@@ -1002,38 +1111,7 @@ class AutonomousDemoStateMachine:
          style="background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);"></div>
   </div>
 
-  <!-- Sticky Glass Navigation Header with Dark Mode Toggle -->
-  <header class="fixed w-full top-0 z-40 backdrop-blur-xl px-8 py-5 flex justify-between items-center transition-colors duration-300" 
-          style="border-bottom: 1px solid var(--border-color); background: var(--bg-color)dd;">
-    <div class="text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
-      {b['business_name']}
-    </div>
-    <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
-      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Philosophy</a>
-      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Curated Offerings</a>
-      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reservations</a>
-    </nav>
-    <div class="flex items-center gap-4">
-      <!-- Dark / Light Mode Switcher Toggle Button -->
-      <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-all duration-300 hover:scale-105" 
-              style="border-color: var(--border-color); color: var(--text-color); background: var(--surface-card);">
-        <!-- Sun Icon (shown in dark mode) -->
-        <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="5" stroke-width="2"></circle>
-          <path stroke-width="2" stroke-linecap="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-        </svg>
-        <!-- Moon Icon (shown in light mode) -->
-        <svg id="theme-icon-moon" class="w-4 h-4 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-        </svg>
-      </button>
-
-      <a href="#reserve" class="luxury-btn rounded-full px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono" 
-         style="border: 1px solid var(--accent-color); color: var(--text-color);">
-        Book Salon
-      </a>
-    </div>
-  </header>
+  {nav_html}
 
   {hero_html}
   {gap_banner_html}

@@ -28,9 +28,9 @@
 
 ## 3. Curated Photography Assets (Step 2 Research Directive)
 - **Asset Rule:** "Collect good photos and use them in the site where possible."
-- **Atmospheric Hero Backdrop:** `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85`
-- **Signature Dish Bento Feature:** `https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80`
-- **Artisanal Process & Cellar Metric:** `https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80`
+- **Atmospheric Hero Backdrop:** `https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85`
+- **Signature Dish Bento Feature:** `https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80`
+- **Artisanal Process & Cellar Metric:** `https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80`
 
 ## 4. Integrated Component Specifications (`resources.py`)
 1. **KokonutUI Liquid Glass:** Frosted backdrop-blur-xl cards with subtle 1px perimeter border and reflective highlight gradient.
