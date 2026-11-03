@@ -1,0 +1,24 @@
+{
+  "status": "scouted",
+  "business_name": "Apex Detailing London",
+  "category": "Car detailing service",
+  "categories": ["Car detailing service", "Car wash"],
+  "rating": 4.9,
+  "review_count": 88,
+  "phone": "+44 20 7946 0101",
+  "address": "1 Grosvenor Pl, London SW1X 7HJ, UK",
+  "website": "https://apexdetailing.co.uk",
+  "hours": "Monday - Saturday 08:30 - 18:00",
+  "photos": [],
+  "reviews": [
+    {
+      "author": "Charles M.",
+      "stars": "5.0★",
+      "text": "Impeccable ceramic coating applied to my Aston Martin. Showroom finish delivered on time."
+    }
+  ],
+  "services": [
+    {"title": "Multi-Stage Paint Correction", "desc": null, "price": null, "category": "Services"},
+    {"title": "Ceramic Coating Protection", "desc": null, "price": null, "category": "Services"}
+  ]
+}

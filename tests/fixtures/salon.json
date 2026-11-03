@@ -1,0 +1,24 @@
+{
+  "status": "scouted",
+  "business_name": "Covent Garden Atelier",
+  "category": "Hair salon",
+  "categories": ["Hair salon", "Beauty salon"],
+  "rating": 4.9,
+  "review_count": 115,
+  "phone": "+44 20 7946 0505",
+  "address": "25 King St, London WC2E 8JD, UK",
+  "website": "https://coventgardenatelier.co.uk",
+  "hours": "Tuesday - Saturday 10:00 - 19:00",
+  "photos": [],
+  "reviews": [
+    {
+      "author": "Sophie T.",
+      "stars": "5.0★",
+      "text": "Incredible styling and balayage technique. Truly attentive stylists and serene aesthetic."
+    }
+  ],
+  "services": [
+    {"title": "Bespoke Balayage & Colour", "desc": null, "price": null, "category": "Hair"},
+    {"title": "Precision Cut & Styling", "desc": null, "price": null, "category": "Hair"}
+  ]
+}

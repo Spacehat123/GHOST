@@ -1,0 +1,24 @@
+{
+  "status": "scouted",
+  "business_name": "Mayfair Athletic Club",
+  "category": "Gym",
+  "categories": ["Gym", "Fitness center"],
+  "rating": 4.8,
+  "review_count": 96,
+  "phone": "+44 20 7946 0303",
+  "address": "15 Berkeley Square, London W1J 6BD, UK",
+  "website": "https://mayfairathletic.co.uk",
+  "hours": "Monday - Sunday 06:00 - 22:00",
+  "photos": [],
+  "reviews": [
+    {
+      "author": "David R.",
+      "stars": "5.0★",
+      "text": "Best boutique training facility in Central London. High caliber coaching and private reformer pilates."
+    }
+  ],
+  "services": [
+    {"title": "Private Strength Coaching", "desc": null, "price": null, "category": "Training"},
+    {"title": "Reformer Pilates Suite", "desc": null, "price": null, "category": "Training"}
+  ]
+}

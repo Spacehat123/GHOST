@@ -1,0 +1,21 @@
+{
+  "status": "scouted",
+  "business_name": "The Grenadier Mayfair",
+  "category": "Restaurant",
+  "categories": ["Restaurant", "Pub", "Public house"],
+  "rating": 4.6,
+  "review_count": 310,
+  "phone": "+44 20 7946 0404",
+  "address": "18 Wilton Row, London SW1X 7NR, UK",
+  "website": "https://grenadiermayfair.co.uk",
+  "hours": "Monday - Sunday 12:00 - 23:00",
+  "photos": [],
+  "reviews": [
+    {
+      "author": "Eleanor G.",
+      "stars": "5.0★",
+      "text": "Historic charm and exceptional British dining. The Sunday roast and hospitality were memorable."
+    }
+  ],
+  "services": []
+}

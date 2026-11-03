@@ -1,0 +1,8 @@
+{
+  "max_concurrent_builds": 2,
+  "deploy_after_confirm": true,
+  "preview_dir": "demos/",
+  "screenshot_retry": 1,
+  "pause_between_leads_sec": 2,
+  "use_owner_photos": false
+}

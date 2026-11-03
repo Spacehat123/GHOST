@@ -1,0 +1,24 @@
+{
+  "status": "scouted",
+  "business_name": "Harley Street Smile Studio",
+  "category": "Cosmetic dental clinic",
+  "categories": ["Cosmetic dental clinic", "Dental clinic"],
+  "rating": 4.9,
+  "review_count": 142,
+  "phone": "+44 20 7946 0202",
+  "address": "10 Harley St, London W1G 9PF, UK",
+  "website": "https://harleystreetsmile.co.uk",
+  "hours": "Monday - Friday 09:00 - 18:00",
+  "photos": [],
+  "reviews": [
+    {
+      "author": "Victoria S.",
+      "stars": "5.0★",
+      "text": "The porcelain veneers transformed my smile completely. Extremely professional care and gentle clinicians."
+    }
+  ],
+  "services": [
+    {"title": "Porcelain Veneers", "desc": null, "price": null, "category": "Treatments"},
+    {"title": "Invisalign Clear Aligners", "desc": null, "price": null, "category": "Treatments"}
+  ]
+}

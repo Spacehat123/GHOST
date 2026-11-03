@@ -802,7 +802,7 @@ class AutonomousDemoStateMachine:
     for any business sector without domain hallucination or persona leaks.
     """
 
-    def __init__(self, business_name: str, location: Optional[str] = None, slug: Optional[str] = None):
+    def __init__(self, business_name: str, location: Optional[str] = None, slug: Optional[str] = None, use_owner_photos: bool = False):
         self.business_name = business_name.strip()
         inferred_loc, _ = infer_location_and_phone(self.business_name, location)
         self.location = inferred_loc
@@ -822,6 +822,7 @@ class AutonomousDemoStateMachine:
         self.needs_confirmation: bool = False
         self.candidates: List[Dict[str, Any]] = []
         self.show_sample_services: Optional[bool] = None
+        self.use_owner_photos: bool = use_owner_photos
         self.brand_data: Dict[str, Any] = {}
         self.archetype_id: int = 5
         self.design_tokens: Dict[str, Any] = {}
@@ -910,9 +911,9 @@ class AutonomousDemoStateMachine:
         assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS).copy()
         copy_set = DOMAIN_COPY.get(domain, DOMAIN_COPY["general_services"])
 
-        # Inject authentic photos if verified
+        # Inject authentic photos if verified and allowed by photos policy (3.4)
         scraped_photos = scout_data.get("photos", [])
-        if len(scraped_photos) >= 3:
+        if self.use_owner_photos and len(scraped_photos) >= 3:
             assets["hero_bg"] = scraped_photos[0]["url"] if isinstance(scraped_photos[0], dict) else scraped_photos[0]
             assets["bento_img1"] = scraped_photos[1]["url"] if isinstance(scraped_photos[1], dict) else scraped_photos[1]
             assets["bento_img2"] = scraped_photos[2]["url"] if isinstance(scraped_photos[2], dict) else scraped_photos[2]

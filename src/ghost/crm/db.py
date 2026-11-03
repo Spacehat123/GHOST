@@ -126,9 +126,14 @@ class CRMDatabase:
                     status TEXT DEFAULT 'harvested',
                     needs_confirmation INTEGER DEFAULT 0,
                     created_at REAL NOT NULL,
+                    demo_url TEXT,
                     FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE SET NULL
                 )
             """)
+            try:
+                cur.execute("ALTER TABLE leads ADD COLUMN demo_url TEXT")
+            except sqlite3.OperationalError:
+                pass
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS suppression (
                     id TEXT PRIMARY KEY,
@@ -353,7 +358,8 @@ class CRMDatabase:
                         score_total = COALESCE(?, score_total),
                         gaps_json = COALESCE(?, gaps_json),
                         status = COALESCE(?, status),
-                        needs_confirmation = COALESCE(?, needs_confirmation)
+                        needs_confirmation = COALESCE(?, needs_confirmation),
+                        demo_url = COALESCE(?, demo_url)
                     WHERE slug = ?
                 """, (
                     lead_data.get("batch_id"),
@@ -374,6 +380,7 @@ class CRMDatabase:
                     gaps_json,
                     lead_data.get("status", "harvested"),
                     1 if lead_data.get("needs_confirmation") else 0,
+                    lead_data.get("demo_url"),
                     slug
                 ))
             else:
@@ -382,8 +389,8 @@ class CRMDatabase:
                         id, batch_id, slug, name, address, phone, website,
                         rating, review_count, maps_cid, google_category, domain,
                         entity_type, score_revenue, score_fit, score_friction,
-                        score_total, gaps_json, status, needs_confirmation, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        score_total, gaps_json, status, needs_confirmation, created_at, demo_url
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     lid,
                     lead_data.get("batch_id"),
@@ -405,7 +412,8 @@ class CRMDatabase:
                     gaps_json,
                     lead_data.get("status", "harvested"),
                     1 if lead_data.get("needs_confirmation") else 0,
-                    created_at
+                    created_at,
+                    lead_data.get("demo_url")
                 ))
             conn.commit()
 
