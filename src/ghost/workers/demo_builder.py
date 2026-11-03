@@ -105,11 +105,31 @@ ARCHETYPE_STYLES = {
         "font_head": "'Space Grotesk', sans-serif",
         "font_body": "'Inter', sans-serif",
         "google_fonts": "family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600"
+    },
+    5: {
+        "name": "Clean Service & Modern Precision",
+        "bg": "#f8f9fa",
+        "surface": "#ffffff",
+        "accent": "#0f766e",
+        "accent_secondary": "#0284c7",
+        "text": "#0f172a",
+        "muted": "#475569",
+        "border": "#e2e8f0",
+        "dark_bg": "#0b1120",
+        "dark_surface": "#1e293b",
+        "dark_accent": "#14b8a6",
+        "dark_accent_secondary": "#38bdf8",
+        "dark_text": "#f8fafc",
+        "dark_muted": "#94a3b8",
+        "dark_border": "#334155",
+        "font_head": "'Plus Jakarta Sans', sans-serif",
+        "font_body": "'Inter', sans-serif",
+        "google_fonts": "family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600"
     }
 }
 
 class DemoBuilderWorker:
-    """Worker task orchestrating the generation of bespoke luxury restaurant demos."""
+    """Worker task orchestrating the generation of bespoke business demos."""
 
     @staticmethod
     def slugify(text: str) -> str:
@@ -119,32 +139,39 @@ class DemoBuilderWorker:
     @classmethod
     async def _run_opencode_generator(
         cls,
-        restaurant_name: str,
-        slug: str,
-        tagline: str,
-        style: Dict[str, str],
-        archetype_id: int,
-        items: List[Dict[str, Any]],
-        contact: Dict[str, str],
-        html_path: str
+        business_name: Optional[str] = None,
+        slug: str = "",
+        tagline: str = "",
+        style: Optional[Dict[str, str]] = None,
+        archetype_id: int = 1,
+        items: Optional[List[Dict[str, Any]]] = None,
+        contact: Optional[Dict[str, str]] = None,
+        html_path: str = "",
+        restaurant_name: Optional[str] = None,
+        **kwargs
     ) -> bool:
         """
         Executes OpenCode CLI with `--auto -m opencode/glm-5.3-flash-free` to generate
-        or refine the bespoke luxury static HTML demo.
+        or refine the bespoke static HTML demo.
         Falls back down OPENCODE_MODELS if a provider rate-limits.
         """
+        name = (business_name or restaurant_name or "Client").strip()
+        style = style or ARCHETYPE_STYLES[1]
+        items = items or []
+        contact = contact or {}
+
         if not os.path.exists(OPENCODE_BIN):
-            logger.warning(f"OpenCode binary not found at {OPENCODE_BIN}. Using internal luxury generator.")
+            logger.warning(f"OpenCode binary not found at {OPENCODE_BIN}. Using internal bespoke generator.")
             return False
 
         from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS, DOMAIN_COPY
-        domain = detect_domain_profile(restaurant_name, contact.get("address", ""), "")
+        domain = detect_domain_profile(name, contact.get("address", ""), "")
         assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
         copy_set = DOMAIN_COPY.get(domain, DOMAIN_COPY["general_services"])
 
         # Inject Premium Design & Motion Resources into prompt
         prompt = (
-            f"Generate an ultra-luxury, high-ticket single-page responsive HTML website with Tailwind CSS for {domain.replace('_', ' ')} establishment '{restaurant_name}'.\n"
+            f"Generate an ultra-luxury, high-ticket single-page responsive HTML website with Tailwind CSS for {domain.replace('_', ' ')} establishment '{name}'.\n"
             f"Style Archetype {archetype_id}: {style['name']}.\n"
             f"Palette: Background {style['bg']}, Surface {style['surface']}, Accent {style['accent']}, Text {style['text']}, Border {style['border']}.\n"
             f"Fonts: Headers {style['font_head']}, Body {style['font_body']}.\n"
@@ -185,12 +212,14 @@ class DemoBuilderWorker:
     @classmethod
     async def build_demo(
         cls,
-        restaurant_name: str,
+        business_name: Optional[str] = None,
         archetype: int = 1,
         tagline: Optional[str] = None,
         menu_items: Optional[List[Dict[str, Any]]] = None,
         contact_info: Optional[Dict[str, str]] = None,
-        use_state_machine: bool = True
+        use_state_machine: bool = True,
+        restaurant_name: Optional[str] = None,
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Builds a bespoke luxury single-page HTML demo for cold outreach.
@@ -201,15 +230,16 @@ class DemoBuilderWorker:
           Phase 4: Visual Self-Healing & Brave CDP Verification (390x844 & 1440x900)
           Phase 5: Instant Preview & Handover + CRM sync + Outreach Pitch
         """
-        slug = cls.slugify(restaurant_name)
+        target_name = (business_name or restaurant_name or "Client").strip()
+        slug = cls.slugify(target_name)
 
         # Execute 5-Stage State Machine if requested
         if use_state_machine:
             try:
                 from ghost.workers.demo_state_machine import AutonomousDemoStateMachine, infer_location_and_phone
                 raw_loc = contact_info.get("address") if contact_info else None
-                inferred_loc, inferred_phone = infer_location_and_phone(restaurant_name, raw_loc)
-                sm = AutonomousDemoStateMachine(business_name=restaurant_name, location=inferred_loc, slug=slug)
+                inferred_loc, inferred_phone = infer_location_and_phone(target_name, raw_loc)
+                sm = AutonomousDemoStateMachine(business_name=target_name, location=inferred_loc, slug=slug)
                 return await sm.execute_all_phases()
             except Exception as e:
                 logger.warning(f"State machine execution encountered issue ({e}), falling back to standard builder flow.")
@@ -219,8 +249,8 @@ class DemoBuilderWorker:
 
         from ghost.workers.demo_state_machine import infer_location_and_phone, detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS
         raw_loc = contact_info.get("address") if contact_info else None
-        inferred_loc, inferred_phone = infer_location_and_phone(restaurant_name, raw_loc)
-        domain = detect_domain_profile(restaurant_name, inferred_loc, "")
+        inferred_loc, inferred_phone = infer_location_and_phone(target_name, raw_loc)
+        domain = detect_domain_profile(target_name, inferred_loc, "")
         assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
 
         style = ARCHETYPE_STYLES.get(archetype, ARCHETYPE_STYLES[1])
@@ -231,8 +261,6 @@ class DemoBuilderWorker:
         items = menu_items or [dict(it) for it in assets.get("services", [])]
 
         # Verify client status if registered in CRM:
-        # Pre-contract / pitch prospects (status != 'closed_won') receive ONLY lightweight single-page static HTML demos.
-        # Ghost director is strictly forbidden from scaffolding multi-page frameworks or burning director tokens on unclosed leads.
         try:
             from ghost.crm.db import CRMDatabase
             crm = CRMDatabase.get_instance()
@@ -246,7 +274,7 @@ class DemoBuilderWorker:
 
         # 1. First attempt generation via OpenCode worker CLI
         opencode_success = await cls._run_opencode_generator(
-            restaurant_name=restaurant_name,
+            business_name=target_name,
             slug=slug,
             tagline=tag,
             style=style,
@@ -259,7 +287,7 @@ class DemoBuilderWorker:
         # 2. Fallback to built-in bespoke template assembler if OpenCode didn't write file
         if not opencode_success or not os.path.exists(html_path) or os.path.getsize(html_path) < 500:
             html_content = cls._generate_html(
-                restaurant_name=restaurant_name,
+                business_name=target_name,
                 slug=slug,
                 tagline=tag,
                 style=style,
@@ -285,7 +313,7 @@ class DemoBuilderWorker:
             await watchdog.emit_signal(
                 event_type="demo_build_completed",
                 source="opencode_worker",
-                summary=f"Luxury Demo Build ready for '{restaurant_name}' (Archetype {archetype}: {style['name']}). Engine: {generator_used}. Verification: 0 console errors.",
+                summary=f"Luxury Demo Build ready for '{target_name}' (Archetype {archetype}: {style['name']}). Engine: {generator_used}. Verification: 0 console errors.",
                 payload={
                     "client_slug": slug,
                     "html_path": html_path,
@@ -301,7 +329,8 @@ class DemoBuilderWorker:
         return {
             "status": "success",
             "slug": slug,
-            "restaurant_name": restaurant_name,
+            "business_name": target_name,
+            "restaurant_name": target_name,
             "generator": generator_used,
             "archetype": style["name"],
             "path": html_path,
@@ -317,15 +346,22 @@ class DemoBuilderWorker:
     @classmethod
     def _generate_html(
         cls,
-        restaurant_name: str,
-        slug: str,
-        tagline: str,
-        style: Dict[str, str],
-        archetype_id: int,
-        items: List[Dict[str, Any]],
-        contact: Dict[str, str]
+        business_name: Optional[str] = None,
+        slug: str = "",
+        tagline: str = "",
+        style: Optional[Dict[str, str]] = None,
+        archetype_id: int = 1,
+        items: Optional[List[Dict[str, Any]]] = None,
+        contact: Optional[Dict[str, str]] = None,
+        restaurant_name: Optional[str] = None,
+        **kwargs
     ) -> str:
         """Assembles luxury bespoke HTML without generic stock AI widgets."""
+        target_name = (business_name or restaurant_name or "Client").strip()
+        style = style or ARCHETYPE_STYLES[1]
+        items = items or []
+        contact = contact or {}
+
         is_dark = archetype_id in [1, 4]
         accent_color = style["accent"]
         bg_color = style["bg"]
@@ -334,14 +370,15 @@ class DemoBuilderWorker:
         border_color = style["border"]
         muted_color = style.get("muted", "#888")
 
-        from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS
-        domain = detect_domain_profile(restaurant_name, contact.get("address", ""), "")
+        from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS, DOMAIN_COPY
+        domain = detect_domain_profile(target_name, contact.get("address", ""), "")
         assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS)
+        copy_set = DOMAIN_COPY.get(domain, DOMAIN_COPY["general_services"])
         hero_img = assets.get("hero_bg", "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85")
         bento_img1 = assets.get("bento_img1", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80")
 
         # Category pills
-        categories = list(dict.fromkeys(item.get("category", "Menu") for item in items))
+        categories = list(dict.fromkeys(item.get("category", "Services") for item in items))
         category_pills = "".join([
             f'<button class="cat-pill px-5 py-2 rounded-full text-xs uppercase tracking-widest transition-all duration-300 '
             f'{"bg-amber-400 text-black font-semibold" if idx == 0 else "border border-neutral-400 dark:border-neutral-700 hover:border-neutral-500 text-neutral-600 dark:text-neutral-300"}" '
@@ -365,7 +402,7 @@ class DemoBuilderWorker:
             menu_cards.append(f'''
             <div class="menu-card spring-card backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 relative overflow-hidden group" 
                  style="background: var(--surface); border: 1px solid var(--border);" 
-                 data-cat="{item.get('category', 'Menu')}">
+                 data-cat="{item.get('category', 'Services')}">
               {card_img_html}
               <div class="flex justify-between items-baseline mb-2 relative z-10">
                 <h3 class="text-lg font-semibold tracking-wide" style="font-family: {style['font_head']}; color: var(--text);">{item['title']}</h3>
@@ -381,7 +418,7 @@ class DemoBuilderWorker:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{restaurant_name} — Bespoke Dining</title>
+  <title>{target_name} — {copy_set.get('offering_title', 'Bespoke Services')}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {{
@@ -458,12 +495,12 @@ class DemoBuilderWorker:
   <!-- Minimalist Luxury Navigation with Theme Toggle -->
   <header class="fixed w-full top-0 z-50 backdrop-blur-md px-8 py-5 flex justify-between items-center transition-colors duration-300" style="border-bottom: 1px solid var(--border); background: var(--bg)ee;">
     <div class="luxury-head text-xl font-bold tracking-widest uppercase" style="color: var(--accent);">
-      {restaurant_name}
+      {target_name}
     </div>
     <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest" style="color: var(--muted);">
-      <a href="#about" class="hover:text-amber-500 transition-colors">Philosophy</a>
-      <a href="#menu" class="hover:text-amber-500 transition-colors">The Menu</a>
-      <a href="#reserve" class="hover:text-amber-500 transition-colors">Reservations</a>
+      <a href="#about" class="hover:text-amber-500 transition-colors">About</a>
+      <a href="#services" class="hover:text-amber-500 transition-colors">{copy_set.get('offering_title', 'Services')}</a>
+      <a href="#booking" class="hover:text-amber-500 transition-colors">{copy_set.get('cta_primary', 'Inquire')}</a>
     </nav>
     <div class="flex items-center gap-4">
       <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-transform hover:scale-105" style="border-color: var(--border); color: var(--text); background: var(--surface);">
@@ -475,22 +512,22 @@ class DemoBuilderWorker:
           <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
         </svg>
       </button>
-      <a href="#reserve" class="luxury-btn">Reserve a Table</a>
+      <a href="#booking" class="luxury-btn">{copy_set.get('cta_primary', 'Inquire')}</a>
     </div>
   </header>
 
   <!-- Hero Section with Background Photography -->
   <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-24 pb-16 relative overflow-hidden">
     <div class="absolute inset-0 -z-20 overflow-hidden">
-      <img src="{hero_img}" alt="{restaurant_name}" class="w-full h-full object-cover filter brightness-[0.92] dark:brightness-[0.4] scale-105 transition-transform duration-1000 ease-out" />
+      <img src="{hero_img}" alt="{target_name}" class="w-full h-full object-cover filter brightness-[0.92] dark:brightness-[0.4] scale-105 transition-transform duration-1000 ease-out" />
       <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/75 to-transparent"></div>
     </div>
     <div class="max-w-3xl relative z-10">
       <div class="reveal-el text-xs uppercase tracking-widest mb-4 font-semibold inline-block px-4 py-1.5 rounded-full backdrop-blur-md" style="color: var(--accent); background: var(--surface); border: 1px solid var(--border);">
-        Private Dining & Culinary Artistry
+        {copy_set.get('philosophy_kicker', 'Professional Excellence & Standards')}
       </div>
       <h1 class="reveal-el text-4xl md:text-7xl font-bold leading-tight mb-6">
-        {restaurant_name}
+        {target_name}
       </h1>
       <p class="reveal-el text-sm md:text-lg mb-10 leading-relaxed max-w-xl mx-auto" style="color: var(--text);">
         {tagline}
@@ -498,23 +535,23 @@ class DemoBuilderWorker:
       
       <!-- Magic UI: Shimmer Luxury CTA Button -->
       <div class="reveal-el flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <a href="#menu" class="luxury-btn rounded-full backdrop-blur-md" style="background: var(--surface);">Explore The Menu</a>
-        <a href="#reserve" class="relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none transition-transform active:scale-95 shadow-lg">
+        <a href="#services" class="luxury-btn rounded-full backdrop-blur-md" style="background: var(--surface);">{copy_set.get('cta_secondary', 'Explore Offerings')}</a>
+        <a href="#booking" class="relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none transition-transform active:scale-95 shadow-lg">
           <span class="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,var(--accent)_0%,#ffffff_50%,var(--accent)_100%)]"></span>
           <span class="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full px-8 py-2 text-xs uppercase tracking-[0.2em] font-medium backdrop-blur-3xl transition-colors" style="background: var(--bg); color: var(--text);">
-            Reserve Tasting Experience
+            {copy_set.get('cta_primary', 'Get in Touch')}
           </span>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- Menu Section with Mobile Category Pills -->
-  <section id="menu" class="py-24 px-6 md:px-16" style="border-top: 1px solid var(--border);">
+  <!-- Offerings Section with Mobile Category Pills -->
+  <section id="services" class="py-24 px-6 md:px-16" style="border-top: 1px solid var(--border);">
     <div class="max-w-5xl mx-auto">
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-5xl font-bold mb-4">Curated Offerings</h2>
-        <p class="text-xs uppercase tracking-widest" style="color: var(--accent);">Seasonal Harvest & Sommelier Pairings</p>
+        <h2 class="text-3xl md:text-5xl font-bold mb-4">{copy_set.get('offering_title', 'Curated Offerings')}</h2>
+        <p class="text-xs uppercase tracking-widest" style="color: var(--accent);">{copy_set.get('offering_kicker', 'Disciplined Standards')}</p>
       </div>
 
       <!-- Mobile Category Navigation Pills -->
@@ -527,22 +564,22 @@ class DemoBuilderWorker:
         {menu_cards_html}
       </div>
 
-      <!-- Bklit: Styled Luxury Sommelier Data Metric Card -->
+      <!-- Domain Standards Card -->
       <div class="mt-12 backdrop-blur-xl p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6" style="background: var(--surface); border: 1px solid var(--border);">
         <div>
-          <p class="text-xs uppercase tracking-widest" style="color: var(--muted);">Cellar Vintage Reserve</p>
-          <p class="text-3xl font-serif mt-1" style="color: var(--accent);">98.5 Points</p>
-          <p class="text-xs mt-1" style="color: var(--muted);">Domaine de la Romanée-Conti Grand Cru & Rare Casks</p>
+          <p class="text-xs uppercase tracking-widest" style="color: var(--muted);">{copy_set.get('philosophy_kicker', 'Quality Standards')}</p>
+          <p class="text-2xl font-serif mt-1" style="color: var(--accent);">{copy_set.get('philosophy_title', 'Uncompromising Quality')}</p>
+          <p class="text-xs mt-1" style="color: var(--muted);">{target_name} • Calibrated Client Engagements</p>
         </div>
         <div class="flex items-center gap-3">
-          <span class="px-4 py-2 text-[11px] tracking-widest uppercase font-mono rounded-full" style="background: var(--accent)18; color: var(--accent); border: 1px solid var(--accent)44;">Sommelier Certified</span>
+          <span class="px-4 py-2 text-[11px] tracking-widest uppercase font-mono rounded-full" style="background: var(--accent)18; color: var(--accent); border: 1px solid var(--accent)44;">Direct Concierge</span>
         </div>
       </div>
     </div>
   </section>
   <!-- Footer -->
   <footer class="py-8 text-center text-xs" style="border-top: 1px solid var(--border); color: var(--muted);">
-    © 2026 {restaurant_name}. Crafted with architectural precision. All rights reserved.
+    © 2026 {target_name}. Crafted with architectural precision. All rights reserved.
   </footer>
 
   <!-- Theme Toggle & Anime.js Micro-Interactions -->

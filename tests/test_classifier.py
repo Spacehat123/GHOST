@@ -37,6 +37,63 @@ class TestBusinessClassifier(unittest.TestCase):
         self.assertTrue(needs_conf)
         self.assertLessEqual(conf, 0.50)
 
+    def test_the_crown_pub(self):
+        """'The Crown Pub' must classify into restaurants_cafes."""
+        domain, conf, needs_conf = classify_business(None, "The Crown Pub")
+        self.assertEqual(domain, "restaurants_cafes")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.85)
+
+    def test_glow_beauty_studio(self):
+        """'Glow Beauty Studio' must classify into salons_spas."""
+        domain, conf, needs_conf = classify_business(None, "Glow Beauty Studio")
+        self.assertEqual(domain, "salons_spas")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.85)
+
+    def test_violas_couture_with_tailor_category(self):
+        """'Viola’s Couture' with Google category 'Tailor' maps to boutiques_retail."""
+        domain, conf, needs_conf = classify_business("Tailor", "Viola’s Couture")
+        self.assertEqual(domain, "boutiques_retail")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.90)
+
+    def test_violas_couture_name_alone(self):
+        """'Viola’s Couture' with no category matches couture -> boutiques_retail."""
+        domain, conf, needs_conf = classify_business(None, "Viola’s Couture")
+        self.assertEqual(domain, "boutiques_retail")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.85)
+
+    def test_pet_groomers(self):
+        """'Pet Groomers' maps to home_trade_services."""
+        domain, conf, needs_conf = classify_business(None, "Pet Groomers")
+        self.assertEqual(domain, "home_trade_services")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.85)
+
+    def test_autocare_with_nearby_restaurant_snippet_prefers_name(self):
+        """'Autocare' must match trade/auto service even when snippet mentions a nearby Italian restaurant."""
+        domain, conf, needs_conf = classify_business(
+            None,
+            "Autocare",
+            "Located right next to the best Italian restaurant on High Street. Ample customer parking."
+        )
+        self.assertEqual(domain, "home_trade_services")
+        self.assertFalse(needs_conf)
+        self.assertGreaterEqual(conf, 0.85)
+
+    def test_blue_door_with_coffee_snippet_fails_closed(self):
+        """'Blue Door' with a casual coffee snippet must NOT classify as a cafe; must fail closed to general_services with needs_confirmation."""
+        domain, conf, needs_conf = classify_business(
+            None,
+            "Blue Door",
+            "Located across from the best coffee spot in London. Meeting space and private studios available."
+        )
+        self.assertEqual(domain, "general_services")
+        self.assertTrue(needs_conf)
+        self.assertLessEqual(conf, 0.50)
+
     def test_detect_domain_profile_shim(self):
         """detect_domain_profile shim returns correct domain string."""
         dom = detect_domain_profile("Apex Performance Gym", "London", "crossfit and strength training")

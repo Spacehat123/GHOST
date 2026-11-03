@@ -85,14 +85,50 @@ class TestClaimsLint(unittest.TestCase):
                 self.assertNotIn("4K curated CDN media", html)
                 self.assertNotIn("reservation sync", html)
                 self.assertNotIn("Verified Establishment", html)
+                self.assertNotIn("Verified Impressions", html)
+                self.assertNotIn("Verified Client", html)
+                self.assertIn("What customers say", html)
 
-                # 4. Single review must NOT be duplicated into an infinite marquee loop
+                # 4. Unverified curated services must be marked as sample concept architecture
+                self.assertIn("Sample Concept Architecture • Not Scraped from Listing", html)
+                self.assertIn("[Sample Scope Placeholder]", html)
+
+                ledger_path = os.path.join(sm.out_dir, "SOURCES.json")
+                self.assertTrue(os.path.exists(ledger_path))
+                import json
+                with open(ledger_path, "r", encoding="utf-8") as f:
+                    ledger_data = json.load(f)
+                self.assertFalse(ledger_data["services"]["verified"])
+                self.assertIn("Sample Concept Architecture", ledger_data["services"]["notes"])
+
+                # 5. Single review must NOT be duplicated into an infinite marquee loop
                 # With 1 review, static quote card layout is used
                 self.assertNotIn("marquee-track", html, "Marquee track should not be rendered for a single review!")
                 self.assertEqual(html.count("Exceptional ceramic coating on my Tesla"), 1)
 
-                # 5. Business title split: primary title clamped
+                # 6. Business title split: primary title clamped
                 self.assertIn("Topaz Detailing", html)
+
+    def test_demo_builder_fallback_purged_of_hospitality(self):
+        """DemoBuilderWorker._generate_html fallback must use domain copy and contain zero hospitality terms."""
+        from ghost.workers.demo_builder import DemoBuilderWorker, ARCHETYPE_STYLES
+        html = DemoBuilderWorker._generate_html(
+            business_name="Apex Motor Works",
+            slug="apex-motor-works",
+            tagline="Precision engineering in London.",
+            style=ARCHETYPE_STYLES[5],
+            archetype_id=5,
+            items=[{"title": "Brake Inspection", "price": "£120", "desc": "Full caliper overhaul.", "category": "Safety"}],
+            contact={"address": "London, UK"}
+        )
+        self.assertNotIn("Bespoke Dining", html)
+        self.assertNotIn("Sommelier", html)
+        self.assertNotIn("Cellar Vintage Reserve", html)
+        self.assertNotIn("98.5 Points", html)
+        self.assertNotIn("Reserve Tasting Experience", html)
+        self.assertNotIn("Seasonal Harvest", html)
+        self.assertIn("Apex Motor Works", html)
+        self.assertIn("Brake Inspection", html)
 
 
 if __name__ == "__main__":
