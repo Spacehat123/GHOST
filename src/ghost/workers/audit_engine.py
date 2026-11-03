@@ -7,11 +7,11 @@ Extracts real metrics via Brave CDP:
 - Layout shift & DOM size penalty
 Outputs an interactive comparison benchmark card to drop into client pitch decks and demos.
 """
+import aiohttp
 import asyncio
 import json
 import logging
 import time
-import urllib.request
 from typing import Dict, Any, Optional
 import websockets
 
@@ -21,6 +21,28 @@ CDP_HTTP = "http://127.0.0.1:9222"
 
 class PerformanceAuditor:
     """Headless CDP performance auditor generating side-by-side pitch benchmarks."""
+
+    @staticmethod
+    async def _send_cdp(ws, req_id: int, method: str, params: Optional[Dict[str, Any]] = None, timeout: float = 8.0, event_buffer: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """Correlates CDP request and response by id, filtering background events and recording received events."""
+        payload = {"id": req_id, "method": method}
+        if params is not None:
+            payload["params"] = params
+        await ws.send(json.dumps(payload))
+
+        async def _recv_loop():
+            while True:
+                msg_raw = await ws.recv()
+                try:
+                    msg = json.loads(msg_raw)
+                except Exception:
+                    continue
+                if msg.get("id") == req_id:
+                    return msg
+                elif event_buffer is not None and "method" in msg:
+                    event_buffer.append(msg)
+
+        return await asyncio.wait_for(_recv_loop(), timeout=timeout)
 
     @classmethod
     async def audit_url(cls, target_url: str) -> Dict[str, Any]:
@@ -40,38 +62,57 @@ class PerformanceAuditor:
                 ]
             }
 
-        # Open dedicated temporary audit tab
+        # Open dedicated temporary audit tab using non-blocking aiohttp
         tab_id = None
         try:
-            req = urllib.request.Request(f"{CDP_HTTP}/json/new?about:blank", method="PUT")
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                tab_data = json.loads(resp.read().decode())
-                tab_id = tab_data.get("id")
-                ws_url = tab_data.get("webSocketDebuggerUrl")
+            timeout = aiohttp.ClientTimeout(total=3)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.put(f"{CDP_HTTP}/json/new?about:blank") as resp:
+                    tab_data = await resp.json(content_type=None)
+                    tab_id = tab_data.get("id")
+                    ws_url = tab_data.get("webSocketDebuggerUrl")
 
             if not ws_url:
                 raise RuntimeError("No WebSocket URL for audit tab")
 
             async with websockets.connect(ws_url, max_size=10_000_000, ping_timeout=10) as ws:
+                event_buffer = []
                 # Enable Performance and Page domains
-                await ws.send(json.dumps({"id": 1, "method": "Performance.enable"}))
-                await ws.send(json.dumps({"id": 2, "method": "Page.enable"}))
+                await cls._send_cdp(ws, 1, "Performance.enable", event_buffer=event_buffer)
+                await cls._send_cdp(ws, 2, "Page.enable", event_buffer=event_buffer)
 
                 t_start = time.time()
-                await ws.send(json.dumps({
-                    "id": 3,
-                    "method": "Page.navigate",
-                    "params": {"url": target_url}
-                }))
+                await cls._send_cdp(ws, 3, "Page.navigate", {"url": target_url}, event_buffer=event_buffer)
 
-                # Wait for navigation settling
-                await asyncio.sleep(4.0)
+                # Event-driven wait: check if load event fired during navigation or wait for it
+                already_loaded = any(
+                    m.get("method") in ["Page.loadEventFired", "Page.domContentEventFired"]
+                    for m in event_buffer
+                )
+
+                if not already_loaded:
+                    async def _wait_for_load():
+                        while True:
+                            raw = await ws.recv()
+                            try:
+                                msg = json.loads(raw)
+                            except Exception:
+                                continue
+                            if msg.get("method") in ["Page.loadEventFired", "Page.domContentEventFired"]:
+                                return True
+
+                    try:
+                        await asyncio.wait_for(_wait_for_load(), timeout=4.5)
+                    except asyncio.TimeoutError:
+                        pass
+
+                # Short settling for dynamic animations/metrics
+                await asyncio.sleep(0.3)
                 elapsed = round(time.time() - t_start, 2)
 
-                # Query Performance metrics
-                await ws.send(json.dumps({"id": 4, "method": "Performance.getMetrics"}))
-                resp = await ws.recv()
-                metrics_list = json.loads(resp).get("result", {}).get("metrics", [])
+                # Query Performance metrics with correlated ID
+                metrics_resp = await cls._send_cdp(ws, 4, "Performance.getMetrics", timeout=5.0)
+                metrics_list = metrics_resp.get("result", {}).get("metrics", [])
                 metrics_map = {m["name"]: m["value"] for m in metrics_list if "name" in m}
 
                 dom_nodes = metrics_map.get("Nodes", 1850)
@@ -108,7 +149,10 @@ class PerformanceAuditor:
         finally:
             if tab_id:
                 try:
-                    urllib.request.urlopen(f"{CDP_HTTP}/json/close/{tab_id}", timeout=2)
+                    close_timeout = aiohttp.ClientTimeout(total=2)
+                    async with aiohttp.ClientSession(timeout=close_timeout) as session:
+                        async with session.get(f"{CDP_HTTP}/json/close/{tab_id}") as resp:
+                            pass
                 except Exception:
                     pass
 

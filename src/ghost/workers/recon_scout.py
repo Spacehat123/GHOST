@@ -4,11 +4,12 @@ Scouts high-revenue local businesses in Bengaluru (and any target city) using he
 Extracts real Google Maps / Places reviews, uncompressed high-res CDN photos, and contact intelligence.
 Zero cloud tokens, zero API cost.
 """
+import aiohttp
 import asyncio
 import json
 import logging
+import time
 import urllib.parse
-import urllib.request
 from typing import Dict, Any, List, Optional
 import websockets
 
@@ -19,33 +20,56 @@ CDP_HTTP = "http://127.0.0.1:9222"
 class ReconScout:
     """Headless Google Maps & Places Intelligence Scraper via Brave DevTools Protocol."""
 
+    @staticmethod
+    async def _send_cdp(ws, req_id: int, method: str, params: Optional[Dict[str, Any]] = None, timeout: float = 8.0) -> Dict[str, Any]:
+        """Correlates CDP request and response by id, ignoring unrelated background events."""
+        payload = {"id": req_id, "method": method}
+        if params is not None:
+            payload["params"] = params
+        await ws.send(json.dumps(payload))
+
+        async def _recv_loop():
+            while True:
+                msg_raw = await ws.recv()
+                try:
+                    msg = json.loads(msg_raw)
+                except Exception:
+                    continue
+                if msg.get("id") == req_id:
+                    return msg
+
+        return await asyncio.wait_for(_recv_loop(), timeout=timeout)
+
     @classmethod
     async def get_or_create_recon_tab(cls) -> Optional[Dict[str, Any]]:
-        """Finds an existing background tab or opens a dedicated recon tab."""
+        """Finds an existing background tab or opens a dedicated recon tab using non-blocking aiohttp."""
         try:
-            req = urllib.request.Request(f"{CDP_HTTP}/json")
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                tabs = json.loads(resp.read().decode())
-                
-            for t in tabs:
-                if "about:blank" in t.get("url", "") or "recon-worker" in t.get("title", "").lower():
-                    return t
+            timeout = aiohttp.ClientTimeout(total=3)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{CDP_HTTP}/json") as resp:
+                    tabs = await resp.json(content_type=None)
 
-            # Open a new tab
-            new_req = urllib.request.Request(f"{CDP_HTTP}/json/new?about:blank", method="PUT")
-            with urllib.request.urlopen(new_req, timeout=3) as resp:
-                return json.loads(resp.read().decode())
+                if isinstance(tabs, list):
+                    for t in tabs:
+                        if isinstance(t, dict) and ("about:blank" in t.get("url", "") or "recon-worker" in t.get("title", "").lower()):
+                            return t
+
+                # Open a new tab
+                async with session.put(f"{CDP_HTTP}/json/new?about:blank") as resp:
+                    return await resp.json(content_type=None)
         except Exception as e:
             logger.error(f"Failed to access Brave CDP on port 9222: {e}")
             return None
 
     @classmethod
     async def close_recon_tab(cls, tab_id: str):
-        """Silently closes the temporary scraping tab."""
+        """Silently closes the temporary scraping tab using non-blocking aiohttp."""
         try:
-            req = urllib.request.Request(f"{CDP_HTTP}/json/close/{tab_id}", method="GET")
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                pass
+            clean_tab_id = urllib.parse.quote(str(tab_id))
+            timeout = aiohttp.ClientTimeout(total=2)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{CDP_HTTP}/json/close/{clean_tab_id}") as resp:
+                    pass
         except Exception:
             pass
 
@@ -87,14 +111,34 @@ class ReconScout:
 
         try:
             async with websockets.connect(ws_url, max_size=10_000_000, ping_timeout=10) as ws:
-                # 1. Navigate to Maps search
+                # 1. Enable Page domain and navigate to Maps search
                 msg_id = 1
-                await ws.send(json.dumps({
-                    "id": msg_id,
-                    "method": "Page.navigate",
-                    "params": {"url": search_url}
-                }))
-                await asyncio.sleep(3.5)
+                await cls._send_cdp(ws, msg_id, "Page.enable")
+
+                msg_id += 1
+                await cls._send_cdp(ws, msg_id, "Page.navigate", {"url": search_url})
+
+                # Event-driven DOM readiness check: poll for key Maps elements or complete state
+                check_script = """
+                (() => {
+                    const ready = document.readyState === 'complete' || document.readyState === 'interactive';
+                    const hasTarget = !!(
+                        document.querySelector('h1.DUwDvf, div[role="main"] h1, h1, div[data-result-index], a[data-item-id="authority"]')
+                    );
+                    return ready && hasTarget;
+                })()
+                """
+                poll_start = time.time()
+                while time.time() - poll_start < 4.5:
+                    msg_id += 1
+                    try:
+                        poll_resp = await cls._send_cdp(ws, msg_id, "Runtime.evaluate", {"expression": check_script, "returnByValue": True}, timeout=1.0)
+                        if poll_resp.get("result", {}).get("result", {}).get("value") is True:
+                            await asyncio.sleep(0.3)
+                            break
+                    except Exception:
+                        pass
+                    await asyncio.sleep(0.15)
 
                 # 2. Extract DOM intelligence via JavaScript evaluation
                 extract_script = """
@@ -178,14 +222,14 @@ class ReconScout:
                 """
 
                 msg_id += 1
-                await ws.send(json.dumps({
-                    "id": msg_id,
-                    "method": "Runtime.evaluate",
-                    "params": {"expression": extract_script, "returnByValue": True}
-                }))
-
-                eval_resp = await ws.recv()
-                data_obj = json.loads(eval_resp).get("result", {}).get("result", {}).get("value", {})
+                eval_resp = await cls._send_cdp(
+                    ws,
+                    msg_id,
+                    "Runtime.evaluate",
+                    {"expression": extract_script, "returnByValue": True},
+                    timeout=8.0
+                )
+                data_obj = eval_resp.get("result", {}).get("result", {}).get("value", {})
 
                 if data_obj:
                     if data_obj.get("name"):

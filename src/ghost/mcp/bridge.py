@@ -3,9 +3,11 @@ import asyncio
 import os
 import json
 import base64
+import re
 import urllib.request
 import urllib.parse
 from typing import Dict, Any, List, Optional, Tuple, Union
+import aiohttp
 import websockets
 
 REA_PATH = "/home/pranc/projects/rea"
@@ -87,14 +89,23 @@ class CDPAutomationEngine:
     """
 
     @staticmethod
-    async def send_command(ws, req_id: int, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        payload = {"id": req_id, "method": method, "params": params}
+    async def send_command(ws, req_id: int, method: str, params: Optional[Dict[str, Any]] = None, timeout: float = 8.0) -> Dict[str, Any]:
+        payload = {"id": req_id, "method": method}
+        if params is not None:
+            payload["params"] = params
         await ws.send(json.dumps(payload))
-        while True:
-            resp = await ws.recv()
-            data = json.loads(resp)
-            if data.get("id") == req_id:
-                return data
+
+        async def _recv_loop():
+            while True:
+                resp = await ws.recv()
+                try:
+                    data = json.loads(resp)
+                except Exception:
+                    continue
+                if data.get("id") == req_id:
+                    return data
+
+        return await asyncio.wait_for(_recv_loop(), timeout=timeout)
 
     @classmethod
     async def dispatch_mouse_click(cls, ws, x: float, y: float, click_count: int = 1):
@@ -219,10 +230,10 @@ class BraveCDPBridge:
     async def get_version(cls) -> Dict[str, Any]:
         """Get browser details and debugger endpoints."""
         try:
-            def _req():
-                with urllib.request.urlopen(f"{cls.BASE_URL}/json/version", timeout=3) as resp:
-                    return json.loads(resp.read().decode())
-            return await asyncio.to_thread(_req)
+            timeout = aiohttp.ClientTimeout(total=3)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{cls.BASE_URL}/json/version") as resp:
+                    return await resp.json(content_type=None)
         except Exception as e:
             return {"error": f"Failed to connect to Brave CDP: {e}"}
 
@@ -230,9 +241,12 @@ class BraveCDPBridge:
     async def list_tabs(cls) -> List[Dict[str, Any]]:
         """List all active pages and tabs in Brave."""
         try:
-            def _req():
-                with urllib.request.urlopen(f"{cls.BASE_URL}/json/list", timeout=3) as resp:
-                    tabs = json.loads(resp.read().decode())
+            timeout = aiohttp.ClientTimeout(total=3)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{cls.BASE_URL}/json/list") as resp:
+                    tabs = await resp.json(content_type=None)
+                    if not isinstance(tabs, list):
+                        return []
                     return [
                         {
                             "id": t.get("id"),
@@ -241,9 +255,8 @@ class BraveCDPBridge:
                             "type": t.get("type"),
                             "wsUrl": t.get("webSocketDebuggerUrl")
                         }
-                        for t in tabs if t.get("type") in ["page", "app"]
+                        for t in tabs if isinstance(t, dict) and t.get("type") in ["page", "app"]
                     ]
-            return await asyncio.to_thread(_req)
         except Exception as e:
             return [{"error": f"Failed to list tabs: {e}"}]
 
@@ -252,11 +265,10 @@ class BraveCDPBridge:
         """Open a new tab at the specified URL."""
         try:
             encoded = urllib.parse.quote(url)
-            def _req():
-                req = urllib.request.Request(f"{cls.BASE_URL}/json/new?{encoded}", method="PUT")
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    return json.loads(resp.read().decode())
-            return await asyncio.to_thread(_req)
+            timeout = aiohttp.ClientTimeout(total=3)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.put(f"{cls.BASE_URL}/json/new?{encoded}") as resp:
+                    return await resp.json(content_type=None)
         except Exception as e:
             return {"error": f"Failed to open tab: {e}"}
 
@@ -284,10 +296,13 @@ class BraveCDPBridge:
                         found = True
                         break
 
-            def _req():
-                with urllib.request.urlopen(f"{cls.BASE_URL}/json/activate/{target_id}", timeout=3) as resp:
-                    return {"success": True, "status": resp.status, "activated_tab": target_id}
-            return await asyncio.to_thread(_req)
+            timeout = aiohttp.ClientTimeout(total=3)
+            clean_id = urllib.parse.quote(str(target_id))
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{cls.BASE_URL}/json/activate/{clean_id}") as resp:
+                    if resp.status == 200:
+                        return {"success": True, "status": resp.status, "activated_tab": target_id}
+                    return {"success": False, "status": resp.status, "error": f"Brave returned HTTP {resp.status}"}
         except Exception as e:
             return {"error": f"Failed to activate tab: {e}"}
 
@@ -324,10 +339,13 @@ class BraveCDPBridge:
             if not target_id:
                 return {"success": False, "error": f"No tab matching '{tab_id_or_match}' found."}
 
-            def _req():
-                with urllib.request.urlopen(f"{cls.BASE_URL}/json/close/{target_id}", timeout=3) as resp:
-                    return {"success": True, "status": resp.status, "closed_tab": target_title, "id": target_id}
-            return await asyncio.to_thread(_req)
+            timeout = aiohttp.ClientTimeout(total=3)
+            clean_id = urllib.parse.quote(str(target_id))
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{cls.BASE_URL}/json/close/{clean_id}") as resp:
+                    if resp.status == 200:
+                        return {"success": True, "status": resp.status, "closed_tab": target_title, "id": target_id}
+                    return {"success": False, "status": resp.status, "error": f"Brave returned HTTP {resp.status}"}
         except Exception as e:
             return {"error": f"Failed to close tab: {e}"}
 
@@ -656,10 +674,37 @@ class MediaBridge:
         return await ShellExecutor.run(f"playerctl {p_arg}previous")
 
     @classmethod
+    async def resolve_spotify_track(cls, query: str) -> Optional[str]:
+        """Resolve a song query to a direct Spotify URI (spotify:track:<id>)."""
+        clean_q = query.strip()
+        if clean_q.startswith("spotify:"):
+            return clean_q
+        url_match = re.search(r"open\.spotify\.com/(track|album|playlist)/([a-zA-Z0-9]+)", clean_q)
+        if url_match:
+            return f"spotify:{url_match.group(1)}:{url_match.group(2)}"
+
+        # Non-blocking search lookup via DDG Lite to find open.spotify.com track link
+        try:
+            encoded = urllib.parse.urlencode({"q": f"site:open.spotify.com/track {clean_q}"})
+            url = f"https://lite.duckduckgo.com/lite/?{encoded}"
+            headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/119.0"}
+            timeout = aiohttp.ClientTimeout(total=4)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status == 200:
+                        html = await resp.text()
+                        matches = re.findall(r"open\.spotify\.com(?:%2F|/)track(?:%2F|/)([a-zA-Z0-9]{22})", html)
+                        if matches:
+                            return f"spotify:track:{matches[0]}"
+        except Exception as e:
+            logger.debug(f"Direct track resolution lookup failed: {e}")
+        return None
+
+    @classmethod
     async def spotify_action(cls, action: str = "play", query: Optional[str] = None) -> Dict[str, Any]:
         """
-        Native Spotify control via spotify-launcher, DBus OpenUri, and playerctl.
-        Ensures Spotify is running, launching it if necessary, then loads/plays songs or queues.
+        Native Spotify control via spotify-launcher, DBus OpenUri with track resolution, and playerctl.
+        Ensures Spotify is running, launching it if necessary, then loads/plays songs or queues cleanly.
         """
         # Check if spotify is running
         check = await ShellExecutor.run("pgrep -f spotify")
@@ -668,46 +713,45 @@ class MediaBridge:
         if not is_running:
             # Launch native spotify-launcher
             await ShellExecutor.run("spotify-launcher &")
-            await asyncio.sleep(2.5)
+            # Poll until Spotify is responsive on DBus or playerctl with short interval
+            for _ in range(25):
+                await asyncio.sleep(0.1)
+                p_check = await ShellExecutor.run("playerctl -p spotify status")
+                if p_check.get("returncode") in [0, 1]:
+                    break
 
         act = action.lower().strip()
         if act in ["play_query", "play_song", "search"] or (query and act in ["play", "liked", "liked_songs"]):
             search_str = query or "liked songs"
-            # Dispatch DBus OpenUri with spotify search or uri
-            if search_str.startswith("spotify:"):
+            resolved_uri = await cls.resolve_spotify_track(search_str)
+            if resolved_uri:
+                uri = resolved_uri
+            elif search_str.startswith("spotify:"):
                 uri = search_str
             else:
                 uri = f"spotify:search:{urllib.parse.quote(search_str)}"
 
+            safe_uri = uri.replace('"', '\\"')
             dbus_cmd = (
                 f'dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify '
-                f'/org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.OpenUri string:"{uri}"'
+                f'/org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.OpenUri string:"{safe_uri}"'
             )
             res = await ShellExecutor.run(dbus_cmd)
-            await asyncio.sleep(0.4)
 
-            # Trigger play immediately and start zero-token verification loop
-            for attempt in range(3):
-                # Send playerctl play
-                await ShellExecutor.run("playerctl --player=spotify play")
-                # Ensure Spotify window is focused and simulate Enter/Space on the top search result
-                await ShellExecutor.run("hyprctl repl 'return hl.dispatch(hl.dsp.focus({ window = \"class:Spotify\" }))'")
-                await asyncio.sleep(0.15)
-                await ShellExecutor.run("xdotool search --class spotify windowactivate key Return")
-                await ShellExecutor.run("xdotool search --class spotify windowactivate key space")
-                await asyncio.sleep(0.4)
-
-                # Zero-token verification: inspect playerctl status
-                stat_check = await ShellExecutor.run("playerctl -p spotify status")
+            # Direct playerctl playback and verification loop (clean native Wayland/DBus, zero xdotool)
+            for attempt in range(4):
+                await asyncio.sleep(0.2)
+                await ShellExecutor.run("playerctl --player=spotify,spotify_player play")
+                stat_check = await ShellExecutor.run("playerctl --player=spotify,spotify_player status")
                 current_stat = stat_check.get("stdout", "").strip()
                 if current_stat.lower() == "playing":
                     return {"status": "playing_query", "query": search_str, "uri": uri, "verified": True, "attempts": attempt + 1}
 
-            return {"status": "dispatched", "query": search_str, "uri": uri, "verified": False, "note": "Dispatched to Spotify, but playback not confirmed running."}
+            return {"status": "dispatched", "query": search_str, "uri": uri, "verified": False, "note": "Dispatched to Spotify via DBus OpenUri."}
 
         elif act in ["play", "resume", "liked", "liked_songs"]:
             # Play via playerctl targeting spotify with zero-token verification loop
-            for attempt in range(3):
+            for attempt in range(4):
                 res = await ShellExecutor.run("playerctl --player=spotify,spotify_player play")
                 if res.get("returncode") != 0:
                     dbus_cmd = (
@@ -715,11 +759,10 @@ class MediaBridge:
                         '/org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.OpenUri string:"spotify:collection:tracks"'
                     )
                     await ShellExecutor.run(dbus_cmd)
-                    await asyncio.sleep(0.4)
+                    await asyncio.sleep(0.25)
                     await ShellExecutor.run("playerctl --player=spotify,spotify_player play")
-                    await ShellExecutor.run("xdotool search --class spotify windowactivate key space")
 
-                await asyncio.sleep(0.35)
+                await asyncio.sleep(0.2)
                 stat_check = await ShellExecutor.run("playerctl -p spotify status")
                 if stat_check.get("stdout", "").strip().lower() == "playing":
                     return {"status": "playing", "player": "spotify", "verified": True, "attempts": attempt + 1}
@@ -815,9 +858,9 @@ class SystemAppBridge:
                             found = True
                             break
                         else:
-                            # Move it to target workspace directly
-                            await cls.hyprctl_dispatch("focuswindow", f"class:{c.get('class')}")
-                            await cls.hyprctl_dispatch("movetoworkspace", ws_target)
+                            # Move it to target workspace directly using movetoworkspacesilent
+                            target_window = f"class:{c.get('class')}"
+                            await cls.hyprctl_dispatch("movetoworkspacesilent", f"{ws_target},{target_window}")
                             found = True
                             break
 
@@ -836,48 +879,52 @@ class SystemAppBridge:
     @staticmethod
     async def hyprctl_dispatch(dispatcher: str, args: str = "") -> Dict[str, Any]:
         """
-        Execute any Hyprland dispatcher safely using Hyprland's Lua REPL runtime or CLI dispatch.
-        Handles both workspace switching and window moves with 100% compatibility across Hyprland versions.
+        Execute any Hyprland dispatcher safely using standard Hyprland CLI dispatch syntax
+        with automatic Lua dispatch translation for Hyprland 0.56+ compatibility.
         """
         clean_disp = dispatcher.strip().lower()
         clean_args = str(args).strip()
 
-        if clean_disp in ["workspace", "switch_workspace"]:
-            # Lua runtime dispatch: hl.dispatch(hl.dsp.focus({ workspace = N }))
-            lua_code = f"return hl.dispatch(hl.dsp.focus({{ workspace = {clean_args} }}))"
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        elif clean_disp in ["movetoworkspace", "move_to_workspace"]:
-            # Lua runtime dispatch: hl.dispatch(hl.dsp.window.move({ workspace = N }))
-            lua_code = f"return hl.dispatch(hl.dsp.window.move({{ workspace = {clean_args} }}))"
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        elif clean_disp in ["focuswindow", "focus_window"]:
-            lua_code = f'return hl.dispatch(hl.dsp.focus({{ window = "{clean_args}" }}))'
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        elif clean_disp in ["killactive", "close_window"]:
-            lua_code = "return hl.dispatch(hl.dsp.window.close())"
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        elif clean_disp in ["togglefloating"]:
-            lua_code = "return hl.dispatch(hl.dsp.window.toggle_floating())"
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        elif clean_disp in ["fullscreen", "toggle_fullscreen"]:
-            lua_code = "return hl.dispatch(hl.dsp.window.fullscreen())"
-            res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
-            return {"status": "dispatched", "command": lua_code, "result": res}
-
-        else:
-            cmd = f"hyprctl dispatch {dispatcher} {clean_args}".strip()
-            res = await ShellExecutor.run(cmd)
+        # 1. Try standard CLI dispatch first (e.g. hyprctl dispatch movetoworkspacesilent 1,class:kitty)
+        cmd = f"hyprctl dispatch {clean_disp} {clean_args}".strip()
+        res = await ShellExecutor.run(cmd)
+        if res.get("returncode") == 0:
             return {"status": "dispatched", "command": cmd, "result": res}
+
+        # 2. If CLI dispatch failed (e.g. Hyprland 0.56+ requiring Lua syntax), map to hl.dsp:
+        lua_call = None
+        if clean_disp in ["workspace", "switch_workspace"]:
+            lua_call = f"hl.dsp.focus({{ workspace = {clean_args} }})"
+        elif clean_disp in ["movetoworkspacesilent", "move_to_workspace_silent"]:
+            parts = [p.strip() for p in clean_args.split(",", 1)]
+            ws = parts[0]
+            win_arg = f', window = "{parts[1]}"' if len(parts) > 1 and parts[1] else ""
+            lua_call = f"hl.dsp.window.move({{ workspace = {ws}, silent = true{win_arg} }})"
+        elif clean_disp in ["movetoworkspace", "move_to_workspace"]:
+            parts = [p.strip() for p in clean_args.split(",", 1)]
+            ws = parts[0]
+            win_arg = f', window = "{parts[1]}"' if len(parts) > 1 and parts[1] else ""
+            lua_call = f"hl.dsp.window.move({{ workspace = {ws}{win_arg} }})"
+        elif clean_disp in ["focuswindow", "focus_window"]:
+            lua_call = f'hl.dsp.focus({{ window = "{clean_args}" }})'
+        elif clean_disp in ["killactive", "close_window", "closewindow"]:
+            if clean_args:
+                lua_call = f'hl.dsp.window.close({{ window = "{clean_args}" }})'
+            else:
+                lua_call = "hl.dsp.window.close()"
+        elif clean_disp in ["togglefloating"]:
+            lua_call = "hl.dsp.window.float()"
+        elif clean_disp in ["fullscreen", "toggle_fullscreen"]:
+            lua_call = "hl.dsp.window.fullscreen()"
+
+        if lua_call:
+            lua_code = f"return hl.dispatch({lua_call})"
+            lua_res = await ShellExecutor.run(f"hyprctl repl '{lua_code}'")
+            if lua_res.get("returncode") == 0:
+                return {"status": "dispatched", "command": lua_code, "result": lua_res}
+            return {"status": "error", "command": lua_code, "result": lua_res}
+
+        return {"status": "error", "command": cmd, "result": res}
 
     @classmethod
     async def set_wallpaper(cls, query_or_path: str) -> Dict[str, Any]:
@@ -1046,7 +1093,7 @@ class SystemAppBridge:
 
         # If a window query is supplied, focus it first
         if window_query:
-            await ShellExecutor.run(f"hyprctl repl 'return hl.dispatch(hl.dsp.focus({{ window = \"{window_query}\" }}))'")
+            await cls.hyprctl_dispatch("focuswindow", window_query)
             await asyncio.sleep(0.1)
 
         if clean_type in ["key", "shortcut"]:
@@ -1075,31 +1122,26 @@ class SystemAppBridge:
                 lua_call = f'return hl.dispatch(hl.dsp.send_shortcut({{ key = "{main_key}" }}))'
 
             res = await ShellExecutor.run(f"hyprctl repl '{lua_call}'")
-
-            # Fallback to xdotool if needed (e.g. XWayland clients like Spotify, Steam, Discord)
-            if window_query:
-                await ShellExecutor.run(f"xdotool search --class {window_query} windowactivate key {main_key}")
-            else:
-                await ShellExecutor.run(f"xdotool key {main_key} 2>/dev/null")
-
             return {"status": "simulated", "type": clean_type, "mod": mod_str, "key": main_key, "result": res}
 
         elif clean_type == "type_text":
             text_val = keys or ""
-            # Type via xdotool
+            # Native Wayland text injection via wl-copy and compositor paste
             safe_text = text_val.replace('"', '\\"')
-            res = await ShellExecutor.run(f'xdotool type --delay 20 "{safe_text}"')
+            await ShellExecutor.run(f'wl-copy "{safe_text}"')
+            await asyncio.sleep(0.04)
+            lua_paste = 'return hl.dispatch(hl.dsp.send_shortcut({ mod = "CTRL", key = "v" }))'
+            res = await ShellExecutor.run(f"hyprctl repl '{lua_paste}'")
             return {"status": "simulated", "type": "type_text", "text": text_val, "result": res}
 
         elif clean_type in ["click", "mouse_click", "mouse_move"]:
             if x is not None and y is not None:
                 # Move cursor via Hyprland Lua dispatch
-                await ShellExecutor.run(f"hyprctl repl 'return hl.dispatch(hl.dsp.cursor.move({{ x = {int(x)}, y = {int(y)} }}))'")
-                # Also move xdotool cursor for XWayland clients
-                res = await ShellExecutor.run(f"xdotool mousemove {int(x)} {int(y)} click 1")
-                return {"status": "simulated", "type": "click", "x": x, "y": y, "result": res}
+                res = await ShellExecutor.run(f"hyprctl repl 'return hl.dispatch(hl.dsp.cursor.move({{ x = {int(x)}, y = {int(y)} }}))'")
+                return {"status": "simulated", "type": "cursor_move", "x": x, "y": y, "result": res}
             else:
-                res = await ShellExecutor.run("xdotool click 1")
+                # Dispatch Return as standard activation without xdotool
+                res = await ShellExecutor.run("hyprctl repl 'return hl.dispatch(hl.dsp.send_shortcut({ key = \"Return\" }))'")
                 return {"status": "simulated", "type": "click", "result": res}
 
         return {"status": "error", "message": f"Unsupported simulation type: {sim_type}"}

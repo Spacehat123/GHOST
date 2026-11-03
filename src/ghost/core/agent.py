@@ -139,6 +139,7 @@ class GhostAgent:
         current_turn = 0
         latest_turn_tokens = 0
         operator_aborted = False
+        tool_call_history: List[Dict[str, Any]] = []
 
         while True:
             current_turn += 1
@@ -231,6 +232,115 @@ class GhostAgent:
                         except Exception:
                             args = {}
 
+                        # Serialize arguments deterministically for deduplication check
+                        try:
+                            args_key = json.dumps(args, sort_keys=True)
+                        except Exception:
+                            args_key = str(args)
+
+                        if operator_aborted:
+                            res = {
+                                "status": "aborted",
+                                "error": "Execution halted: circuit breaker tripped on preceding repeated call."
+                            }
+                            yield {
+                                "type": "tool_start",
+                                "tool": tool_name,
+                                "arguments": args
+                            }
+                            yield {
+                                "type": "tool_end",
+                                "tool": tool_name,
+                                "result": res
+                            }
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc_info["id"],
+                                "content": json.dumps(res)
+                            })
+                            continue
+
+                        # Deduplication Guard & Failure Circuit Breaker:
+                        # Check consecutive attempts of the identical tool call and arguments
+                        consecutive_identical = 0
+                        prev_results = []
+                        for prev in reversed(tool_call_history):
+                            if prev["name"] == tool_name and prev["args_key"] == args_key:
+                                consecutive_identical += 1
+                                prev_results.append(prev["result"])
+                            else:
+                                break
+
+                        def _is_error_result(r: Any) -> bool:
+                            if isinstance(r, dict):
+                                if r.get("error"):
+                                    return True
+                                if r.get("status") in ["error", "failed"]:
+                                    return True
+                                if r.get("success") is False or r.get("ok") is False or r.get("allowed") is False:
+                                    return True
+                                if "returncode" in r and r.get("returncode") != 0:
+                                    return True
+                            elif isinstance(r, str):
+                                if r.strip().lower().startswith("error"):
+                                    return True
+                            return False
+
+                        # Circuit Breaker: If called 3 consecutive times with identical args
+                        # and prior executions yielded errors or identical results, intercept immediately
+                        if consecutive_identical >= 2:
+                            has_error = any(_is_error_result(r) for r in prev_results)
+                            has_identical = (
+                                len(prev_results) >= 2 and
+                                all(r == prev_results[0] for r in prev_results[1:])
+                            )
+
+                            if has_error or has_identical:
+                                logger.warning(
+                                    f"GhostAgent Circuit Breaker: Intercepted repeated tool call '{tool_name}' "
+                                    f"with identical arguments ({consecutive_identical + 1} consecutive attempts)."
+                                )
+                                res = {
+                                    "status": "circuit_breaker_tripped",
+                                    "error": f"Circuit breaker tripped: '{tool_name}' called {consecutive_identical + 1} consecutive times with identical arguments yielding identical/failing results.",
+                                    "diagnostic": (
+                                        f"Execution loop deduplication guard activated for tool '{tool_name}'. "
+                                        f"You MUST NOT retry this exact tool call again with the same arguments. "
+                                        f"Adapt your strategy immediately: try an alternative tool/parameter, or report the situation and ask the operator for guidance."
+                                    ),
+                                    "consecutive_attempts": consecutive_identical + 1
+                                }
+
+                                yield {
+                                    "type": "tool_start",
+                                    "tool": tool_name,
+                                    "arguments": args
+                                }
+                                yield {
+                                    "type": "tool_end",
+                                    "tool": tool_name,
+                                    "result": res
+                                }
+
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc_info["id"],
+                                    "content": json.dumps(res)
+                                })
+
+                                tool_call_history.append({
+                                    "name": tool_name,
+                                    "args_key": args_key,
+                                    "result": res
+                                })
+
+                                # If repeated beyond 3 attempts, halt the loop and force spoken synthesis to operator
+                                if consecutive_identical >= 3:
+                                    logger.warning("GhostAgent: Halting spinning execution loop to force operator consultation.")
+                                    operator_aborted = True
+
+                                continue
+
                         # 1. Yield UI state update showing tool execution
                         yield {
                             "type": "tool_start",
@@ -240,6 +350,13 @@ class GhostAgent:
 
                         # 2. Execute Python primitive natively
                         res = await OmniRouteBrain.execute_tool_call(tool_name, args)
+
+                        # Record execution in deduplication history
+                        tool_call_history.append({
+                            "name": tool_name,
+                            "args_key": args_key,
+                            "result": res
+                        })
 
                         # 3. Yield UI event for completion
                         yield {
