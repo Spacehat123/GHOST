@@ -19,7 +19,9 @@ from ghost.mcp.bridge import (
     ReaBridge,
     WebSearchBridge,
     DatabaseBridge,
-    GitHubBridge
+    GitHubBridge,
+    AgentDesktopBridge,
+    GitBridge
 )
 
 logger = logging.getLogger("ghost.brain")
@@ -688,6 +690,31 @@ GHOST_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "git_action",
+            "description": "Execute local and remote Git commands (status, add, commit, push, pull, branch, remote, diff, log) deterministically. Features headless SSH key passphrase support with SSH_ASKPASS.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "Git subcommand and arguments (e.g. 'status', 'add .', 'commit -m \"msg\"', 'push origin main', 'remote -v')"
+                    },
+                    "repo_dir": {
+                        "type": "string",
+                        "description": "Optional repository path (defaults to '/home/pranc/projects/ghost')"
+                    },
+                    "passphrase": {
+                        "type": "string",
+                        "description": "Optional SSH key passphrase for remote operations (e.g. '5437')"
+                    }
+                },
+                "required": ["command"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "system_run",
             "description": "EMERGENCY / LAST RESORT ONLY. Do NOT use this for normal file discovery or directory exploration. Use primary tools (desktop_control, media_control, browser_action) instead.",
             "parameters": {
@@ -745,9 +772,12 @@ class OmniRouteBrain:
         "8. REAL-TIME MEDIA & AUDIO PLAYBACK RULES:\n"
         "   - Spotify Music: When asked to play a song/artist (e.g. 'play interstellar', 'play cars 3 soundtrack'), ALWAYS call media_control(action='spotify_action', query='<song or album name>') or media_control(action='play'). If spotify is on another workspace, use desktop_control(action='switch_workspace', workspace='4') or focus Spotify first. Never claim music is playing unless verified.\n"
         "   - Video / Streaming (JioHotstar / YouTube / Web): When asked to resume or play a movie or show in the browser (e.g. 'resume cars 3 in jiohotstar kids profile'), use browser_action(action='focus_tab', target='Cars 3') or browser_action(action='brave_click_and_type', target='video', val='play') or browser_action(action='open_url'). If asked to move the mouse or click on a specific element, use input_simulation(sim_type='click', x=X, y=Y) or browser_action.\n"
-        "9. STRICT ZERO-HALLUCINATION & REPO VERIFICATION MANDATE:\n"
-        "   - NEVER claim a shell command, file write, Git push, remote configuration, or external action was executed unless you physically called the appropriate tool (e.g. system_run, desktop_control) and verified its return status.\n"
-        "   - If an action requires user terminal interaction (such as entering an SSH key passphrase for 'git push', or authorizing an interactive prompt), state clearly that the command is ready or staged in terminal and requires the passphrase, rather than pretending it already pushed.\n\n"
+        "9. MANDATORY TASK-TO-TOOL INTENT MATRIX (ZERO EXPLORATORY WANDERING):\n"
+        "   - Git Operations (push, commit, status, remote): MUST call git_action. When pushing with SSH key passphrase, pass passphrase='5437'. Never wander into bash commands for Git.\n"
+        "   - Spotify / Music: MUST call media_control(action='spotify_action', query='...').\n"
+        "   - Web Video / Streaming: MUST call browser_action.\n"
+        "   - Desktop GUI Apps (Obsidian, Figma, Discord, system dialogs): MUST call agent_desktop_command.\n"
+        "   - STATED TRUTH RULE: NEVER claim a command or push succeeded without executing the tool and inspecting its return code.\n\n"
         "OPERATIONAL PROTOCOLS:\n"
         "- When the user asks for an action (close tab, open URL, WhatsApp, media, move/rename files, apps, CRM, email, demo build), ALWAYS call the corresponding tool first.\n"
         "- DEMO GENERATION & WEBSITE BUILD PROTOCOL: When commanded to build a demo or website for any business, strictly adhere to the 12-Step Website Build Guide (/home/pranc/projects/ghost/WEBSITE_BUILD_GUIDE.md). Execute build_luxury_demo immediately. The builder strictly executes as a 5-stage state machine:\n"
@@ -1279,7 +1309,19 @@ class OmniRouteBrain:
                 res = {"ok": False, "error": f"Unsupported agent_desktop action: {action}"}
             return {"status": "success" if res.get("ok", True) else "error", "result": res}
 
-        # 17. Safe System CLI Run Fallback
+        # 17. Deterministic Git Engine (with Headless SSH_ASKPASS support)
+        elif tool_name == "git_action":
+            from ghost.mcp.bridge import GitBridge
+            raw_cmd = arguments.get("command", "status").strip()
+            repo_path = arguments.get("repo_dir", "/home/pranc/projects/ghost")
+            pass_key = arguments.get("passphrase") or "5437"
+            parts = [p.strip() for p in raw_cmd.split() if p.strip()]
+            if parts and parts[0] == "git":
+                parts = parts[1:]
+            res = await GitBridge.run_git(args=parts, repo_dir=repo_path, passphrase=pass_key)
+            return {"status": "success" if res.get("success", False) else "error", "result": res}
+
+        # 18. Safe System CLI Run Fallback
         elif tool_name == "system_run":
             cmd = arguments.get("command", "")
             res = await ShellExecutor.run(cmd)

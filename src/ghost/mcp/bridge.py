@@ -1539,12 +1539,6 @@ class AgentDesktopBridge:
                 return {"ok": False, "error": {"message": "target_ref required for scroll action"}}
             direction = value or "down"
             args.extend(["--direction", direction, target_ref])
-        else:
-            if target_ref:
-                args.append(target_ref)
-            if value:
-                args.append(value)
-
         cmd = " ".join(f'"{a}"' if " " in a else a for a in args)
         res = await ShellExecutor.run(cmd)
         stdout = res.get("stdout", "").strip()
@@ -1552,5 +1546,62 @@ class AgentDesktopBridge:
             return json.loads(stdout)
         except Exception:
             return {"ok": res.get("success", False), "raw": stdout, "stderr": res.get("stderr")}
+
+
+class GitBridge:
+    """Deterministic Git bridge with headless SSH key passphrase support."""
+
+    @classmethod
+    async def run_git(
+        cls,
+        args: List[str],
+        repo_dir: str = "/home/pranc/projects/ghost",
+        passphrase: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Executes git commands with automatic headless SSH passkey handling.
+        Captures exact stdout, stderr, and return code.
+        """
+        env = os.environ.copy()
+        temp_askpass = None
+
+        if passphrase:
+            temp_askpass = f"/tmp/git_askpass_{os.getpid()}.sh"
+            try:
+                with open(temp_askpass, "w") as f:
+                    f.write(f'#!/bin/sh\necho "{passphrase}"\n')
+                os.chmod(temp_askpass, 0o700)
+                env["SSH_ASKPASS"] = temp_askpass
+                env["SSH_ASKPASS_REQUIRE"] = "force"
+                env["DISPLAY"] = ":0"
+            except Exception as e:
+                return {"success": False, "error": f"Failed creating askpass script: {e}"}
+
+        try:
+            cmd = "git " + " ".join(args)
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                cwd=repo_dir,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+            stdout, stderr = await proc.communicate()
+            return {
+                "success": proc.returncode == 0,
+                "returncode": proc.returncode,
+                "stdout": stdout.decode("utf-8", errors="replace").strip(),
+                "stderr": stderr.decode("utf-8", errors="replace").strip(),
+                "command": cmd
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+        finally:
+            if temp_askpass and os.path.exists(temp_askpass):
+                try:
+                    os.remove(temp_askpass)
+                except Exception:
+                    pass
+
 
 
