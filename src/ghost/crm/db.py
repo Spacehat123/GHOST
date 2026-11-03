@@ -3,15 +3,27 @@ Single source of truth for hospitality & boutique web agency client tracking.
 Guarantees anti-hallucination: all pricing, deals, and channel preferences are strictly grounded.
 """
 import os
+import re
+import json
+import uuid
 import sqlite3
 import time
 import logging
-from typing import Dict, Any, List, Optional
+from contextlib import contextmanager
+from typing import Dict, Any, List, Optional, Tuple, Union
 
 logger = logging.getLogger("ghost.crm")
 
 CRM_DB_PATH = "/home/pranc/projects/ghost/data/crm.db"
 OBSIDIAN_CLIENTS_DIR = "/home/pranc/Obsidian Vault/Ghost/Clients"
+
+LEAD_STATUSES = {
+    "harvested", "qualified", "rejected", "building", "needs_confirmation",
+    "built", "deployed", "drafts_ready", "approved", "sent", "replied",
+    "agreed", "contract_drafted", "contract_sent", "deposit_received",
+    "won", "lost", "suppressed"
+}
+
 
 class CRMDatabase:
     _instance: Optional["CRMDatabase"] = None
@@ -28,13 +40,17 @@ class CRMDatabase:
             cls._instance = CRMDatabase()
         return cls._instance
 
-    def _get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _get_connection(self):
         conn = sqlite3.connect(self.db_path, timeout=5)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
-        """Create tables if they do not exist."""
+        """Create tables and indices if they do not exist."""
         with self._get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -63,7 +79,423 @@ class CRMDatabase:
                     FOREIGN KEY (client_slug) REFERENCES clients(slug) ON DELETE CASCADE
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS campaigns (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    city TEXT NOT NULL,
+                    created_at REAL NOT NULL,
+                    harvest_per_batch INTEGER DEFAULT 100,
+                    keep_fraction REAL DEFAULT 0.33
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS batches (
+                    id TEXT PRIMARY KEY,
+                    campaign_id TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    harvested_count INTEGER DEFAULT 0,
+                    qualified_count INTEGER DEFAULT 0,
+                    built_count INTEGER DEFAULT 0,
+                    created_at REAL,
+                    UNIQUE(campaign_id, category),
+                    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS leads (
+                    id TEXT PRIMARY KEY,
+                    batch_id TEXT,
+                    slug TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    address TEXT,
+                    phone TEXT,
+                    website TEXT,
+                    rating REAL,
+                    review_count INTEGER,
+                    maps_cid TEXT,
+                    google_category TEXT,
+                    domain TEXT,
+                    entity_type TEXT DEFAULT 'unknown',
+                    score_revenue REAL DEFAULT 0.0,
+                    score_fit REAL DEFAULT 0.0,
+                    score_friction REAL DEFAULT 0.0,
+                    score_total REAL DEFAULT 0.0,
+                    gaps_json TEXT,
+                    status TEXT DEFAULT 'harvested',
+                    needs_confirmation INTEGER DEFAULT 0,
+                    created_at REAL NOT NULL,
+                    FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE SET NULL
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS suppression (
+                    id TEXT PRIMARY KEY,
+                    kind TEXT NOT NULL,
+                    value_normalised TEXT UNIQUE NOT NULL,
+                    reason TEXT NOT NULL,
+                    added_at REAL NOT NULL,
+                    source TEXT DEFAULT 'manual'
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS drafts (
+                    id TEXT PRIMARY KEY,
+                    lead_id TEXT NOT NULL,
+                    channel TEXT NOT NULL,
+                    subject TEXT,
+                    body TEXT NOT NULL,
+                    link TEXT,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    created_at REAL NOT NULL,
+                    approved_at REAL,
+                    sent_at REAL,
+                    FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id TEXT PRIMARY KEY,
+                    lead_id TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    version INTEGER DEFAULT 1,
+                    path TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    created_at REAL NOT NULL,
+                    FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS events (
+                    id TEXT PRIMARY KEY,
+                    lead_id TEXT,
+                    type TEXT NOT NULL,
+                    payload_json TEXT,
+                    at REAL NOT NULL
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_batch ON leads(batch_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_slug ON leads(slug)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_suppression_lookup ON suppression(kind, value_normalised)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_events_lead ON events(lead_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)")
             conn.commit()
+
+    # =========================================================================
+    # Campaigns & Batches
+    # =========================================================================
+
+    def create_campaign(
+        self,
+        name: str,
+        city: str,
+        harvest_per_batch: int = 100,
+        keep_fraction: float = 0.33,
+        campaign_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new campaign."""
+        cid = campaign_id or f"camp_{uuid.uuid4().hex[:10]}"
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO campaigns (id, name, city, created_at, harvest_per_batch, keep_fraction)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (cid, name.strip(), city.strip(), now, harvest_per_batch, keep_fraction))
+            conn.commit()
+        return self.get_campaign(cid)
+
+    def get_campaign(self, campaign_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve campaign by ID with its batches."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id.strip(),))
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            cur.execute("SELECT * FROM batches WHERE campaign_id = ? ORDER BY created_at ASC, id ASC", (campaign_id.strip(),))
+            data["batches"] = [dict(b) for b in cur.fetchall()]
+            return data
+
+    def list_campaigns(self) -> List[Dict[str, Any]]:
+        """List all campaigns ordered by creation date."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM campaigns ORDER BY created_at DESC")
+            campaigns = [dict(r) for r in cur.fetchall()]
+            for c in campaigns:
+                cur.execute("SELECT * FROM batches WHERE campaign_id = ? ORDER BY created_at ASC, id ASC", (c["id"],))
+                c["batches"] = [dict(b) for b in cur.fetchall()]
+            return campaigns
+
+    def create_batch(
+        self,
+        campaign_id: str,
+        category: str,
+        batch_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new batch under a campaign."""
+        now = time.time()
+        bid = batch_id or f"batch_{int(now*1000)}_{uuid.uuid4().hex[:6]}"
+        clean_cat = category.strip()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO batches (id, campaign_id, category, status, harvested_count, qualified_count, built_count, created_at)
+                VALUES (?, ?, ?, 'pending', 0, 0, 0, ?)
+            """, (bid, campaign_id.strip(), clean_cat, now))
+            conn.commit()
+        return self.get_batch(bid)
+
+    def get_batch(self, batch_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve batch by ID."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM batches WHERE id = ?", (batch_id.strip(),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_batches_for_campaign(self, campaign_id: str) -> List[Dict[str, Any]]:
+        """Get all batches for a given campaign."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM batches WHERE campaign_id = ? ORDER BY created_at ASC, id ASC", (campaign_id.strip(),))
+            return [dict(r) for r in cur.fetchall()]
+
+    def update_batch(
+        self,
+        batch_id: str,
+        status: Optional[str] = None,
+        harvested_count: Optional[int] = None,
+        qualified_count: Optional[int] = None,
+        built_count: Optional[int] = None
+    ) -> bool:
+        """Update batch status and counters."""
+        updates = []
+        params = []
+        if status is not None:
+            updates.append("status = ?")
+            params.append(status)
+        if harvested_count is not None:
+            updates.append("harvested_count = ?")
+            params.append(harvested_count)
+        if qualified_count is not None:
+            updates.append("qualified_count = ?")
+            params.append(qualified_count)
+        if built_count is not None:
+            updates.append("built_count = ?")
+            params.append(built_count)
+
+        if not updates:
+            return False
+
+        params.append(batch_id.strip())
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE batches SET {', '.join(updates)} WHERE id = ?", params)
+            conn.commit()
+            return cur.rowcount > 0
+
+    # =========================================================================
+    # Leads & Clients
+    # =========================================================================
+
+    def add_or_update_lead(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Insert or update a lead record in the leads table."""
+        slug = lead_data["slug"].strip().lower()
+        lid = lead_data.get("id") or f"lead_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        created_at = lead_data.get("created_at") or now
+
+        # Package any extra metadata into gaps_json if provided
+        gaps_json = lead_data.get("gaps_json")
+        extra = {}
+        for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+            if lead_data.get(k) is not None:
+                extra[k] = lead_data[k]
+        if extra:
+            if gaps_json:
+                try:
+                    existing_dict = json.loads(gaps_json)
+                    if isinstance(existing_dict, dict):
+                        existing_dict.update(extra)
+                        gaps_json = json.dumps(existing_dict)
+                except Exception:
+                    pass
+            else:
+                gaps_json = json.dumps(extra)
+
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM leads WHERE slug = ?", (slug,))
+            existing = cur.fetchone()
+
+            if existing:
+                cur.execute("""
+                    UPDATE leads SET
+                        batch_id = COALESCE(?, batch_id),
+                        name = COALESCE(?, name),
+                        address = COALESCE(?, address),
+                        phone = COALESCE(?, phone),
+                        website = COALESCE(?, website),
+                        rating = COALESCE(?, rating),
+                        review_count = COALESCE(?, review_count),
+                        maps_cid = COALESCE(?, maps_cid),
+                        google_category = COALESCE(?, google_category),
+                        domain = COALESCE(?, domain),
+                        entity_type = COALESCE(?, entity_type),
+                        score_revenue = COALESCE(?, score_revenue),
+                        score_fit = COALESCE(?, score_fit),
+                        score_friction = COALESCE(?, score_friction),
+                        score_total = COALESCE(?, score_total),
+                        gaps_json = COALESCE(?, gaps_json),
+                        status = COALESCE(?, status),
+                        needs_confirmation = COALESCE(?, needs_confirmation)
+                    WHERE slug = ?
+                """, (
+                    lead_data.get("batch_id"),
+                    lead_data.get("name"),
+                    lead_data.get("address"),
+                    lead_data.get("phone"),
+                    lead_data.get("website"),
+                    lead_data.get("rating"),
+                    lead_data.get("review_count"),
+                    lead_data.get("maps_cid"),
+                    lead_data.get("google_category"),
+                    lead_data.get("domain"),
+                    lead_data.get("entity_type", "unknown"),
+                    lead_data.get("score_revenue", 0.0),
+                    lead_data.get("score_fit", 0.0),
+                    lead_data.get("score_friction", 0.0),
+                    lead_data.get("score_total", 0.0),
+                    gaps_json,
+                    lead_data.get("status", "harvested"),
+                    1 if lead_data.get("needs_confirmation") else 0,
+                    slug
+                ))
+            else:
+                cur.execute("""
+                    INSERT INTO leads (
+                        id, batch_id, slug, name, address, phone, website,
+                        rating, review_count, maps_cid, google_category, domain,
+                        entity_type, score_revenue, score_fit, score_friction,
+                        score_total, gaps_json, status, needs_confirmation, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    lid,
+                    lead_data.get("batch_id"),
+                    slug,
+                    lead_data.get("name"),
+                    lead_data.get("address"),
+                    lead_data.get("phone"),
+                    lead_data.get("website"),
+                    lead_data.get("rating"),
+                    lead_data.get("review_count"),
+                    lead_data.get("maps_cid"),
+                    lead_data.get("google_category"),
+                    lead_data.get("domain"),
+                    lead_data.get("entity_type", "unknown"),
+                    lead_data.get("score_revenue", 0.0),
+                    lead_data.get("score_fit", 0.0),
+                    lead_data.get("score_friction", 0.0),
+                    lead_data.get("score_total", 0.0),
+                    gaps_json,
+                    lead_data.get("status", "harvested"),
+                    1 if lead_data.get("needs_confirmation") else 0,
+                    created_at
+                ))
+            conn.commit()
+
+        # Keep legacy clients table synchronized
+        self.add_or_update_client(
+            slug=slug,
+            business_name=lead_data.get("name") or slug,
+            phone=lead_data.get("phone"),
+            email=lead_data.get("email"),
+            status=lead_data.get("status", "harvested")
+        )
+
+        return self.get_lead(slug)
+
+    def get_lead(self, slug_or_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve lead by slug or ID."""
+        clean_key = slug_or_id.strip()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM leads WHERE slug = ? OR id = ?", (clean_key.lower(), clean_key))
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            data["needs_confirmation"] = bool(data.get("needs_confirmation"))
+            if data.get("gaps_json"):
+                try:
+                    extra = json.loads(data["gaps_json"])
+                    if isinstance(extra, dict):
+                        for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+                            if k in extra and k not in data:
+                                data[k] = extra[k]
+                except Exception:
+                    pass
+            return data
+
+    def get_leads_by_batch(self, batch_id: str, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve all leads for a batch, optionally filtered by status."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            if status:
+                cur.execute(
+                    "SELECT * FROM leads WHERE batch_id = ? AND status = ? ORDER BY score_total DESC, created_at ASC",
+                    (batch_id.strip(), status.strip().lower())
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM leads WHERE batch_id = ? ORDER BY score_total DESC, created_at ASC",
+                    (batch_id.strip(),)
+                )
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                r["needs_confirmation"] = bool(r.get("needs_confirmation"))
+                if r.get("gaps_json"):
+                    try:
+                        extra = json.loads(r["gaps_json"])
+                        if isinstance(extra, dict):
+                            for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+                                if k in extra and k not in r:
+                                    r[k] = extra[k]
+                    except Exception:
+                        pass
+            return rows
+
+    def update_lead(self, slug_or_id: str, **kwargs) -> bool:
+        """Update arbitrary columns of a lead."""
+        if not kwargs:
+            return False
+        clean_key = slug_or_id.strip()
+        updates = []
+        params = []
+        for k, v in kwargs.items():
+            if k == "needs_confirmation":
+                updates.append("needs_confirmation = ?")
+                params.append(1 if v else 0)
+            else:
+                updates.append(f"{k} = ?")
+                params.append(v)
+
+        params.extend([clean_key.lower(), clean_key])
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE leads SET {', '.join(updates)} WHERE slug = ? OR id = ?", params)
+            conn.commit()
+            updated = cur.rowcount > 0
+
+        if updated and "status" in kwargs:
+            self.update_lead_status(clean_key, kwargs["status"])
+
+        return updated
 
     def add_or_update_client(
         self,
@@ -118,7 +550,6 @@ class CRMDatabase:
                 ))
             conn.commit()
 
-        # Bi-directional sync: mirror to Obsidian markdown
         client_data = self.get_client(clean_slug)
         if client_data:
             self._sync_to_obsidian(client_data)
@@ -126,19 +557,21 @@ class CRMDatabase:
         return client_data
 
     def update_lead_status(self, slug: str, status: str) -> bool:
-        """Updates the status of a lead/client by slug."""
+        """Updates the status of a lead/client by slug across both leads and clients tables."""
         clean_slug = slug.strip().lower()
         now = time.time()
         with self._get_connection() as conn:
             cur = conn.cursor()
+            cur.execute("UPDATE leads SET status = ? WHERE slug = ?", (status, clean_slug))
+            leads_updated = cur.rowcount > 0
             cur.execute("UPDATE clients SET status = ?, updated_at = ? WHERE slug = ?", (status, now, clean_slug))
+            clients_updated = cur.rowcount > 0
             conn.commit()
-            updated = cur.rowcount > 0
-        if updated:
+        if clients_updated:
             client_data = self.get_client(clean_slug)
             if client_data:
                 self._sync_to_obsidian(client_data)
-        return updated
+        return leads_updated or clients_updated
 
     def get_client(self, slug: str) -> Optional[Dict[str, Any]]:
         """Retrieve client and their interaction history."""
@@ -182,6 +615,229 @@ class CRMDatabase:
         if client_data:
             self._sync_to_obsidian(client_data)
         return {"status": "success", "client": clean_slug, "timestamp": now}
+
+    # =========================================================================
+    # Suppression Management
+    # =========================================================================
+
+    @staticmethod
+    def normalize_suppression_value(kind: str, value: str) -> str:
+        """Normalize identifier for suppression lookup."""
+        k = kind.strip().lower()
+        val = value.strip()
+        if k == "email":
+            return val.lower()
+        elif k == "phone":
+            digits = re.sub(r"[^\d]", "", val)
+            return digits[-10:] if len(digits) >= 10 else digits
+        elif k in ("domain", "website"):
+            clean = re.sub(r"^https?://", "", val, flags=re.IGNORECASE)
+            clean = clean.split("/")[0].split(":")[0].lower()
+            if clean.startswith("www."):
+                clean = clean[4:]
+            return clean
+        elif k in ("maps_cid", "cid"):
+            return val
+        elif k == "name":
+            return re.sub(r"[^\w\s]", "", val).strip().lower()
+        return val.lower()
+
+    def add_suppression(
+        self,
+        kind: str,
+        value: str,
+        reason: str,
+        source: str = "manual"
+    ) -> Dict[str, Any]:
+        """Add an entry to the suppression list."""
+        norm_val = self.normalize_suppression_value(kind, value)
+        supp_id = f"supp_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT OR REPLACE INTO suppression (id, kind, value_normalised, reason, added_at, source)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (supp_id, kind.strip().lower(), norm_val, reason.strip(), now, source))
+            conn.commit()
+
+        return {
+            "id": supp_id,
+            "kind": kind.strip().lower(),
+            "value_normalised": norm_val,
+            "reason": reason.strip(),
+            "added_at": now,
+            "source": source
+        }
+
+    def is_suppressed(
+        self,
+        kind: Optional[str] = None,
+        value: Optional[str] = None,
+        lead: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """Check if an entity or specific identifier is on the suppression list."""
+        checks: List[Tuple[str, str]] = []
+        if kind and value:
+            norm = self.normalize_suppression_value(kind, value)
+            if norm:
+                checks.append((kind.strip().lower(), norm))
+
+        if lead:
+            if lead.get("phone"):
+                norm = self.normalize_suppression_value("phone", str(lead["phone"]))
+                if norm:
+                    checks.append(("phone", norm))
+            if lead.get("email"):
+                norm = self.normalize_suppression_value("email", str(lead["email"]))
+                if norm:
+                    checks.append(("email", norm))
+            if lead.get("website"):
+                norm = self.normalize_suppression_value("domain", str(lead["website"]))
+                if norm:
+                    checks.append(("domain", norm))
+            if lead.get("maps_cid"):
+                norm = self.normalize_suppression_value("maps_cid", str(lead["maps_cid"]))
+                if norm:
+                    checks.append(("maps_cid", norm))
+            if lead.get("name"):
+                norm = self.normalize_suppression_value("name", str(lead["name"]))
+                if norm:
+                    checks.append(("name", norm))
+
+        if not checks:
+            return False
+
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            for k, norm_v in checks:
+                cur.execute(
+                    "SELECT id FROM suppression WHERE kind = ? AND value_normalised = ?",
+                    (k, norm_v)
+                )
+                if cur.fetchone():
+                    return True
+        return False
+
+    def list_suppressions(self) -> List[Dict[str, Any]]:
+        """List all suppression records."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM suppression ORDER BY added_at DESC")
+            return [dict(r) for r in cur.fetchall()]
+
+    # =========================================================================
+    # Events & Audit Logging
+    # =========================================================================
+
+    def record_event(
+        self,
+        event_type: str,
+        lead_id: Optional[str] = None,
+        payload: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Record an audit trail event."""
+        eid = f"evt_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        payload_str = json.dumps(payload or {})
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO events (id, lead_id, type, payload_json, at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (eid, lead_id, event_type.strip(), payload_str, now))
+            conn.commit()
+
+        return {"id": eid, "lead_id": lead_id, "type": event_type, "payload": payload or {}, "at": now}
+
+    def get_events(self, lead_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Fetch audit events, optionally for a specific lead."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            if lead_id:
+                cur.execute("SELECT * FROM events WHERE lead_id = ? ORDER BY at DESC LIMIT ?", (lead_id.strip(), limit))
+            else:
+                cur.execute("SELECT * FROM events ORDER BY at DESC LIMIT ?", (limit,))
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                try:
+                    r["payload"] = json.loads(r.get("payload_json") or "{}")
+                except Exception:
+                    r["payload"] = {}
+            return rows
+
+    # =========================================================================
+    # Drafts & Documents (Part 4 & 5 readiness)
+    # =========================================================================
+
+    def add_or_update_draft(
+        self,
+        lead_id: str,
+        channel: str,
+        body: str,
+        subject: Optional[str] = None,
+        link: Optional[str] = None,
+        status: str = "draft",
+        draft_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert or update an outbound draft."""
+        did = draft_id or f"draft_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM drafts WHERE id = ?", (did,))
+            if cur.fetchone():
+                cur.execute("""
+                    UPDATE drafts SET
+                        channel = ?, subject = ?, body = ?, link = ?, status = ?
+                    WHERE id = ?
+                """, (channel, subject, body, link, status, did))
+            else:
+                cur.execute("""
+                    INSERT INTO drafts (id, lead_id, channel, subject, body, link, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (did, lead_id, channel, subject, body, link, status, now))
+            conn.commit()
+        return {"id": did, "lead_id": lead_id, "channel": channel, "status": status, "body": body}
+
+    def get_drafts_for_lead(self, lead_id: str) -> List[Dict[str, Any]]:
+        """Retrieve all drafts for a lead."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM drafts WHERE lead_id = ? ORDER BY created_at DESC", (lead_id.strip(),))
+            return [dict(r) for r in cur.fetchall()]
+
+    def add_document(
+        self,
+        lead_id: str,
+        kind: str,
+        path: str,
+        version: int = 1,
+        status: str = "draft",
+        doc_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Record a generated document (contract, welcome, invoice)."""
+        doc_id = doc_id or f"doc_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO documents (id, lead_id, kind, version, path, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (doc_id, lead_id, kind, version, path, status, now))
+            conn.commit()
+        return {"id": doc_id, "lead_id": lead_id, "kind": kind, "path": path, "status": status}
+
+    def get_documents_for_lead(self, lead_id: str) -> List[Dict[str, Any]]:
+        """Retrieve all documents for a lead."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM documents WHERE lead_id = ? ORDER BY created_at DESC", (lead_id.strip(),))
+            return [dict(r) for r in cur.fetchall()]
+
+    # =========================================================================
+    # Obsidian Vault Sync
+    # =========================================================================
 
     def _sync_to_obsidian(self, client: Dict[str, Any]):
         """Format client record into Obsidian markdown note with YAML frontmatter."""

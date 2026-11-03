@@ -1,0 +1,12 @@
+{
+  "city": "London",
+  "categories": ["car detailing", "cosmetic dental clinic", "boutique gym"],
+  "harvest_per_batch": 100,
+  "keep_fraction": 0.33,
+  "min_rating": 4.0,
+  "min_reviews": 10,
+  "min_total_score": 45,
+  "max_distance_km": null,
+  "exclude_chains": true,
+  "operator_location": null
+}
