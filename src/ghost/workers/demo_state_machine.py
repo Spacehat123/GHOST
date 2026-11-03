@@ -372,20 +372,22 @@ class AutonomousDemoStateMachine:
 
 ---
 
-## 1. Visual & Token Palette (Light Mode Default + Dark Mode Alternate)
+## 1. Visual & Token Palette (Color Hierarchy Guide Reference)
 - **Mode Directive:** **LIGHT MODE BY DEFAULT** with functional Dark Mode toggle (`document.documentElement.classList.toggle('dark')`).
-- **Light Palette (Default):**
-  - Background Root: `{arch['bg']}`
-  - Surface Elevation: `{arch['surface']}`
-  - Primary Luxury Accent: `{arch['accent']}` (Secondary: `{arch['accent_secondary']}`)
-  - High-Legibility Text: `{arch['text']}` (Muted: `{arch['muted']}`)
-  - Subtle Perimeter Border: `{arch['border']}`
-- **Dark Palette (Alternate via `.dark`):**
-  - Background Root: `{arch['dark_bg']}`
-  - Surface Elevation: `{arch['dark_surface']}`
-  - Primary Luxury Accent: `{arch['dark_accent']}` (Secondary: `{arch['dark_accent_secondary']}`)
-  - High-Legibility Text: `{arch['dark_text']}` (Muted: `{arch['dark_muted']}`)
-  - Subtle Perimeter Border: `{arch['dark_border']}`
+- **Layers (Depth Principle):**
+  - Light Canvas: `{arch['bg']}` (Never flat white; ensures surface card elevation)
+  - Light Surface: `#ffffff` (Cards, panels)
+  - Light Raised: `#ffffff` (With soft layered shadows)
+  - Dark Canvas: `{arch['dark_bg']}` / Dark Surface: `{arch['dark_surface']}` / Dark Raised: `#2A2A2A`
+- **Softened Text Ink (No Vibrating #000):**
+  - Primary Ink: `#1D1B20` (Light) / `#E6E1E5` (Dark)
+  - Secondary Ink: `#49454F` (Light) / `#CAC4D0` (Dark)
+- **Accent Pair (60/30/10 Rule):**
+  - Light Accent: `{arch['accent']}` (Deepened for >=4.5:1 contrast on light canvas)
+  - Dark Accent: `{arch['dark_accent']}` (Lightened for >=7:1 contrast on dark canvas)
+- **Elevation & Shadows:**
+  - Resting: `0 1px 2px rgba(0,0,0,.06)` / Hover: `0 8px 24px rgba(0,0,0,.10)`
+  - Hairline perimeter line: `rgba(29, 27, 32, .08)` (Light) / `rgba(255, 255, 255, .08)` (Dark)
 
 ## 2. Typography Pairings
 - **Display / Editorial Headers:** `{arch['font_head']}`
@@ -1025,28 +1027,52 @@ class AutonomousDemoStateMachine:
   {starter_kit}
   <style>
     :root {{
+      /* Color Hierarchy Guide: Tokens */
+      --canvas: {arch['bg']};
+      --surface: #ffffff;
+      --raised: #ffffff;
+      --ink: #1D1B20;
+      --ink-2: #49454F;
+      --ink-disabled: rgba(29, 27, 32, .38);
       --bg-color: {arch['bg']};
       --surface-color: {arch['surface']};
       --surface-card: {arch['surface']}ee;
       --accent-color: {arch['accent']};
       --accent-secondary: {arch['accent_secondary']};
-      --text-color: {arch['text']};
-      --muted-color: {arch['muted']};
+      --on-accent: #ffffff;
+      --text-color: #1D1B20;
+      --muted-color: #49454F;
       --border-color: {arch['border']};
+      --line: rgba(29, 27, 32, .08);
+      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .06);
+      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .10);
+      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .16);
       --accent-alpha15: {arch['accent']}26;
       --accent-alpha20: {arch['accent']}33;
       --accent-alpha30: {arch['accent']}4d;
       --accent-alpha40: {arch['accent']}66;
     }}
     html.dark {{
+      /* Color Hierarchy Guide: Dark Tokens */
+      --canvas: {arch['dark_bg']};
+      --surface: {arch['dark_surface']};
+      --surface-card: {arch['dark_surface']}ee;
+      --raised: #2A2A2A;
+      --ink: #E6E1E5;
+      --ink-2: #CAC4D0;
+      --ink-disabled: rgba(230, 225, 229, .38);
       --bg-color: {arch['dark_bg']};
       --surface-color: {arch['dark_surface']};
-      --surface-card: {arch['dark_surface']}ee;
       --accent-color: {arch['dark_accent']};
       --accent-secondary: {arch['dark_accent_secondary']};
-      --text-color: {arch['dark_text']};
-      --muted-color: {arch['dark_muted']};
+      --on-accent: #1D1B20;
+      --text-color: #E6E1E5;
+      --muted-color: #CAC4D0;
       --border-color: {arch['dark_border']};
+      --line: rgba(255, 255, 255, .08);
+      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .3);
+      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .4);
+      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .6);
       --accent-alpha15: {arch['dark_accent']}26;
       --accent-alpha20: {arch['dark_accent']}33;
       --accent-alpha30: {arch['dark_accent']}4d;

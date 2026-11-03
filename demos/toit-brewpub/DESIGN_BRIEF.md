@@ -6,20 +6,22 @@
 
 ---
 
-## 1. Visual & Token Palette (Light Mode Default + Dark Mode Alternate)
+## 1. Visual & Token Palette (Color Hierarchy Guide Reference)
 - **Mode Directive:** **LIGHT MODE BY DEFAULT** with functional Dark Mode toggle (`document.documentElement.classList.toggle('dark')`).
-- **Light Palette (Default):**
-  - Background Root: `#f9f9fb`
-  - Surface Elevation: `#eeeff3`
-  - Primary Luxury Accent: `#d97706` (Secondary: `#dc2626`)
-  - High-Legibility Text: `#111827` (Muted: `#4b5563`)
-  - Subtle Perimeter Border: `#d1d5db`
-- **Dark Palette (Alternate via `.dark`):**
-  - Background Root: `#0f0f11`
-  - Surface Elevation: `#18181b`
-  - Primary Luxury Accent: `#f59e0b` (Secondary: `#ef4444`)
-  - High-Legibility Text: `#f3f4f6` (Muted: `#9ca3af`)
-  - Subtle Perimeter Border: `#27272a`
+- **Layers (Depth Principle):**
+  - Light Canvas: `#f9f9fb` (Never flat white; ensures surface card elevation)
+  - Light Surface: `#ffffff` (Cards, panels)
+  - Light Raised: `#ffffff` (With soft layered shadows)
+  - Dark Canvas: `#0f0f11` / Dark Surface: `#18181b` / Dark Raised: `#2A2A2A`
+- **Softened Text Ink (No Vibrating #000):**
+  - Primary Ink: `#1D1B20` (Light) / `#E6E1E5` (Dark)
+  - Secondary Ink: `#49454F` (Light) / `#CAC4D0` (Dark)
+- **Accent Pair (60/30/10 Rule):**
+  - Light Accent: `#d97706` (Deepened for >=4.5:1 contrast on light canvas)
+  - Dark Accent: `#f59e0b` (Lightened for >=7:1 contrast on dark canvas)
+- **Elevation & Shadows:**
+  - Resting: `0 1px 2px rgba(0,0,0,.06)` / Hover: `0 8px 24px rgba(0,0,0,.10)`
+  - Hairline perimeter line: `rgba(29, 27, 32, .08)` (Light) / `rgba(255, 255, 255, .08)` (Dark)
 
 ## 2. Typography Pairings
 - **Display / Editorial Headers:** `'Space Grotesk', sans-serif`

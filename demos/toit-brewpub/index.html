@@ -34,28 +34,52 @@
 
   <style>
     :root {
+      /* Color Hierarchy Guide: Tokens */
+      --canvas: #f9f9fb;
+      --surface: #ffffff;
+      --raised: #ffffff;
+      --ink: #1D1B20;
+      --ink-2: #49454F;
+      --ink-disabled: rgba(29, 27, 32, .38);
       --bg-color: #f9f9fb;
       --surface-color: #eeeff3;
       --surface-card: #eeeff3ee;
       --accent-color: #d97706;
       --accent-secondary: #dc2626;
-      --text-color: #111827;
-      --muted-color: #4b5563;
+      --on-accent: #ffffff;
+      --text-color: #1D1B20;
+      --muted-color: #49454F;
       --border-color: #d1d5db;
+      --line: rgba(29, 27, 32, .08);
+      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .06);
+      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .10);
+      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .16);
       --accent-alpha15: #d9770626;
       --accent-alpha20: #d9770633;
       --accent-alpha30: #d977064d;
       --accent-alpha40: #d9770666;
     }
     html.dark {
+      /* Color Hierarchy Guide: Dark Tokens */
+      --canvas: #0f0f11;
+      --surface: #18181b;
+      --surface-card: #18181bee;
+      --raised: #2A2A2A;
+      --ink: #E6E1E5;
+      --ink-2: #CAC4D0;
+      --ink-disabled: rgba(230, 225, 229, .38);
       --bg-color: #0f0f11;
       --surface-color: #18181b;
-      --surface-card: #18181bee;
       --accent-color: #f59e0b;
       --accent-secondary: #ef4444;
-      --text-color: #f3f4f6;
-      --muted-color: #9ca3af;
+      --on-accent: #1D1B20;
+      --text-color: #E6E1E5;
+      --muted-color: #CAC4D0;
       --border-color: #27272a;
+      --line: rgba(255, 255, 255, .08);
+      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .3);
+      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .4);
+      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .6);
       --accent-alpha15: #f59e0b26;
       --accent-alpha20: #f59e0b33;
       --accent-alpha30: #f59e0b4d;
