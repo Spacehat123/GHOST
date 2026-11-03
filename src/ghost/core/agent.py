@@ -135,14 +135,12 @@ class GhostAgent:
             messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
         messages.append({"role": "user", "content": user_text})
 
-        # Loop to handle function calling and multi-step tool execution with dynamic turn budget
-        turn_budget = 8
-        max_total_turns = 24
+        # Loop to handle function calling and multi-step tool execution (unlimited operational turns)
         current_turn = 0
         latest_turn_tokens = 0
-        budget_denied = False
+        operator_aborted = False
 
-        while current_turn < turn_budget:
+        while True:
             current_turn += 1
 
             if self._interrupt_event.is_set():
@@ -250,18 +248,13 @@ class GhostAgent:
                             "result": res
                         }
 
-                        # Dynamic Turn Budget Extension Handling
-                        # If Ghost requests authorization to extend turn budget or more turns
+                        # Interactive Authorization Modal Handling
+                        # If operator explicitly denies authorization on a gated action
                         if tool_name == "desktop_control" and args.get("action") in ["request_authorization", "request_consent", "authorize"]:
                             allowed = res.get("result", {}).get("allowed") if isinstance(res.get("result"), dict) else res.get("allowed")
-                            req_text = str(args.get("target") or args.get("args") or "").lower()
-                            if "turn" in req_text or "step" in req_text or "budget" in req_text:
-                                if allowed:
-                                    turn_budget = min(turn_budget + 8, max_total_turns)
-                                    logger.info(f"Operator approved turn extension. Budget now: {turn_budget}")
-                                else:
-                                    budget_denied = True
-                                    logger.info("Operator denied turn extension. Aborting tool loop to final synthesis.")
+                            if allowed is False:
+                                operator_aborted = True
+                                logger.info("Operator denied authorization. Aborting tool loop to final synthesis.")
 
                         # 4. Feed REAL tool output back into conversation messages
                         if tool_name == "capture_screen" and isinstance(res, dict) and res.get("status") == "success" and res.get("data_uri"):
@@ -290,8 +283,8 @@ class GhostAgent:
                                 "content": json.dumps(res)
                             })
 
-                    # If operator denied turn extension, exit tool loop immediately to final synthesis pass
-                    if budget_denied:
+                    # If operator explicitly denied authorization, exit tool loop immediately to final synthesis pass
+                    if operator_aborted:
                         break
 
                     # Loop back to generate model's spoken response with tool results!
