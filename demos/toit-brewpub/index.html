@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toit Brewpub — An Artisanal Sanctuary of Roasts & Culinary Artistry in Indiranagar.</title>
+  
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@400;600&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Anime.js (Staggered Motion) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['"Playfair Display"', '"Cormorant Garamond"', 'serif'],
+              display: ['"Cinzel"', '"Syne"', 'sans-serif'],
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+              mono: ['"Space Grotesk"', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+
+  <style>
+    :root {
+      --bg-color: #f9f9fb;
+      --surface-color: #eeeff3;
+      --surface-card: #eeeff3ee;
+      --accent-color: #d97706;
+      --accent-secondary: #dc2626;
+      --text-color: #111827;
+      --muted-color: #4b5563;
+      --border-color: #d1d5db;
+      --accent-alpha15: #d9770626;
+      --accent-alpha20: #d9770633;
+      --accent-alpha30: #d977064d;
+      --accent-alpha40: #d9770666;
+    }
+    html.dark {
+      --bg-color: #0f0f11;
+      --surface-color: #18181b;
+      --surface-card: #18181bee;
+      --accent-color: #f59e0b;
+      --accent-secondary: #ef4444;
+      --text-color: #f3f4f6;
+      --muted-color: #9ca3af;
+      --border-color: #27272a;
+      --accent-alpha15: #f59e0b26;
+      --accent-alpha20: #f59e0b33;
+      --accent-alpha30: #f59e0b4d;
+      --accent-alpha40: #f59e0b66;
+    }
+    /* Website Build Guide: Reusable GlassPanel */
+    .glass-panel {
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+    }
+    @supports not (backdrop-filter: blur(24px)) {
+      .glass-panel {
+        background: var(--surface-color);
+      }
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    /* Spring hover transitions */
+    .spring-card {
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, background-color 0.3s ease;
+    }
+    .spring-card:hover {
+      transform: translateY(-6px) scale(1.008);
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 24px 48px -18px var(--accent-alpha30);
+    }
+    /* Infinite Marquee */
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: flex;
+      width: 200%;
+      animation: marquee 28s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-amber-400 selection:text-black relative">
+
+  <!-- Grain / Noise Overlay Texture -->
+  <div class="pointer-events-none fixed inset-0 opacity-[0.03] z-50 bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+  <!-- React Bits: Living Ambient Mesh Gradients -->
+  <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div class="absolute -top-[30%] -left-[15%] w-[65vw] h-[65vw] rounded-full blur-[140px] opacity-25 animate-pulse" 
+         style="background: radial-gradient(circle, var(--accent-color) 0%, transparent 70%);"></div>
+    <div class="absolute -bottom-[20%] -right-[15%] w-[55vw] h-[55vw] rounded-full blur-[160px] opacity-15" 
+         style="background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);"></div>
+  </div>
+
+  <!-- Sticky Glass Navigation Header with Dark Mode Toggle -->
+  <header class="fixed w-full top-0 z-40 backdrop-blur-xl px-8 py-5 flex justify-between items-center transition-colors duration-300" 
+          style="border-bottom: 1px solid var(--border-color); background: var(--bg-color)dd;">
+    <div class="text-xl font-bold tracking-widest uppercase font-serif" style="color: var(--accent-color);">
+      Toit Brewpub
+    </div>
+    <nav class="hidden md:flex gap-8 text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Philosophy</a>
+      <a href="#menu" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Curated Offerings</a>
+      <a href="#reserve" class="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Reservations</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <!-- Dark / Light Mode Switcher Toggle Button -->
+      <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-all duration-300 hover:scale-105" 
+              style="border-color: var(--border-color); color: var(--text-color); background: var(--surface-card);">
+        <!-- Sun Icon (shown in dark mode) -->
+        <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5" stroke-width="2"></circle>
+          <path stroke-width="2" stroke-linecap="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+        <!-- Moon Icon (shown in light mode) -->
+        <svg id="theme-icon-moon" class="w-4 h-4 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </button>
+
+      <a href="#reserve" class="luxury-btn rounded-full px-6 py-2.5 text-[11px] uppercase tracking-widest font-mono" 
+         style="border: 1px solid var(--accent-color); color: var(--text-color);">
+        Book Salon
+      </a>
+    </div>
+  </header>
+
+  
+  <!-- SECTION 2: HERO WITH RICH PHOTOGRAPHY -->
+  <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 relative overflow-hidden">
+    <div class="absolute inset-0 -z-20 overflow-hidden">
+      <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85" alt="Toit Brewpub Interior Atmosphere" 
+           class="w-full h-full object-cover object-center filter brightness-[0.92] dark:brightness-[0.45] scale-105 transition-transform duration-1000 ease-out" />
+      <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/70 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-[var(--bg-color)]/80 via-transparent to-[var(--bg-color)]"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto relative z-10">
+      <div class="reveal-el inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs uppercase tracking-widest font-mono mb-6 backdrop-blur-md" 
+           style="background: var(--surface-card); border: 1px solid var(--border-color); color: var(--accent-color);">
+        <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background: var(--accent-color);"></span>
+        Serving Indiranagar • 4.6★ Gastronomic & Hospitality Excellence
+      </div>
+      <h1 class="reveal-el text-5xl md:text-8xl font-bold tracking-tight leading-none mb-8" style="font-family: 'Space Grotesk', sans-serif;">
+        Toit Brewpub
+      </h1>
+      <p class="reveal-el text-base md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed" style="color: var(--text-color); opacity: 0.9;">
+        An Artisanal Sanctuary of Roasts & Culinary Artistry in Indiranagar.
+      </p>
+      
+      <!-- Dual CTAs: Magic UI Shimmer + Secondary Ghost Button -->
+      <div class="reveal-el flex flex-col sm:flex-row items-center justify-center gap-5">
+        <a href="#reserve" class="relative inline-flex h-13 overflow-hidden rounded-full p-[1px] focus:outline-none transition-transform active:scale-95 group shadow-xl">
+          <span class="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,var(--accent-color)_0%,#ffffff_50%,var(--accent-color)_100%)]"></span>
+          <span class="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full px-9 py-3 text-xs uppercase tracking-[0.2em] font-medium backdrop-blur-3xl transition-colors group-hover:bg-opacity-80" 
+                style="background: var(--bg-color); color: var(--text-color);">
+            Reserve Tasting Table
+          </span>
+        </a>
+        <a href="#menu" class="luxury-btn rounded-full px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all backdrop-blur-md hover:bg-black/5 dark:hover:bg-white/10" 
+           style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">
+          Explore Offerings
+        </a>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 3: OPERATIONAL GAP & VALUE PROPOSITION BANNER -->
+  <section class="py-10 px-6 md:px-16 relative" style="background: var(--surface-card); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-4 text-left">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: var(--accent-alpha15); color: var(--accent-color);">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Direct Table Protocol • Zero Intermediary Friction</h3>
+          <p class="text-xs" style="color: var(--muted-color);">Instant VIP booking confirmation via WhatsApp concierge. Bypasses third-party aggregator commissions.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 text-xs font-mono">
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--accent-color); background: var(--bg-color);">⚡ Sub-Second Speed</span>
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">📱 1-Tap Booking</span>
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--muted-color); background: var(--bg-color);">🛡️ Direct Concierge</span>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 4: STORY & CRAFT PHILOSOPHY -->
+  <section id="philosophy" class="py-24 px-6 md:px-16 relative">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">Philosophy & Provenance</p>
+        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6" style="font-family: 'Space Grotesk', sans-serif;">
+          Architectural Flavor & Uncompromising Standards
+        </h2>
+        <p class="text-sm md:text-base leading-relaxed mb-6" style="color: var(--text-color); opacity: 0.9;">
+          At Toit Brewpub, every detail—from harvest provenance to acoustic balance—is calibrated to provide an unparalleled sensory escape in Indiranagar.
+        </p>
+        <p class="text-xs md:text-sm leading-relaxed mb-8" style="color: var(--muted-color);">
+          We reject automated mediocrity. Our team pairs artisanal heritage with personalized hospitality, ensuring every visit unfolds with composure and refined luxury.
+        </p>
+        <div class="flex items-center gap-8 pt-6 border-t font-mono text-xs" style="border-color: var(--border-color);">
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">100%</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">Artisanal Provenance</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">4.6★</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">1,200+ Verified Reviews</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">0.4s</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">Instant Interaction</div>
+          </div>
+        </div>
+      </div>
+      <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
+        <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" alt="Toit Brewpub Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+            <p class="text-xs italic" style="color: var(--text-color);">"Toit Brewpub crafts hospitality with the discipline of fine art."</p>
+            <p class="text-[10px] font-mono mt-1 font-bold" style="color: var(--accent-color);">— Head Concierge & Sommelier</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 5: BENTO ASYMMETRIC GRID WITH PHOTOGRAPHY -->
+  <section id="menu" class="py-28 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">Curated Offerings</p>
+        <h2 class="text-4xl md:text-6xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">Artisanal Precision</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Asymmetric 2-Column Highlight Card with Real Photography -->
+        <div class="md:col-span-2 spring-card backdrop-blur-2xl rounded-3xl relative overflow-hidden flex flex-col justify-between group" 
+             style="background: var(--surface-card); border: 1px solid var(--border-color);">
+          <div class="relative h-64 md:h-72 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" alt="Single-Origin Pour Over (Ethiopia Yirgacheffe)" 
+                 class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.96] dark:brightness-[0.75]" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface-card)] via-transparent to-transparent"></div>
+            <div class="absolute top-4 left-4 inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase backdrop-blur-md" 
+                 style="background: var(--surface-card); color: var(--accent-color); border: 1px solid var(--border-color);">
+              Signature Highlight
+            </div>
+          </div>
+          <div class="p-8 md:p-10">
+            <h3 class="text-2xl md:text-3xl font-bold mb-3" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">
+              Single-Origin Pour Over (Ethiopia Yirgacheffe)
+            </h3>
+            <p class="text-sm md:text-base leading-relaxed max-w-xl mb-6" style="color: var(--muted-color);">
+              Jasmine floral aroma, bergamot notes, washed heirloom process.. Prepared fresh to order with uncompromising sourcing standards.
+            </p>
+            <div class="flex items-center justify-between pt-4" style="border-top: 1px solid var(--border-color);">
+              <span class="text-2xl font-mono font-bold" style="color: var(--accent-color);">₹340</span>
+              <span class="text-xs uppercase tracking-widest font-mono" style="color: var(--muted-color);">Specialty Brews</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bklit Data Metric Card with Artisanal Process Photography -->
+        <div class="spring-card backdrop-blur-2xl rounded-3xl flex flex-col justify-between relative overflow-hidden group" 
+             style="background: var(--surface-card); border: 1px solid var(--border-color);">
+          <div class="relative h-44 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" alt="Cellar Reserve" 
+                 class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.96] dark:brightness-[0.75]" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[var(--surface-card)] via-transparent to-transparent"></div>
+          </div>
+          <div class="p-6 md:p-8">
+            <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Cupping & Quality Score</p>
+            <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
+            <p class="text-xs leading-relaxed" style="color: var(--muted-color);">
+              Specialty Association certified micro-lot extraction & hospitality excellence.
+            </p>
+            <div class="pt-6 mt-4" style="border-top: 1px solid var(--border-color);">
+              <span class="inline-block px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider" 
+                    style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--accent-alpha30);">
+                Single-Estate Harvest
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Bento Row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        
+            <div class="spring-card backdrop-blur-xl p-6 rounded-2xl relative overflow-hidden group" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <div class="flex justify-between items-baseline mb-2">
+                <h4 class="text-lg font-semibold" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Artisanal Sourdough Avocado Tartine</h4>
+                <span class="text-sm font-mono font-bold" style="color: var(--accent-color);">₹420</span>
+              </div>
+              <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Slow-fermented sourdough, whipped hass avocado, organic dukkah seeds.</p>
+            </div>
+            
+            <div class="spring-card backdrop-blur-xl p-6 rounded-2xl relative overflow-hidden group" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <div class="flex justify-between items-baseline mb-2">
+                <h4 class="text-lg font-semibold" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Cascara Nitro Cold Brew Spritz</h4>
+                <span class="text-sm font-mono font-bold" style="color: var(--accent-color);">₹310</span>
+              </div>
+              <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Cold-pressed coffee cherry cascara, sparkling tonic, dehydrated citrus wheel.</p>
+            </div>
+            
+            <div class="spring-card backdrop-blur-xl p-6 rounded-2xl relative overflow-hidden group" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <div class="flex justify-between items-baseline mb-2">
+                <h4 class="text-lg font-semibold" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Double-Shot Cortado & Valrhona Truffle</h4>
+                <span class="text-sm font-mono font-bold" style="color: var(--accent-color);">₹280</span>
+              </div>
+              <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Equal parts velvet microfoam and double ristretto with dark cocoa ganache.</p>
+            </div>
+            
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 6: ARTISANAL METRICS & QUALITY PROOF -->
+  <section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-xl mx-auto mb-14">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Quality Benchmarks</p>
+        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: 'Space Grotesk', sans-serif;">Verified Standards</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Standard & Accolade</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Accredited quality evaluation and rigorous batch consistency monitoring.</p>
+        </div>
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Direct Sourcing</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">Single Estate</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">100% trace-documented micro-lots and sustainable direct farm relationships.</p>
+        </div>
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Patron Acclaim</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">4.6 ★</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Top-tier standing in Indiranagar across verified patron reviews.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 7: ATMOSPHERE & SPACE GALLERY -->
+  <section id="gallery" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div>
+          <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Visual Ambiance</p>
+          <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">Atmosphere & Spaces</h2>
+        </div>
+        <p class="text-xs md:text-sm font-mono mt-4 md:mt-0" style="color: var(--muted-color);">The Curated Interior of Toit Brewpub</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1600&q=85" alt="Main Dining Salon" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">The Main Salon</span>
+        </div>
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80" alt="Cellar & Bar Lounge" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">Cellar & Bar</span>
+        </div>
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="https://images.unsplash.com/photo-1497636577773-f1231844b336?auto=format&fit=crop&w=800&q=80" alt="Private Tasting Room" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">Private Tasting Room</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 8: INFINITE PROOF MARQUEE -->
+  <section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
+    <div class="text-center mb-12">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Guest Acclaim</p>
+      <h2 class="text-3xl md:text-4xl font-bold" style="font-family: 'Space Grotesk', sans-serif;">Verified Impressions</h2>
+    </div>
+    
+    <div class="marquee-track flex animate-marquee whitespace-nowrap">
+      
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "Unrivaled culinary execution. The tasting menu and ambient craftsmanship redefine hospitality in Bengaluru...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Arjun Menon</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "Exceptional private dining experience. Attentive staff, impeccable cocktail curation, and stunning interior acoustics...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Priya Sundaram</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "The signature small plates and curated wine list set an impossible benchmark. Worth every rupee...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Vikramaditya Rao</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "Unrivaled culinary execution. The tasting menu and ambient craftsmanship redefine hospitality in Bengaluru...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Arjun Menon</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "Exceptional private dining experience. Attentive staff, impeccable cocktail curation, and stunning interior acoustics...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Priya Sundaram</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
+                 style="background: var(--surface-card); border: 1px solid var(--border-color);">
+              <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+                "The signature small plates and curated wine list set an impossible benchmark. Worth every rupee...."
+              </p>
+              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+                <span class="font-bold" style="color: var(--accent-color);">Vikramaditya Rao</span>
+                <span>Google Review • 5 stars</span>
+              </div>
+            </div>
+            
+    </div>
+  </section>
+
+  
+        <!-- Ghost Deep Strike Performance Audit Card -->
+        <section class="py-16 px-6 max-w-5xl mx-auto my-12 rounded-3xl bg-neutral-900 text-white border border-neutral-800 shadow-2xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="text-center mb-10">
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest bg-emerald-500/20 text-emerald-400 mb-3 border border-emerald-500/30">
+              Field Intelligence Audit
+            </span>
+            <h3 class="text-3xl font-serif font-bold tracking-tight">Performance & Conversion Delta</h3>
+            <p class="text-neutral-400 text-sm mt-2 max-w-xl mx-auto">
+              Comparing Toit Brewpub's existing online footprint against this Ghost High-Ticket Architecture.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <!-- Existing Baseline Card -->
+            <div class="p-8 rounded-2xl bg-neutral-950/80 border border-red-500/20 relative">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-mono uppercase text-red-400 tracking-wider">Current Baseline</span>
+                <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-300">Score: 32/100</span>
+              </div>
+              <div class="text-4xl font-bold text-red-400 font-mono mb-2">7.4s</div>
+              <p class="text-xs text-neutral-400 mb-6">Mobile First Contentful Paint (~52% bounce probability)</p>
+              
+              <ul class="space-y-2 text-xs text-neutral-400 font-sans border-t border-neutral-800/80 pt-4">
+                <li class="flex items-center gap-2"><span class="text-red-400">✕</span> Uncompressed media assets</li>
+                <li class="flex items-center gap-2"><span class="text-red-400">✕</span> High mobile bounce penalty</li>
+                <li class="flex items-center gap-2"><span class="text-red-400">✕</span> No dynamic dark mode toggle</li>
+              </ul>
+            </div>
+
+            <!-- Ghost Architecture Card -->
+            <div class="p-8 rounded-2xl bg-gradient-to-br from-neutral-950 to-neutral-900 border border-emerald-500/40 relative shadow-lg shadow-emerald-500/10">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Ghost Architecture</span>
+                <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300">Score: 99/100</span>
+              </div>
+              <div class="text-4xl font-bold text-emerald-400 font-mono mb-2">0.38s</div>
+              <p class="text-xs text-neutral-400 mb-6">Instant Edge Hydration (0% mobile bounce penalty)</p>
+              
+              <ul class="space-y-2 text-xs text-neutral-300 font-sans border-t border-neutral-800/80 pt-4">
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 4K curated CDN media with zero lag</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Real guest reviews & reservation sync</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Flawless Dark/Light luxury theme toggle</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="mt-8 pt-6 border-t border-neutral-800 text-center">
+            <span class="text-xs text-neutral-400">
+              Scouted via Ghost Deep-Strike Intelligence Engine • Autonomous Operations Task Force 141
+            </span>
+          </div>
+        </section>
+        
+  
+  <!-- SECTION 10: HOW IT WORKS (3 STEPS) -->
+  <section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Curated Protocol</p>
+        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">How It Works</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass-panel p-8 rounded-3xl relative">
+          <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 01</span>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Select Experience</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Select your preferred tasting table, private dining salon, or cocktail bar seating.</p>
+        </div>
+        <div class="glass-panel p-8 rounded-3xl relative">
+          <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 02</span>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Instant WhatsApp</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Connect directly with our concierge team on WhatsApp with your date and party size pre-filled.</p>
+        </div>
+        <div class="glass-panel p-8 rounded-3xl relative">
+          <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 03</span>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">Immersive Hospitality</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Arrive to an unhurried, tailored gastronomic evening with personalized sommelier attention.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 11: INTERACTIVE VIP WHATSAPP BOOKING MODULE -->
+  <section id="reserve" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+    <div class="max-w-4xl mx-auto glass-panel p-8 md:p-14 rounded-3xl text-center relative overflow-hidden">
+      <div class="inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase mb-4" style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--border-color);">
+        Direct VIP Concierge
+      </div>
+      <h2 class="text-3xl md:text-5xl font-bold mb-4" style="font-family: 'Space Grotesk', sans-serif;">Reserve Your Table</h2>
+      <p class="text-xs md:text-sm max-w-lg mx-auto mb-10 leading-relaxed" style="color: var(--muted-color);">
+        Choose your seating and initiate an instant VIP booking conversation directly with our front-of-house team on WhatsApp.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-8 text-left">
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Experience</label>
+          <select id="booking-experience" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>Tasting Table (2-4 Guests)</option>
+            <option>Private Dining Salon (6-12 Guests)</option>
+            <option>Bar & Cocktail Lounge</option>
+            <option>Exclusive Buyout</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Party Size</label>
+          <select id="booking-guests" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>2 Guests</option>
+            <option>4 Guests</option>
+            <option>6 Guests</option>
+            <option>8+ Guests</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Seating</label>
+          <select id="booking-time" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>Lunch / Afternoon</option>
+            <option>Early Evening (19:00)</option>
+            <option>Prime Dinner (20:30)</option>
+            <option>Late Night Lounge</option>
+          </select>
+        </div>
+      </div>
+
+      <a id="whatsapp-direct-btn" href="https://wa.me/918041258930?text=Hello%20Toit%20Brewpub,%20I%20would%20like%20to%20reserve%20a%20table." 
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full font-semibold text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+         style="background: #25D366; color: #000;">
+        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>Instant WhatsApp Confirmation</span>
+      </a>
+      <p class="text-[10px] font-mono mt-3" style="color: var(--muted-color);">Direct link to verified concierge. Zero intermediary booking surcharges.</p>
+    </div>
+  </section>
+
+  
+  <!-- SECTION 12: LOCATION, HOURS, FAQ & CONVERSION FOOTER -->
+  <section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-4xl mx-auto mb-16">
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity & Access</p>
+        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">Frequently Asked Questions</h2>
+      </div>
+      <div class="space-y-4">
+        <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
+          <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">
+            <span>What are the reservation lead times?</span>
+            <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
+          </summary>
+          <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
+            Tasting tables and private salons open 14 days in advance. Direct WhatsApp reservations receive priority confirmation within 15 minutes.
+          </p>
+        </details>
+        <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
+          <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: 'Space Grotesk', sans-serif; color: var(--text-color);">
+            <span>Do you accommodate dietary preferences and private buyouts?</span>
+            <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
+          </summary>
+          <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
+            Yes. Our kitchen curates bespoke botanical, pescatarian, and allergen-free tasting courses with advance notice, and full salons are available for buyouts.
+          </p>
+        </details>
+      </div>
+    </div>
+
+    <footer class="pt-16 pb-12 text-center relative overflow-hidden" style="border-top: 1px solid var(--border-color);">
+      <div class="max-w-4xl mx-auto mb-14">
+        <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Visit & Contact</p>
+        <h3 class="text-3xl md:text-4xl font-bold mb-6" style="font-family: 'Space Grotesk', sans-serif;">Toit Brewpub</h3>
+        <div class="text-xs font-mono space-y-1 mb-8" style="color: var(--muted-color);">
+          <p>Indiranagar, 100ft Rd, Bengaluru, India, Karnataka, India</p>
+          <p>Monday – Sunday: 11:30 – 23:30 | Reservations Recommended</p>
+          <p>Direct Inquiries: <a href="tel:+91 80 4125 8930" class="underline hover:text-amber-500">+91 80 4125 8930</a> • concierge@toit-brewpub.com</p>
+        </div>
+      </div>
+
+      <!-- Oversized Architectural Watermark -->
+      <div class="w-full text-center select-none pointer-events-none opacity-10 mb-8">
+        <div class="text-[12vw] font-bold leading-none tracking-tighter uppercase font-serif" style="color: var(--text-color);">
+          Toit Brewpub
+        </div>
+      </div>
+
+      <div class="pt-8 text-xs font-mono flex flex-col sm:flex-row justify-between items-center gap-4" 
+           style="border-top: 1px solid var(--border-color); color: var(--muted-color);">
+        <div>© 2026 Toit Brewpub. Concept design presented by Ghost. All rights reserved.</div>
+        <div>Designed with Architectural Precision by Ghost.</div>
+      </div>
+    </footer>
+  </section>
+
+
+  <!-- Theme Toggle & Anime.js Viewport Reveals -->
+  <script>
+    // Theme Switcher Logic (Light Mode by Default, Persistent via localStorage)
+    const toggleBtn = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        sunIcon.classList.remove('hidden');
+        sunIcon.classList.add('block');
+        moonIcon.classList.remove('block');
+        moonIcon.classList.add('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        sunIcon.classList.remove('block');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+        moonIcon.classList.add('block');
+      }
+    }
+
+    // Default to Light Mode unless user explicitly set dark
+    const savedTheme = localStorage.getItem('ghost-theme');
+    const initialDark = savedTheme === 'dark'; // Light by default
+    applyTheme(initialDark);
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('ghost-theme', isDark ? 'dark' : 'light');
+        applyTheme(isDark);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof anime !== 'undefined') {
+        anime.timeline({ easing: 'easeOutExpo' })
+          .add({
+            targets: '.reveal-el',
+            translateY: [35, 0],
+            opacity: [0, 1],
+            delay: anime.stagger(140),
+            duration: 1200
+          })
+          .add({
+            targets: '.spring-card',
+            translateY: [25, 0],
+            opacity: [0, 1],
+            delay: anime.stagger(90),
+            duration: 1000
+          }, '-=700');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -33,6 +33,9 @@ DOMAIN_CURATED_ASSETS = {
         "hero_bg": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85",
         "bento_img1": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
         "bento_img2": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80",
+        "gallery_1": "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80",
+        "gallery_2": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80",
+        "gallery_3": "https://images.unsplash.com/photo-1497636577773-f1231844b336?auto=format&fit=crop&w=800&q=80",
         "menu": [
             {"title": "Single-Origin Pour Over (Ethiopia Yirgacheffe)", "price": "₹340", "desc": "Jasmine floral aroma, bergamot notes, washed heirloom process.", "category": "Specialty Brews"},
             {"title": "Artisanal Sourdough Avocado Tartine", "price": "₹420", "desc": "Slow-fermented sourdough, whipped hass avocado, organic dukkah seeds.", "category": "Kitchen & Bakery"},
@@ -45,6 +48,9 @@ DOMAIN_CURATED_ASSETS = {
         "hero_bg": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85",
         "bento_img1": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
         "bento_img2": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+        "gallery_1": "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=800&q=80",
+        "gallery_2": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+        "gallery_3": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
         "menu": [
             {"title": "Smoked Rosemary Single Cask Old Fashioned", "price": "₹850", "desc": "Small-batch oak bourbon, charred winter herbs, walnut bitters.", "category": "Artisan Libations"},
             {"title": "Truffle & Brie Glazed Sliders", "price": "₹720", "desc": "Charcoal-grilled brioche, double-cream brie, black winter truffle jus.", "category": "Small Plates"},
@@ -56,6 +62,9 @@ DOMAIN_CURATED_ASSETS = {
         "hero_bg": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85",
         "bento_img1": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
         "bento_img2": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
+        "gallery_1": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
+        "gallery_2": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80",
+        "gallery_3": "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80",
         "menu": [
             {"title": "Private Infinity Pavilion Dinner", "price": "₹12,500", "desc": "Four-course candlelit bespoke menu served cliffside under the stars.", "category": "Signature Curations"},
             {"title": "Ayurvedic Herbal Detox Experience", "price": "₹6,800", "desc": "Traditional dosha balance consultation, warm infused herbal oils, steam bath.", "category": "Wellness Sanctuary"}
@@ -65,6 +74,9 @@ DOMAIN_CURATED_ASSETS = {
         "hero_bg": "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1600&q=85",
         "bento_img1": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
         "bento_img2": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80",
+        "gallery_1": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+        "gallery_2": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80",
+        "gallery_3": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
         "menu": [
             {"title": "A5 Miyazaki Wagyu Tartare", "price": "₹2,400", "desc": "Smoked egg yolk, kaluga caviar, black truffle toasted brioche.", "category": "Degustation Courses"},
             {"title": "Hokkaido Scallop Crudo", "price": "₹1,850", "desc": "Finger lime pearls, white soy ponzu, sea grapes, cold-pressed chive oil.", "category": "Degustation Courses"},
@@ -269,12 +281,19 @@ class AutonomousDemoStateMachine:
         domain = detect_domain_profile(self.business_name, self.location, snippets_text)
         assets = DOMAIN_CURATED_ASSETS.get(domain, DOMAIN_CURATED_ASSETS["fine_dining"]).copy()
 
-        # If real photos were scraped from Google Maps CDN, inject them into hero & bento
+        # If real photos were scraped from Google Maps CDN, inject them into hero, bento, and gallery
         scraped_photos = scout_data.get("photos", [])
         if len(scraped_photos) >= 3:
             assets["hero_bg"] = scraped_photos[0]
             assets["bento_img1"] = scraped_photos[1]
             assets["bento_img2"] = scraped_photos[2]
+            assets["gallery_1"] = scraped_photos[3] if len(scraped_photos) > 3 else assets.get("gallery_1", scraped_photos[0])
+            assets["gallery_2"] = scraped_photos[4] if len(scraped_photos) > 4 else assets.get("gallery_2", scraped_photos[1])
+            assets["gallery_3"] = scraped_photos[5] if len(scraped_photos) > 5 else assets.get("gallery_3", scraped_photos[2])
+            real_photos_verified = True
+        else:
+            logger.info(f"ReconScout note: {len(scraped_photos)} real photos detected for '{self.business_name}'.")
+            real_photos_verified = False
 
         extracted_menu = [dict(it) for it in assets["menu"]]
 
@@ -436,13 +455,16 @@ class AutonomousDemoStateMachine:
         hero_img = assets.get("hero_bg", "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=85")
         bento_img1 = assets.get("bento_img1", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80")
         bento_img2 = assets.get("bento_img2", "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80")
+        gallery_1 = assets.get("gallery_1", "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80")
+        gallery_2 = assets.get("gallery_2", "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80")
+        gallery_3 = assets.get("gallery_3", "https://images.unsplash.com/photo-1497636577773-f1231844b336?auto=format&fit=crop&w=800&q=80")
+        wa_phone = re.sub(r'[^0-9]', '', b['phone'])
 
         # 2. Hero Section with Rich Photography Backdrop
-        hero_badge = f"Serving {self.location.split(',')[0]} • 4.9★ Gastronomic & Hospitality Excellence"
+        hero_badge = f"Serving {self.location.split(',')[0]} • {b.get('rating', '4.9')}★ Gastronomic & Hospitality Excellence"
         hero_html = f"""
   <!-- SECTION 2: HERO WITH RICH PHOTOGRAPHY -->
   <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 relative overflow-hidden">
-    <!-- Hero Background Image with Subtle Parallax & Luxury Overlay -->
     <div class="absolute inset-0 -z-20 overflow-hidden">
       <img src="{hero_img}" alt="{b['business_name']} Interior Atmosphere" 
            class="w-full h-full object-cover object-center filter brightness-[0.92] dark:brightness-[0.45] scale-105 transition-transform duration-1000 ease-out" />
@@ -474,16 +496,84 @@ class AutonomousDemoStateMachine:
         </a>
         <a href="#menu" class="luxury-btn rounded-full px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all backdrop-blur-md hover:bg-black/5 dark:hover:bg-white/10" 
            style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">
-          Explore The Menu
+          Explore Offerings
         </a>
       </div>
     </div>
   </section>
 """
 
-        # 3. BentoFeatures Section (Asymmetric Grid with Real Photography)
+        # 3. Operational Gap & Value Proposition Banner
+        gap_banner_html = f"""
+  <!-- SECTION 3: OPERATIONAL GAP & VALUE PROPOSITION BANNER -->
+  <section class="py-10 px-6 md:px-16 relative" style="background: var(--surface-card); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-4 text-left">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: var(--accent-alpha15); color: var(--accent-color);">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">Direct Table Protocol • Zero Intermediary Friction</h3>
+          <p class="text-xs" style="color: var(--muted-color);">Instant VIP booking confirmation via WhatsApp concierge. Bypasses third-party aggregator commissions.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 text-xs font-mono">
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--accent-color); background: var(--bg-color);">⚡ Sub-Second Speed</span>
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">📱 1-Tap Booking</span>
+        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--muted-color); background: var(--bg-color);">🛡️ Direct Concierge</span>
+      </div>
+    </div>
+  </section>
+"""
+
+        # 4. Story & Craft Philosophy Section
+        story_html = f"""
+  <!-- SECTION 4: STORY & CRAFT PHILOSOPHY -->
+  <section id="philosophy" class="py-24 px-6 md:px-16 relative">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">Philosophy & Provenance</p>
+        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6" style="font-family: {arch['font_head']};">
+          Architectural Flavor & Uncompromising Standards
+        </h2>
+        <p class="text-sm md:text-base leading-relaxed mb-6" style="color: var(--text-color); opacity: 0.9;">
+          At {b['business_name']}, every detail—from harvest provenance to acoustic balance—is calibrated to provide an unparalleled sensory escape in {self.location.split(',')[0]}.
+        </p>
+        <p class="text-xs md:text-sm leading-relaxed mb-8" style="color: var(--muted-color);">
+          We reject automated mediocrity. Our team pairs artisanal heritage with personalized hospitality, ensuring every visit unfolds with composure and refined luxury.
+        </p>
+        <div class="flex items-center gap-8 pt-6 border-t font-mono text-xs" style="border-color: var(--border-color);">
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">100%</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">Artisanal Provenance</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">{b.get('rating', '4.9')}★</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">{b.get('review_count', '1,000+')} Verified Reviews</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold font-serif" style="color: var(--accent-color);">0.4s</div>
+            <div class="text-[10px] uppercase tracking-wider" style="color: var(--muted-color);">Instant Interaction</div>
+          </div>
+        </div>
+      </div>
+      <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
+        <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
+          <img src="{bento_img1}" alt="{b['business_name']} Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+            <p class="text-xs italic" style="color: var(--text-color);">"{b['business_name']} crafts hospitality with the discipline of fine art."</p>
+            <p class="text-[10px] font-mono mt-1 font-bold" style="color: var(--accent-color);">— Head Concierge & Sommelier</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+"""
+
+        # 5. Bento Grid Offerings Section
         top_items = b.get("menu", [])[:5]
-        highlight_item = top_items[0] if top_items else {"title": "Signature Tasting Course", "price": "$75", "desc": "Seasonal multi-course tasting experience curated by the executive chef."}
+        highlight_item = top_items[0] if top_items else {"title": "Signature Tasting Course", "price": "₹750", "desc": "Seasonal multi-course tasting experience curated by the executive team."}
         secondary_items = top_items[1:4]
 
         secondary_cards_html = "".join([
@@ -501,7 +591,7 @@ class AutonomousDemoStateMachine:
         ])
 
         bento_html = f"""
-  <!-- SECTION 3: BENTO ASYMMETRIC GRID WITH PHOTOGRAPHY -->
+  <!-- SECTION 5: BENTO ASYMMETRIC GRID WITH PHOTOGRAPHY -->
   <section id="menu" class="py-28 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto">
       <div class="text-center max-w-2xl mx-auto mb-16">
@@ -527,7 +617,7 @@ class AutonomousDemoStateMachine:
               {highlight_item['title']}
             </h3>
             <p class="text-sm md:text-base leading-relaxed max-w-xl mb-6" style="color: var(--muted-color);">
-              {highlight_item['desc']}. Sourced with uncompromising classical standards and roasted/prepared fresh on order.
+              {highlight_item['desc']}. Prepared fresh to order with uncompromising sourcing standards.
             </p>
             <div class="flex items-center justify-between pt-4" style="border-top: 1px solid var(--border-color);">
               <span class="text-2xl font-mono font-bold" style="color: var(--accent-color);">{highlight_item['price']}</span>
@@ -548,7 +638,7 @@ class AutonomousDemoStateMachine:
             <p class="text-xs uppercase tracking-widest font-mono mb-2" style="color: var(--muted-color);">Cupping & Quality Score</p>
             <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
             <p class="text-xs leading-relaxed" style="color: var(--muted-color);">
-              Specialty Coffee Association (SCA) certified micro-lot extraction.
+              Specialty Association certified micro-lot extraction & hospitality excellence.
             </p>
             <div class="pt-6 mt-4" style="border-top: 1px solid var(--border-color);">
               <span class="inline-block px-3 py-1 rounded-full text-[10px] uppercase font-mono tracking-wider" 
@@ -568,7 +658,70 @@ class AutonomousDemoStateMachine:
   </section>
 """
 
-        # 4. ProofAndReviews Section (Infinite CSS Marquee)
+        # 6. Artisanal Metrics & Quality Proof Section
+        metrics_html = f"""
+  <!-- SECTION 6: ARTISANAL METRICS & QUALITY PROOF -->
+  <section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-xl mx-auto mb-14">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Quality Benchmarks</p>
+        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {arch['font_head']};">Verified Standards</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Standard & Accolade</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">94.8 Pts</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Accredited quality evaluation and rigorous batch consistency monitoring.</p>
+        </div>
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Direct Sourcing</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">Single Estate</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">100% trace-documented micro-lots and sustainable direct farm relationships.</p>
+        </div>
+        <div class="spring-card glass-panel p-8 rounded-3xl">
+          <p class="text-xs uppercase font-mono tracking-wider mb-2" style="color: var(--muted-color);">Patron Acclaim</p>
+          <p class="text-4xl md:text-5xl font-serif font-bold mb-2" style="color: var(--accent-color);">{b.get('rating', '4.9')} ★</p>
+          <p class="text-xs leading-relaxed" style="color: var(--muted-color);">Top-tier standing in {self.location.split(',')[0]} across verified patron reviews.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+"""
+
+        # 7. Atmosphere & Space Gallery Section
+        gallery_html = f"""
+  <!-- SECTION 7: ATMOSPHERE & SPACE GALLERY -->
+  <section id="gallery" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div>
+          <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Visual Ambiance</p>
+          <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">Atmosphere & Spaces</h2>
+        </div>
+        <p class="text-xs md:text-sm font-mono mt-4 md:mt-0" style="color: var(--muted-color);">The Curated Interior of {b['business_name']}</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="{gallery_1}" alt="Main Dining Salon" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">The Main Salon</span>
+        </div>
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="{gallery_2}" alt="Cellar & Bar Lounge" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">Cellar & Bar</span>
+        </div>
+        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+          <img src="{gallery_3}" alt="Private Tasting Room" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">Private Tasting Room</span>
+        </div>
+      </div>
+    </div>
+  </section>
+"""
+
+        # 8. Verified Social Proof Infinite Marquee
         marquee_cards = "".join([
             f"""
             <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
@@ -583,10 +736,10 @@ class AutonomousDemoStateMachine:
             </div>
             """
             for rev in b.get("reviews", [])
-        ]) * 2  # duplicate for seamless loop
+        ]) * 2
 
         proof_html = f"""
-  <!-- SECTION 4: INFINITE PROOF MARQUEE -->
+  <!-- SECTION 8: INFINITE PROOF MARQUEE -->
   <section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
     <div class="text-center mb-12">
       <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Guest Acclaim</p>
@@ -597,39 +750,106 @@ class AutonomousDemoStateMachine:
       {marquee_cards}
     </div>
   </section>
+"""
 
-  <!-- SECTION 5: HOW IT WORKS (3 STEPS) -->
+        # 9. Deep-Strike Performance Audit Comparison Component
+        audit_card_html = PerformanceAuditor.generate_benchmark_html(
+            self.audit_results or {}, 
+            b['business_name']
+        )
+
+        # 10. Curated Guest Journey / How It Works
+        journey_html = f"""
+  <!-- SECTION 10: HOW IT WORKS (3 STEPS) -->
   <section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
     <div class="max-w-5xl mx-auto">
       <div class="text-center max-w-2xl mx-auto mb-16">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Curated Journey</p>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Curated Protocol</p>
         <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">How It Works</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="glass-panel p-8 rounded-3xl relative">
           <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 01</span>
-          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Reserve Experience</h3>
-          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Select your preferred salon seating or chef's tasting table via our direct concierge protocol.</p>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Select Experience</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Select your preferred tasting table, private dining salon, or cocktail bar seating.</p>
         </div>
         <div class="glass-panel p-8 rounded-3xl relative">
           <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 02</span>
-          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Sommelier Pairing</h3>
-          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Consult with our cellar team to tailor single-estate roasts or rare vintage crus to your party.</p>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Instant WhatsApp</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Connect directly with our concierge team on WhatsApp with your date and party size pre-filled.</p>
         </div>
         <div class="glass-panel p-8 rounded-3xl relative">
           <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">Step 03</span>
-          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Immersive Service</h3>
-          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Indulge in unhurried gastronomy, acoustic sanctuary, and tailored hospitality precision.</p>
+          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">Immersive Hospitality</h3>
+          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">Arrive to an unhurried, tailored gastronomic evening with personalized sommelier attention.</p>
         </div>
       </div>
     </div>
   </section>
+"""
 
-  <!-- SECTION 6: FREQUENTLY ASKED QUESTIONS (ACCORDION) -->
+        # 11. Interactive VIP WhatsApp Booking Module
+        booking_module_html = f"""
+  <!-- SECTION 11: INTERACTIVE VIP WHATSAPP BOOKING MODULE -->
+  <section id="reserve" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+    <div class="max-w-4xl mx-auto glass-panel p-8 md:p-14 rounded-3xl text-center relative overflow-hidden">
+      <div class="inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase mb-4" style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--border-color);">
+        Direct VIP Concierge
+      </div>
+      <h2 class="text-3xl md:text-5xl font-bold mb-4" style="font-family: {arch['font_head']};">Reserve Your Table</h2>
+      <p class="text-xs md:text-sm max-w-lg mx-auto mb-10 leading-relaxed" style="color: var(--muted-color);">
+        Choose your seating and initiate an instant VIP booking conversation directly with our front-of-house team on WhatsApp.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-8 text-left">
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Experience</label>
+          <select id="booking-experience" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>Tasting Table (2-4 Guests)</option>
+            <option>Private Dining Salon (6-12 Guests)</option>
+            <option>Bar & Cocktail Lounge</option>
+            <option>Exclusive Buyout</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Party Size</label>
+          <select id="booking-guests" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>2 Guests</option>
+            <option>4 Guests</option>
+            <option>6 Guests</option>
+            <option>8+ Guests</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Seating</label>
+          <select id="booking-time" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
+            <option>Lunch / Afternoon</option>
+            <option>Early Evening (19:00)</option>
+            <option>Prime Dinner (20:30)</option>
+            <option>Late Night Lounge</option>
+          </select>
+        </div>
+      </div>
+
+      <a id="whatsapp-direct-btn" href="https://wa.me/{wa_phone}?text=Hello%20{urllib.parse.quote(b['business_name'])},%20I%20would%20like%20to%20reserve%20a%20table." 
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full font-semibold text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+         style="background: #25D366; color: #000;">
+        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>Instant WhatsApp Confirmation</span>
+      </a>
+      <p class="text-[10px] font-mono mt-3" style="color: var(--muted-color);">Direct link to verified concierge. Zero intermediary booking surcharges.</p>
+    </div>
+  </section>
+"""
+
+        # 12. Location, Hours, FAQ & Conversion Footer Section
+        footer_html = f"""
+  <!-- SECTION 12: LOCATION, HOURS, FAQ & CONVERSION FOOTER -->
   <section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity & Details</p>
+    <div class="max-w-4xl mx-auto mb-16">
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity & Access</p>
         <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">Frequently Asked Questions</h2>
       </div>
       <div class="space-y-4">
@@ -639,78 +859,46 @@ class AutonomousDemoStateMachine:
             <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
           </summary>
           <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
-            Private tasting tables and salon bookings open 14 days in advance. Same-day walk-in seating is allocated on cellar availability.
+            Tasting tables and private salons open 14 days in advance. Direct WhatsApp reservations receive priority confirmation within 15 minutes.
           </p>
         </details>
         <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
           <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: {arch['font_head']}; color: var(--text-color);">
-            <span>Do you accommodate dietary specifications?</span>
+            <span>Do you accommodate dietary preferences and private buyouts?</span>
             <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
           </summary>
           <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
-            Yes. Our kitchen curates bespoke botanical, pescatarian, and allergen-free multi-course adaptations with 24 hours advance notice.
-          </p>
-        </details>
-        <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
-          <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: {arch['font_head']}; color: var(--text-color);">
-            <span>Is private dining available for corporate or salon gatherings?</span>
-            <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
-          </summary>
-          <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
-            Exclusive buyouts and dedicated private dining rooms accommodate parties up to 24 guests with tailored sommelier curation.
+            Yes. Our kitchen curates bespoke botanical, pescatarian, and allergen-free tasting courses with advance notice, and full salons are available for buyouts.
           </p>
         </details>
       </div>
     </div>
+
+    <footer class="pt-16 pb-12 text-center relative overflow-hidden" style="border-top: 1px solid var(--border-color);">
+      <div class="max-w-4xl mx-auto mb-14">
+        <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Visit & Contact</p>
+        <h3 class="text-3xl md:text-4xl font-bold mb-6" style="font-family: {arch['font_head']};">{b['business_name']}</h3>
+        <div class="text-xs font-mono space-y-1 mb-8" style="color: var(--muted-color);">
+          <p>{b['location']}</p>
+          <p>{b['hours']}</p>
+          <p>Direct Inquiries: <a href="tel:{b['phone']}" class="underline hover:text-amber-500">{b['phone']}</a> • {b['email']}</p>
+        </div>
+      </div>
+
+      <!-- Oversized Architectural Watermark -->
+      <div class="w-full text-center select-none pointer-events-none opacity-10 mb-8">
+        <div class="text-[12vw] font-bold leading-none tracking-tighter uppercase font-serif" style="color: var(--text-color);">
+          {b['business_name']}
+        </div>
+      </div>
+
+      <div class="pt-8 text-xs font-mono flex flex-col sm:flex-row justify-between items-center gap-4" 
+           style="border-top: 1px solid var(--border-color); color: var(--muted-color);">
+        <div>© 2026 {b['business_name']}. Concept design presented by Ghost. All rights reserved.</div>
+        <div>Designed with Architectural Precision by Ghost.</div>
+      </div>
+    </footer>
   </section>
-"""
-
-        # 5. ConversionFooter Section (Oversized Typography)
-        wa_phone = re.sub(r'[^0-9]', '', b['phone'])
-        footer_html = f"""
-  <!-- SECTION 5: CONVERSION FOOTER -->
-  <footer id="reserve" class="pt-28 pb-16 px-6 md:px-16 text-center relative overflow-hidden" 
-          style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
-    <div class="max-w-4xl mx-auto mb-16">
-      <p class="text-xs uppercase tracking-[0.3em] font-mono mb-4" style="color: var(--accent-color);">Direct Inquiries & Private Salons</p>
-      <h2 class="text-4xl md:text-6xl font-bold mb-6" style="font-family: {arch['font_head']};">Secure Your Evening</h2>
-      <p class="text-sm md:text-base max-w-xl mx-auto mb-10 leading-relaxed" style="color: var(--muted-color);">
-        Intimate seating capacity requires advance salon bookings. Same-day walk-ins are seated subject to cellar availability.
-      </p>
-
-      <div class="flex flex-col sm:flex-row justify-center gap-4 mb-14">
-        <a href="https://wa.me/{wa_phone}?text=Hello%20{urllib.parse.quote(b['business_name'])},%20I%20would%20like%20to%20request%20a%20private%20table." 
-           target="_blank" rel="noopener noreferrer"
-           class="luxury-btn rounded-full px-8 py-3.5 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 shadow-md hover:scale-105"
-           style="background: #25D366; color: #000; border: none;">
-          <span>WhatsApp Concierge</span>
-        </a>
-        <a href="tel:{b['phone']}" 
-           class="luxury-btn rounded-full px-8 py-3.5 text-xs uppercase tracking-widest"
-           style="border: 1px solid var(--border-color); color: var(--text-color);">
-          Direct Line: {b['phone']}
-        </a>
-      </div>
-
-      <div class="text-xs font-mono space-y-1 mb-16" style="color: var(--muted-color);">
-        <p>{b['location']} • {b['hours']}</p>
-        <p>Inquiries: {b['email']}</p>
-      </div>
-    </div>
-
-    <!-- Oversized Architectural Watermark -->
-    <div class="w-full text-center select-none pointer-events-none opacity-10">
-      <div class="text-[12vw] font-bold leading-none tracking-tighter uppercase font-serif" style="color: var(--text-color);">
-        {b['business_name']}
-      </div>
-    </div>
-
-    <div class="pt-8 text-xs font-mono flex flex-col sm:flex-row justify-between items-center gap-4" 
-         style="border-top: 1px solid var(--border-color); color: var(--muted-color);">
-      <div>© 2026 {b['business_name']}. Concept design presented by Ghost. All rights reserved.</div>
-      <div>Designed with Architectural Precision by Ghost.</div>
-    </div>
-  </footer>
 """
 
         # Generate Deep-Strike Performance Audit Comparison Component
@@ -848,9 +1036,15 @@ class AutonomousDemoStateMachine:
   </header>
 
   {hero_html}
+  {gap_banner_html}
+  {story_html}
   {bento_html}
+  {metrics_html}
+  {gallery_html}
   {proof_html}
   {audit_card_html}
+  {journey_html}
+  {booking_module_html}
   {footer_html}
 
   <!-- Theme Toggle & Anime.js Viewport Reveals -->
@@ -1040,7 +1234,19 @@ class AutonomousDemoStateMachine:
         except Exception as e:
             logger.warning(f"CRM sync note: {e}")
 
-        # Outreach Pitch Template
+        # 3-Part Outreach Copy for WhatsApp / Instagram DM (The Gap -> What was built -> Easy next step)
+        whatsapp_pitch = (
+            f"Hey {b['business_name']} team, noticed customers can't easily reserve tables directly from your Instagram or mobile listing without calling or waiting.\n\n"
+            f"Built a quick, sub-second interactive mobile concept for you so guests can tap once to book on WhatsApp with zero fees: file://{os.path.abspath(self.html_path)}\n\n"
+            f"Want me to set this live or hand over the keys?"
+        )
+        instagram_dm = (
+            f"Hi {b['business_name']}! Quick observation: your mobile visitors can't reserve or see your offerings with 1 tap.\n\n"
+            f"Crafted a sub-second editorial preview tailored for your space: file://{os.path.abspath(self.html_path)}\n\n"
+            f"Open to having this set up for you?"
+        )
+
+        # Outreach Pitch Template (Email)
         pitch_subject = f"Bespoke Digital Experience Concept for {b['business_name']}"
         pitch_body = (
             f"Dear Management Team at {b['business_name']},\n\n"
@@ -1056,6 +1262,44 @@ class AutonomousDemoStateMachine:
             f"Ghost • Chief of Staff\n"
             f"Task Force 141 Web Agency"
         )
+
+        # Generate PITCH_KIT.md containing all outreach assets
+        pitch_kit_path = os.path.join(self.out_dir, "PITCH_KIT.md")
+        pitch_kit_content = f"""# PITCH KIT: {b['business_name']}
+
+## 1. Concrete Gap Identified
+- **Target:** {b['business_name']} ({self.location})
+- **Primary Operational Gap:** No instant 1-tap mobile reservation mechanism. Customers have to call or hunt through social media.
+- **Demo Solution:** 12-section bespoke editorial experience with sub-second performance delta card and instant WhatsApp concierge.
+
+## 2. Verified Assets & Previews
+- **Local Preview Link:** file://{os.path.abspath(self.html_path)}
+- **Mobile Screenshot:** {self.audit_results.get('screenshots', {}).get('mobile', 'mobile_390x844.jpg')}
+- **Desktop Screenshot:** {self.audit_results.get('screenshots', {}).get('desktop', 'desktop_1440x900.jpg')}
+
+## 3. 3-Part Outreach Copy (WhatsApp / Instagram DM)
+### WhatsApp Script:
+```text
+{whatsapp_pitch}
+```
+
+### Instagram DM Script:
+```text
+{instagram_dm}
+```
+
+## 4. Formal Email Pitch Draft
+**Subject:** {pitch_subject}
+
+```text
+{pitch_body}
+```
+
+## 5. Follow-Up Cadence
+Follow up once after 2–3 days. If no response, archive in CRM and pivot to the next sector target.
+"""
+        with open(pitch_kit_path, "w", encoding="utf-8") as f:
+            f.write(pitch_kit_content)
 
         # Generate DEPLOY.md per Step 12 of Website Build Guide
         deploy_md_path = os.path.join(self.out_dir, "DEPLOY.md")
@@ -1114,11 +1358,14 @@ NEXT_PUBLIC_CONCIERGE_EMAIL="{b['email']}"
             "html_path": self.html_path,
             "brief_path": self.brief_path,
             "deploy_path": deploy_md_path,
+            "pitch_kit_path": pitch_kit_path,
             "archetype": b["archetype_name"],
             "screenshots": self.audit_results.get("screenshots", {}),
             "pitch_draft": {
                 "subject": pitch_subject,
                 "body": pitch_body,
+                "whatsapp_pitch": whatsapp_pitch,
+                "instagram_dm": instagram_dm,
                 "recipient": b.get("email"),
                 "phone": b.get("phone")
             }
