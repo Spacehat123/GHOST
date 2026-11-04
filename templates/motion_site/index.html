@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{BUSINESS_NAME}} — Bespoke Motion Flagship</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-tagline">{{TAGLINE}}</div>
+      <h1 class="hero-title">{{BUSINESS_NAME}}</h1>
+      <p class="hero-subtitle">
+        Architectural craftsmanship, bespoke surfaces, and uncompromising precision in {{CITY}}.
+      </p>
+      <div class="cta-group">
+        <a href="{{PHONE_HREF}}" class="btn-primary">Call {{PHONE_DISPLAY}}</a>
+        <a href="{{WHATSAPP_HREF}}" class="btn-secondary" target="_blank" rel="noopener">WhatsApp Inquiries</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Signature Interaction Section -->
+  <main>
+    <section class="signature-section" aria-labelledby="signature-heading">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">Signature Craft Showcase</div>
+          <h2 id="signature-heading" class="section-title">{{SIGNATURE_TITLE}}</h2>
+        </div>
+
+        <!-- Before / After Interactive Slider -->
+        <div class="before-after-container" aria-label="Interactive before and after comparison">
+          <div class="image-layer before">
+            <div class="layer-content">
+              <span class="layer-tag">Stage 1 Pre-Correction</span>
+              <h3>{{SIGNATURE_BEFORE_LABEL}}</h3>
+              <p>Untreated surface showing microscopic wear, road film, and oxidation.</p>
+            </div>
+          </div>
+          <div class="image-layer after">
+            <div class="layer-content">
+              <span class="layer-tag">Stage 2 Optical Finish</span>
+              <h3>{{SIGNATURE_AFTER_LABEL}}</h3>
+              <p>Dual-stage mechanical polish under diffuse inspection lighting.</p>
+            </div>
+          </div>
+          <div 
+            class="slider-handle" 
+            role="slider" 
+            tabindex="0" 
+            aria-label="Comparison slider position" 
+            aria-valuemin="0" 
+            aria-valuemax="100" 
+            aria-valuenow="50"
+          >
+            <div class="slider-handle-button">↔</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Legal & Transparent Disclosure Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>
+        {{CONCEPT_DISCLOSURE}}
+      </p>
+      <p style="margin-top: 0.5rem; opacity: 0.7;">
+        All trademarks, trade names, and photography belong to their respective owners.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

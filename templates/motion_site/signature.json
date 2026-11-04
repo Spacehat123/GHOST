@@ -1,0 +1,9 @@
+{
+  "interaction_type": "before_after_slider",
+  "title": "Precision Correction Showcase",
+  "subtitle": "Interactive inspection of surface restoration tolerances.",
+  "before_label": "Pre-Correction Swirls",
+  "after_label": "Optical Stage-2 Reflection",
+  "is_placeholder": true,
+  "placeholder_note": "Concept interactive demonstration. Client photography will populate final deployment."
+}

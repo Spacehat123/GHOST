@@ -1160,6 +1160,90 @@ GHOST_TOOLS = [
                 "required": ["demo_dir"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "choose_flow",
+            "description": "Evaluates and chooses the site generation flow ('standard', 'motion', or '3d') for a qualified lead. Enforces batch quotas and operator approvals.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lead_slug": {
+                        "type": "string",
+                        "description": "CRM lead slug or business identifier"
+                    },
+                    "operator_choice": {
+                        "type": "string",
+                        "enum": ["standard", "motion", "3d"],
+                        "description": "Optional explicit operator flow mandate"
+                    }
+                },
+                "required": ["lead_slug"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "build_motion_site",
+            "description": "Scaffolds and builds a premium motion flagship website in demos/<slug>/ with a bespoke signature interaction. Requires operator authorization.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "Target project slug (e.g. 'topaz-detailing')"
+                    },
+                    "business_name": {
+                        "type": "string",
+                        "description": "Full business name"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Business sector or category (e.g. 'detailing', 'dental', 'gym')"
+                    },
+                    "signature_type": {
+                        "type": "string",
+                        "description": "Type of signature interaction (e.g. 'before_after_slider', 'interactive_timetable')"
+                    },
+                    "operator_approved": {
+                        "type": "boolean",
+                        "description": "Must be true (operator confirmation required)"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Real verified phone number from ledger"
+                    },
+                    "whatsapp": {
+                        "type": "string",
+                        "description": "Real verified WhatsApp contact"
+                    },
+                    "city": {
+                        "type": "string",
+                        "description": "City or primary service area"
+                    }
+                },
+                "required": ["slug", "operator_approved"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "qa_motion_site",
+            "description": "Runs comprehensive QA, accessibility (reduced-motion), and claims lint on a motion site build.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "demo_dir": {
+                        "type": "string",
+                        "description": "Directory path of the motion demo"
+                    }
+                },
+                "required": ["demo_dir"]
+            }
+        }
     }
 ]
 
@@ -2184,5 +2268,41 @@ class OmniRouteBrain:
             from ghost.workers.three_qa import ThreeQA
             d_dir = str(arguments.get("demo_dir", "")).strip()
             return await ThreeQA.run_qa(demo_dir=d_dir)
+
+        # 23. Flow Router & Motion Flagship Engine
+        elif tool_name == "choose_flow":
+            from ghost.workers.flow_router import FlowRouter
+            from ghost.crm.db import CRMDatabase
+            lslug = str(arguments.get("lead_slug", "")).strip()
+            op_ch = arguments.get("operator_choice")
+            crm = CRMDatabase.get_instance()
+            client_data = crm.get_client(lslug) or {}
+            return FlowRouter.choose_flow(lead_slug=lslug, operator_choice=op_ch, lead_data=client_data)
+
+        elif tool_name == "build_motion_site":
+            from ghost.workers.motion_site_builder import MotionSiteBuilder
+            slug = str(arguments.get("slug", "")).strip()
+            bname = arguments.get("business_name")
+            cat = arguments.get("category")
+            sig_type = arguments.get("signature_type")
+            op_app = bool(arguments.get("operator_approved", False))
+            phone = arguments.get("phone")
+            wa = arguments.get("whatsapp")
+            city = arguments.get("city")
+            return MotionSiteBuilder.build(
+                slug=slug,
+                business_name=bname,
+                category=cat,
+                signature_type=sig_type,
+                operator_approved=op_app,
+                phone=phone,
+                whatsapp=wa,
+                city=city
+            )
+
+        elif tool_name == "qa_motion_site":
+            from ghost.workers.motion_site_builder import MotionQA
+            d_dir = str(arguments.get("demo_dir", "")).strip()
+            return await MotionQA.run_qa(demo_dir=d_dir)
 
         return {"error": f"Tool {tool_name} not recognized"}

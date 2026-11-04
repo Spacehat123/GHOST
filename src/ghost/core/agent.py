@@ -36,7 +36,8 @@ BUILD_TOOLS = {
     "deploy_demo_vercel",
     "motion_site_builder",
     "three_site_builder",
-    "build_3d_site"
+    "build_3d_site",
+    "build_motion_site"
 }
 
 def needs_plan(user_text: str, context: Optional[Dict[str, Any]] = None) -> bool:

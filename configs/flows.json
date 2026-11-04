@@ -1,0 +1,42 @@
+{
+  "batch_limits": {
+    "max_3d_flagship_per_batch": 3,
+    "max_motion_flagship_per_batch": 5,
+    "default_flow": "standard"
+  },
+  "budgets": {
+    "standard": {
+      "js_max_kb": 100,
+      "css_max_kb": 50,
+      "target_lcp_ms": 1200
+    },
+    "motion": {
+      "js_max_kb_gzip": 150,
+      "hero_image_max_kb": 200,
+      "mobile_performance_target": 90,
+      "prefers_reduced_motion_required": true,
+      "max_pinned_viewport_screens": 2.0
+    },
+    "3d": {
+      "max_triangles": 100000,
+      "max_texture_dimension": 2048,
+      "max_glb_mb": 15.0,
+      "target_fps_desktop": 55,
+      "target_fps_mobile": 30
+    }
+  },
+  "visual_experience_sectors": [
+    "automotive_detailing",
+    "detailing",
+    "dental_medical",
+    "salon_spa",
+    "gyms_fitness",
+    "boutique_tailor",
+    "luxury_hospitality",
+    "hotel",
+    "fine_dining",
+    "restaurants_cafes",
+    "photography",
+    "wedding"
+  ]
+}
