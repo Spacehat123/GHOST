@@ -374,7 +374,11 @@ class GhostAgent:
                                 logger.info("Operator denied authorization. Aborting tool loop to final synthesis.")
 
                         # 4. Feed REAL tool output back into conversation messages
-                        if tool_name == "capture_screen" and isinstance(res, dict) and res.get("status") == "success" and res.get("data_uri"):
+                        data_uri = res.get("data_uri") if isinstance(res, dict) else None
+                        if not data_uri and isinstance(res, dict) and isinstance(res.get("result"), dict):
+                            data_uri = res["result"].get("data_uri")
+
+                        if tool_name == "capture_screen" and isinstance(res, dict) and (res.get("status") == "success" or res.get("ok")) and data_uri:
                             messages.append({
                                 "role": "tool",
                                 "tool_call_id": tc_info["id"],
@@ -388,7 +392,7 @@ class GhostAgent:
                                     {
                                         "type": "image_url",
                                         "image_url": {
-                                            "url": res["data_uri"]
+                                            "url": data_uri
                                         }
                                     }
                                 ]

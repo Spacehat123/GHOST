@@ -1,6 +1,7 @@
 """Comprehensive execution bridge for Brave CDP Automation Engine, WhatsApp Web, Media/MPRIS, Desktop Apps, REA, and Shell."""
 import asyncio
 import os
+import subprocess
 import json
 import base64
 import re
@@ -1126,6 +1127,8 @@ class SystemAppBridge:
                 lua_call = f'return hl.dispatch(hl.dsp.send_shortcut({{ key = "{main_key}" }}))'
 
             res = await ShellExecutor.run(f"hyprctl repl '{lua_call}'")
+            if res.get("returncode") != 0 or res.get("success") is False:
+                return {"status": "error", "message": f"hyprctl repl failed: {res.get('stderr')}", "type": clean_type, "result": res}
             return {"status": "simulated", "type": clean_type, "mod": mod_str, "key": main_key, "result": res}
 
         elif clean_type == "type_text":
@@ -1136,16 +1139,22 @@ class SystemAppBridge:
             await asyncio.sleep(0.04)
             lua_paste = 'return hl.dispatch(hl.dsp.send_shortcut({ mod = "CTRL", key = "v" }))'
             res = await ShellExecutor.run(f"hyprctl repl '{lua_paste}'")
+            if res.get("returncode") != 0 or res.get("success") is False:
+                return {"status": "error", "message": f"hyprctl repl failed: {res.get('stderr')}", "type": "type_text", "result": res}
             return {"status": "simulated", "type": "type_text", "text": text_val, "result": res}
 
         elif clean_type in ["click", "mouse_click", "mouse_move"]:
             if x is not None and y is not None:
                 # Move cursor via Hyprland Lua dispatch
                 res = await ShellExecutor.run(f"hyprctl repl 'return hl.dispatch(hl.dsp.cursor.move({{ x = {int(x)}, y = {int(y)} }}))'")
+                if res.get("returncode") != 0 or res.get("success") is False:
+                    return {"status": "error", "message": f"hyprctl repl failed: {res.get('stderr')}", "type": "cursor_move", "result": res}
                 return {"status": "simulated", "type": "cursor_move", "x": x, "y": y, "result": res}
             else:
                 # Dispatch Return as standard activation without xdotool
                 res = await ShellExecutor.run("hyprctl repl 'return hl.dispatch(hl.dsp.send_shortcut({ key = \"Return\" }))'")
+                if res.get("returncode") != 0 or res.get("success") is False:
+                    return {"status": "error", "message": f"hyprctl repl failed: {res.get('stderr')}", "type": "click", "result": res}
                 return {"status": "simulated", "type": "click", "result": res}
 
         return {"status": "error", "message": f"Unsupported simulation type: {sim_type}"}
@@ -1598,6 +1607,45 @@ class GitBridge:
     """Deterministic Git bridge with headless SSH key passphrase support."""
 
     @classmethod
+    def get_passphrase(cls) -> Optional[str]:
+        """
+        Resolve SSH key passphrase strictly from protected configuration,
+        environment variables, or OS credential store.
+        Never accepts model-generated arguments.
+        """
+        # 1. Environment variable override
+        env_pass = os.environ.get("GHOST_GIT_PASSPHRASE") or os.environ.get("GIT_SSH_PASSPHRASE")
+        if env_pass:
+            return env_pass.strip()
+
+        # 2. Protected configuration file (configs/git.json)
+        git_config_path = os.path.join(REPO_DIR, "configs", "git.json")
+        if os.path.exists(git_config_path):
+            try:
+                with open(git_config_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    passphrase = data.get("ssh_passphrase") or data.get("passphrase")
+                    if passphrase:
+                        return str(passphrase).strip()
+            except Exception as e:
+                logger.warning(f"Failed reading git credentials from {git_config_path}: {e}")
+
+        # 3. OS Credential Store (secret-tool lookup if present)
+        try:
+            res = subprocess.run(
+                ["secret-tool", "lookup", "service", "ghost_git"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except Exception:
+            pass
+
+        return None
+
+    @classmethod
     async def run_git(
         cls,
         args: List[str],
@@ -1610,6 +1658,10 @@ class GitBridge:
         """
         if not repo_dir:
             repo_dir = REPO_DIR
+
+        # Automatically resolve credentials from protected config if not supplied
+        if passphrase is None:
+            passphrase = cls.get_passphrase()
         env = os.environ.copy()
         temp_askpass = None
 

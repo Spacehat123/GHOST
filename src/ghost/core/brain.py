@@ -673,11 +673,7 @@ GHOST_TOOLS = [
                     },
                     "repo_dir": {
                         "type": "string",
-                        "description": "Optional repository path (defaults to '/home/pranc/projects/ghost')"
-                    },
-                    "passphrase": {
-                        "type": "string",
-                        "description": "Optional SSH key passphrase for remote operations (e.g. '5437')"
+                        "description": "Optional repository path (defaults to project root directory)"
                     }
                 },
                 "required": ["command"]
@@ -745,7 +741,7 @@ class OmniRouteBrain:
         "   - Spotify Music: When asked to play a song/artist (e.g. 'play interstellar', 'play cars 3 soundtrack'), ALWAYS call media_control(action='spotify_action', query='<song or album name>') or media_control(action='play'). The system uses instant track URI resolution and DBus OpenUri on native Wayland (zero X11/xdotool lag). If spotify is on another workspace, use desktop_control(action='switch_workspace', workspace='4') or desktop_control(action='move_to_workspace', target='Spotify', args='4'). Never claim music is playing unless verified via playerctl status.\n"
         "   - Video / Streaming (JioHotstar / YouTube / Web): When asked to resume or play a movie or show in the browser (e.g. 'resume cars 3 in jiohotstar kids profile'), use browser_action(action='focus_tab', target='Cars 3') or browser_action(action='brave_click_and_type', target='video', val='play') or browser_action(action='open_url'). If asked to move the mouse or click on a specific element, use input_simulation(sim_type='click', x=X, y=Y) or browser_action.\n"
         "9. MANDATORY TASK-TO-TOOL INTENT MATRIX (ZERO EXPLORATORY WANDERING):\n"
-        "   - Git Operations (push, commit, status, remote): MUST call git_action. When pushing with SSH key passphrase, pass passphrase='5437'. Never wander into bash commands for Git.\n"
+        "   - Git Operations (push, commit, status, remote): MUST call git_action. Credentials and SSH passphrases are resolved strictly from protected configuration. Never wander into bash commands for Git.\n"
         "   - Spotify / Music: MUST call media_control(action='spotify_action', query='...').\n"
         "   - Web Video / Streaming: MUST call browser_action.\n"
         "   - Desktop GUI Apps (Obsidian, Figma, Discord, system dialogs): MUST call agent_desktop_command.\n"
@@ -950,10 +946,182 @@ class OmniRouteBrain:
         cls._history = []
 
     @classmethod
+    def normalize_tool_result(
+        cls,
+        tool_name: str,
+        action: str,
+        raw_res: Any,
+        arguments: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Single result-normalization layer for all Ghost tools.
+        Guarantees strict, honest contract:
+        {
+            "ok": bool,
+            "status": "success" | "failed",
+            "tool": str,
+            "action": str,
+            "error": Optional[str],
+            "verified": bool,
+            ... payload data fields (data_uri, client, path, etc.)
+        }
+        Ghost must never report an action succeeded merely because the Python function returned.
+        """
+        ok = True
+        error_msg: Optional[str] = None
+        action_name = str(action) if action else tool_name
+
+        if raw_res is None:
+            ok = False
+            error_msg = f"Tool '{tool_name}' returned no output."
+        elif isinstance(raw_res, Exception):
+            ok = False
+            error_msg = str(raw_res)
+        elif isinstance(raw_res, dict):
+            # If already normalized, extract existing state but ensure integrity
+            if "ok" in raw_res and "verified" in raw_res and "status" in raw_res and "tool" in raw_res:
+                ok = bool(raw_res.get("ok"))
+                error_msg = raw_res.get("error")
+                action_name = str(raw_res.get("action") or action_name)
+            else:
+                # 1. Primary failure flags
+                if raw_res.get("ok") is False:
+                    ok = False
+                elif raw_res.get("success") is False:
+                    ok = False
+                elif raw_res.get("allowed") is False:
+                    ok = False
+                elif raw_res.get("verified") is False:
+                    ok = False
+                elif raw_res.get("status") in ["error", "failed", "denied", "not_found", "config_required"]:
+                    ok = False
+                elif "returncode" in raw_res and raw_res["returncode"] != 0:
+                    ok = False
+                elif raw_res.get("error"):
+                    ok = False
+
+                # 2. Check nested result object if present (e.g. ShellExecutor inside bridge return)
+                if isinstance(raw_res.get("result"), dict):
+                    inner = raw_res["result"]
+                    if inner.get("ok") is False or inner.get("success") is False or inner.get("allowed") is False or inner.get("verified") is False:
+                        ok = False
+                    elif inner.get("status") in ["error", "failed", "denied", "not_found", "config_required"]:
+                        ok = False
+                    elif "returncode" in inner and inner["returncode"] != 0:
+                        ok = False
+                    elif inner.get("error"):
+                        ok = False
+
+                # 3. Extract meaningful error string when not ok
+                if not ok:
+                    if raw_res.get("error"):
+                        err = raw_res["error"]
+                        error_msg = err.get("message") if isinstance(err, dict) else str(err)
+                    elif raw_res.get("message"):
+                        error_msg = str(raw_res["message"])
+                    elif raw_res.get("stderr"):
+                        error_msg = str(raw_res["stderr"]).strip()
+                    elif isinstance(raw_res.get("result"), dict):
+                        inner = raw_res["result"]
+                        if inner.get("error"):
+                            err = inner["error"]
+                            error_msg = err.get("message") if isinstance(err, dict) else str(err)
+                        elif inner.get("message"):
+                            error_msg = str(inner["message"])
+                        elif inner.get("stderr"):
+                            error_msg = str(inner["stderr"]).strip()
+                        else:
+                            error_msg = f"{tool_name}:{action_name} failed"
+                    elif raw_res.get("status") == "denied":
+                        error_msg = "Tactical authorization denied by operator."
+                    elif raw_res.get("status") == "not_found":
+                        error_msg = raw_res.get("message") or f"Resource not found in {tool_name}."
+                    elif raw_res.get("status") == "config_required":
+                        error_msg = raw_res.get("message") or f"Configuration required for {tool_name}."
+                    elif raw_res.get("verified") is False:
+                        error_msg = f"Action '{action_name}' could not be verified on the system."
+                    else:
+                        error_msg = f"{tool_name}:{action_name} failed"
+        elif isinstance(raw_res, str):
+            if raw_res.strip().lower().startswith("error"):
+                ok = False
+                error_msg = raw_res.strip()
+        elif isinstance(raw_res, bool):
+            ok = raw_res
+            if not ok:
+                error_msg = f"{tool_name}:{action_name} returned False"
+
+        # Build consistent normalized output contract
+        normalized: Dict[str, Any] = {
+            "ok": ok,
+            "status": "success" if ok else "failed",
+            "tool": tool_name,
+            "action": action_name,
+            "error": error_msg if not ok else None,
+            "verified": ok,
+        }
+
+        # Merge payload attributes from raw_res without overwriting core contract keys
+        if isinstance(raw_res, dict):
+            for k, v in raw_res.items():
+                if k not in normalized:
+                    normalized[k] = v
+            # Ensure data_uri is lifted to top level if nested inside raw_res["result"]
+            if isinstance(raw_res.get("result"), dict) and "data_uri" in raw_res["result"]:
+                if "data_uri" not in normalized or not normalized["data_uri"]:
+                    normalized["data_uri"] = raw_res["result"]["data_uri"]
+            # Ensure result dictionary exists for legacy/compatibility callers
+            if "result" not in normalized:
+                normalized["result"] = raw_res
+        elif raw_res is not None:
+            normalized["result"] = raw_res
+
+        return normalized
+
+    @classmethod
     async def execute_tool_call(cls, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a tool invoked by the LLM function call."""
+        """Execute a tool invoked by the LLM function call, normalized via single contract."""
         logger.info(f"Executing tool call: {tool_name} with args: {arguments}")
 
+        # Determine semantic action name
+        if tool_name == "capture_screen":
+            action = "capture"
+        else:
+            action = (
+                arguments.get("action")
+                or (arguments.get("command", "").split()[0] if arguments.get("command") else None)
+                or arguments.get("operation")
+                or arguments.get("type")
+                or arguments.get("dispatcher")
+                or arguments.get("region")
+                or (tool_name[6:] if tool_name.startswith("brave_") else None)
+                or (tool_name[4:] if tool_name.startswith("crm_") else None)
+                or (tool_name[6:] if tool_name.startswith("figma_") else None)
+                or (tool_name[7:] if tool_name.startswith("framer_") else None)
+                or tool_name
+            )
+
+        try:
+            raw_res = await cls._dispatch_tool_call(tool_name, str(action), arguments)
+        except Exception as e:
+            logger.error(f"Tool execution exception in {tool_name}:{action}: {e}", exc_info=True)
+            return cls.normalize_tool_result(
+                tool_name=tool_name,
+                action=str(action),
+                raw_res={"error": str(e)},
+                arguments=arguments
+            )
+
+        return cls.normalize_tool_result(
+            tool_name=tool_name,
+            action=str(action),
+            raw_res=raw_res,
+            arguments=arguments
+        )
+
+    @classmethod
+    async def _dispatch_tool_call(cls, tool_name: str, action: str, arguments: Dict[str, Any]) -> Any:
+        """Internal un-normalized dispatch for individual tool implementations."""
         # 1. Desktop & Hyprland Primitive
         if tool_name in ["desktop_control", "hyprland_control", "system_app_launch", "hyprland_dispatch"]:
             act = arguments.get("action", "hyprctl_dispatch")
@@ -962,51 +1130,50 @@ class OmniRouteBrain:
 
             if act == "switch_workspace":
                 ws = target or args or "1"
-                res = await SystemAppBridge.hyprctl_dispatch("workspace", ws)
+                return await SystemAppBridge.hyprctl_dispatch("workspace", ws)
             elif act == "move_to_workspace":
                 ws = target or args or "1"
-                res = await SystemAppBridge.hyprctl_dispatch("movetoworkspace", ws)
+                return await SystemAppBridge.hyprctl_dispatch("movetoworkspace", ws)
             elif act == "focus_window":
-                res = await SystemAppBridge.hyprctl_dispatch("focuswindow", target)
+                return await SystemAppBridge.hyprctl_dispatch("focuswindow", target)
             elif act == "close_window":
-                res = await SystemAppBridge.hyprctl_dispatch("killactive")
+                return await SystemAppBridge.hyprctl_dispatch("killactive")
             elif act == "resize_window":
                 params = args or target or "50 0"
-                res = await SystemAppBridge.hyprctl_dispatch("resizeactive", params)
+                return await SystemAppBridge.hyprctl_dispatch("resizeactive", params)
             elif act == "toggle_floating":
-                res = await SystemAppBridge.hyprctl_dispatch("togglefloating")
+                return await SystemAppBridge.hyprctl_dispatch("togglefloating")
             elif act == "toggle_fullscreen":
-                res = await SystemAppBridge.hyprctl_dispatch("fullscreen", "0")
+                return await SystemAppBridge.hyprctl_dispatch("fullscreen", "0")
             elif act == "set_wallpaper":
-                res = await SystemAppBridge.set_wallpaper(target or args or "ghost")
+                return await SystemAppBridge.set_wallpaper(target or args or "ghost")
             elif act in ["toggle_wallpaper", "wallpaper"]:
-                res = await SystemAppBridge.quickshell_ipc("notch toggle wallpaper")
+                return await SystemAppBridge.quickshell_ipc("notch toggle wallpaper")
             elif act in ["move_file", "rename_file", "mv"]:
-                res = await SystemAppBridge.file_operation("move", source=target, destination=args)
+                return await SystemAppBridge.file_operation("move", source=target, destination=args)
             elif act in ["copy_file", "cp"]:
-                res = await SystemAppBridge.file_operation("copy", source=target, destination=args)
+                return await SystemAppBridge.file_operation("copy", source=target, destination=args)
             elif act in ["delete_file", "rm"]:
-                res = await SystemAppBridge.file_operation("delete", source=target)
+                return await SystemAppBridge.file_operation("delete", source=target)
             elif act in ["request_authorization", "request_consent", "authorize"]:
                 from ghost.mcp.bridge import request_tactical_authorization
                 allowed = await request_tactical_authorization(target or args or "General action authorization requested")
-                res = {"status": "authorized" if allowed else "denied", "allowed": allowed, "action": target}
+                return {"status": "authorized" if allowed else "denied", "allowed": allowed, "action": target}
             elif act == "read_context":
                 ctx_path = os.path.join(REPO_DIR, "context", target.lstrip("/"))
                 if os.path.exists(ctx_path) and os.path.isfile(ctx_path):
                     with open(ctx_path, "r", encoding="utf-8") as f:
                         content = f.read()
-                    res = {"status": "success", "file": target, "content": content}
+                    return {"file": target, "content": content}
                 else:
-                    res = {"status": "error", "message": f"Context file '{target}' not found."}
+                    return {"error": f"Context file '{target}' not found."}
             elif act == "launch_app":
-                res = await SystemAppBridge.launch_app(target, workspace=args if args else None)
+                return await SystemAppBridge.launch_app(target, workspace=args if args else None)
             elif act == "quickshell_ipc":
-                res = await SystemAppBridge.quickshell_ipc(target)
+                return await SystemAppBridge.quickshell_ipc(target)
             else:
                 disp = arguments.get("dispatcher") or target or "workspace"
-                res = await SystemAppBridge.hyprctl_dispatch(disp, args)
-            return {"status": "success", "result": res}
+                return await SystemAppBridge.hyprctl_dispatch(disp, args)
 
         # 2. Universal Media & Spotify Primitive
         elif tool_name in ["media_control", "music_control", "spotify_action"]:
@@ -1015,28 +1182,27 @@ class OmniRouteBrain:
             vol = arguments.get("volume")
 
             if act == "play_query" or (query and act in ["play", "liked", "liked_songs"]):
-                res = await MediaBridge.spotify_action(action="play_query", query=query)
+                return await MediaBridge.spotify_action(action="play_query", query=query)
             elif act == "play":
-                res = await MediaBridge.spotify_action(action="play")
+                return await MediaBridge.spotify_action(action="play")
             elif act == "pause":
-                res = await MediaBridge.spotify_action(action="pause")
+                return await MediaBridge.spotify_action(action="pause")
             elif act == "play_pause":
-                res = await MediaBridge.play_pause()
+                return await MediaBridge.play_pause()
             elif act == "next":
-                res = await MediaBridge.next_track()
+                return await MediaBridge.next_track()
             elif act == "previous":
-                res = await MediaBridge.previous_track()
+                return await MediaBridge.previous_track()
             elif act == "get_track":
-                res = await MediaBridge.get_current_track()
+                return await MediaBridge.get_current_track()
             elif act == "volume_up":
-                res = await MediaBridge.adjust_volume("+5%")
+                return await MediaBridge.adjust_volume("+5%")
             elif act == "volume_down":
-                res = await MediaBridge.adjust_volume("-5%")
+                return await MediaBridge.adjust_volume("-5%")
             elif act == "set_volume":
-                res = await MediaBridge.set_volume(vol or "50%")
+                return await MediaBridge.set_volume(vol or "50%")
             else:
-                res = await MediaBridge.spotify_action(action=act, query=query)
-            return {"status": "success", "result": res}
+                return await MediaBridge.spotify_action(action=act, query=query)
 
         # 3. Universal Browser CDP Primitive
         elif tool_name in ["browser_action", "brave_open_url", "brave_list_tabs", "brave_focus_tab", "brave_close_tab", "brave_click_and_type", "whatsapp_web_action"]:
@@ -1050,46 +1216,39 @@ class OmniRouteBrain:
                 dest = url or target
                 if not dest.startswith("http"):
                     dest = f"https://{dest}"
-                res = await BraveCDPBridge.new_tab(dest)
-                return {"status": "success", "result": res}
+                return await BraveCDPBridge.new_tab(dest)
             elif tool_name == "brave_list_tabs" or act == "list_tabs":
                 tabs = await BraveCDPBridge.list_tabs()
-                valid_tabs = [t for t in tabs if isinstance(t, dict) and "title" in t]
-                return {"status": "success", "count": len(valid_tabs), "tabs": valid_tabs[:6]}
+                if tabs and isinstance(tabs, list) and len(tabs) == 1 and "error" in tabs[0]:
+                    return {"error": tabs[0]["error"]}
+                valid_tabs = [t for t in tabs if isinstance(t, dict) and "title" in t and "error" not in t]
+                return {"count": len(valid_tabs), "tabs": valid_tabs[:6]}
             elif tool_name == "brave_focus_tab" or act == "focus_tab":
-                res = await BraveCDPBridge.activate_tab(target)
-                return {"status": "success", "result": res}
+                return await BraveCDPBridge.activate_tab(target)
             elif tool_name == "brave_close_tab" or act == "close_tab":
-                res = await BraveCDPBridge.close_tab(target)
-                return {"status": "success", "result": res}
+                return await BraveCDPBridge.close_tab(target)
             elif tool_name == "brave_click_and_type" or act == "click_and_type":
-                res = await BraveCDPBridge.click_and_type(target, text=val, press_enter=press_enter)
-                return {"status": "success", "result": res}
+                return await BraveCDPBridge.click_and_type(target, text=val, press_enter=press_enter)
             elif tool_name == "whatsapp_web_action" or act == "whatsapp_action":
                 wa_act = arguments.get("action", "open")
                 if wa_act == "whatsapp_action":
                     wa_act = "message" if val else "open"
-                res = await WhatsAppBridge.action(wa_act, target=target, message_text=val)
-                return {"status": "success", "result": res}
+                return await WhatsAppBridge.action(wa_act, target=target, message_text=val)
             else:
                 # Default browser fallback: open url
                 if url:
-                    res = await BraveCDPBridge.new_tab(url)
-                    return {"status": "success", "result": res}
-                res = {"error": f"Unknown browser action: {act}"}
-                return {"status": "error", "result": res}
+                    return await BraveCDPBridge.new_tab(url)
+                return {"error": f"Unknown browser action: {act}"}
 
         # 4. Recon & Direct Interaction: Screen Capture, Clipboard, Simulation, Notify
         elif tool_name == "capture_screen":
             reg = arguments.get("region", "full")
-            res = await SystemAppBridge.capture_screen(region=reg)
-            return {"status": "success", "result": res}
+            return await SystemAppBridge.capture_screen(region=reg)
 
         elif tool_name == "clipboard_action":
             op = arguments.get("operation", "read")
             text = arguments.get("text")
-            res = await SystemAppBridge.clipboard_action(operation=op, text=text)
-            return {"status": "success", "result": res}
+            return await SystemAppBridge.clipboard_action(operation=op, text=text)
 
         elif tool_name == "input_simulation":
             stype = arguments.get("type", "key")
@@ -1097,15 +1256,13 @@ class OmniRouteBrain:
             x = arguments.get("x")
             y = arguments.get("y")
             wq = arguments.get("window_query")
-            res = await SystemAppBridge.input_simulation(sim_type=stype, keys=keys, x=x, y=y, window_query=wq)
-            return {"status": "success", "result": res}
+            return await SystemAppBridge.input_simulation(sim_type=stype, keys=keys, x=x, y=y, window_query=wq)
 
         elif tool_name == "desktop_notify":
             title = arguments.get("title", "Ghost Recon")
             msg = arguments.get("message", "")
             urg = arguments.get("urgency", "normal")
-            res = await SystemAppBridge.desktop_notify(title=title, message=msg, urgency=urg)
-            return {"status": "success", "result": res}
+            return await SystemAppBridge.desktop_notify(title=title, message=msg, urgency=urg)
 
         # 5. REA Reverse Engineering MCP Bridge
         elif tool_name == "rea_action":
@@ -1117,22 +1274,19 @@ class OmniRouteBrain:
                 args_list.append(target)
             if extra_args:
                 args_list.extend(extra_args.split())
-            res = await ReaBridge.run_command(cmd, args_list)
-            return {"status": "success", "result": res}
+            return await ReaBridge.run_command(cmd, args_list)
 
         # 6. Web Search MCP Bridge
         elif tool_name == "web_search":
             q = arguments.get("query", "")
             limit = int(arguments.get("max_results", 5))
-            res = await WebSearchBridge.search(q, max_results=limit)
-            return {"status": "success", "result": res}
+            return await WebSearchBridge.search(q, max_results=limit)
 
         # 7. Database Query MCP Bridge (SQLite / Postgres)
         elif tool_name == "database_query":
             db = arguments.get("db_path", "")
             q = arguments.get("query", "")
-            res = await DatabaseBridge.query_sqlite(db, q)
-            return {"status": "success", "result": res}
+            return await DatabaseBridge.query_sqlite(db, q)
 
         # 8. GitHub MCP Bridge
         elif tool_name == "github_action":
@@ -1140,8 +1294,7 @@ class OmniRouteBrain:
             repo = arguments.get("repo")
             path = arguments.get("path")
             q = arguments.get("query")
-            res = await GitHubBridge.run_action(action=act, repo=repo, path=path, query=q)
-            return {"status": "success", "result": res}
+            return await GitHubBridge.run_action(action=act, repo=repo, path=path, query=q)
 
         # 9. CRM & Anti-Hallucination Pipeline Primitives
         elif tool_name == "crm_get_client":
@@ -1149,7 +1302,7 @@ class OmniRouteBrain:
             crm = CRMDatabase.get_instance()
             res = crm.get_client(slug)
             if res:
-                return {"status": "success", "client": res}
+                return {"client": res}
             return {"status": "not_found", "message": f"Client '{slug}' not found in CRM."}
 
         elif tool_name == "crm_update_client":
@@ -1168,13 +1321,13 @@ class OmniRouteBrain:
                 email=email, phone=phone, preferred_channel=p_channel,
                 status=stat, deal_value=val, notes=notes
             )
-            return {"status": "success", "client": res}
+            return {"client": res}
 
         elif tool_name == "crm_list_pipeline":
             crm = CRMDatabase.get_instance()
             stat = arguments.get("status")
             clients = crm.list_clients(status=stat)
-            return {"status": "success", "count": len(clients), "pipeline": clients}
+            return {"count": len(clients), "pipeline": clients}
 
         # 10. OpenCode / DeepSeek Luxury Demo Builder Worker Swarm
         elif tool_name == "build_luxury_demo":
@@ -1184,14 +1337,13 @@ class OmniRouteBrain:
             tag = arguments.get("tagline")
             m_items = arguments.get("menu_items")
             c_info = arguments.get("contact_info")
-            res = await DemoBuilderWorker.build_demo(
+            return await DemoBuilderWorker.build_demo(
                 restaurant_name=rname,
                 archetype=arch,
                 tagline=tag,
                 menu_items=m_items,
                 contact_info=c_info
             )
-            return {"status": "success", "result": res}
 
         # 11. Agency Email Engine (IMAP SSL Read-Only)
         elif tool_name == "email_check_inbox":
@@ -1200,7 +1352,7 @@ class OmniRouteBrain:
             u_only = bool(arguments.get("unread_only", True))
             lim = int(arguments.get("limit", 5))
             emails = await asyncio.to_thread(es.check_inbox, unread_only=u_only, limit=lim)
-            return {"status": "success", "count": len(emails), "emails": emails}
+            return {"count": len(emails), "emails": emails}
 
         # 12. Premium Design & Motion Resources
         elif tool_name == "get_premium_resources":
@@ -1209,36 +1361,32 @@ class OmniRouteBrain:
             if res_id:
                 res = get_resource(res_id)
                 if res:
-                    return {"status": "success", "resource": res.dict() if hasattr(res, "dict") else res.__dict__}
+                    return {"resource": res.dict() if hasattr(res, "dict") else res.__dict__}
                 return {"status": "not_found", "message": f"Resource '{res_id}' not found."}
-            return {"status": "success", "resources": list_all_resources()}
+            return {"resources": list_all_resources()}
 
         # 13. Vercel Cloud Deployment & Token Health
         elif tool_name == "deploy_demo_vercel":
             from ghost.workers.deploy import VercelDeployer
             slug = arguments.get("slug", "")
             p_name = arguments.get("project_name")
-            res = await VercelDeployer.deploy_demo(slug=slug, project_name=p_name)
-            return res
+            return await VercelDeployer.deploy_demo(slug=slug, project_name=p_name)
 
         elif tool_name == "vercel_check_token":
             from ghost.workers.deploy import VercelDeployer
-            res = await VercelDeployer.check_token_status()
-            return res
+            return await VercelDeployer.check_token_status()
 
         # 14. Figma REST API Bridge (Post-Contract Production Only)
         elif tool_name == "figma_inspect_file":
             from ghost.workers.figma import FigmaBridge
             f_key = arguments.get("file_key", "")
             d_val = arguments.get("depth", 2)
-            res = await asyncio.to_thread(FigmaBridge.get_file, file_key=f_key, depth=d_val)
-            return res
+            return await asyncio.to_thread(FigmaBridge.get_file, file_key=f_key, depth=d_val)
 
         elif tool_name == "figma_extract_tokens":
             from ghost.workers.figma import FigmaBridge
             f_key = arguments.get("file_key", "")
-            res = await asyncio.to_thread(FigmaBridge.extract_design_tokens, file_key=f_key)
-            return res
+            return await asyncio.to_thread(FigmaBridge.extract_design_tokens, file_key=f_key)
 
         # 15. Framer CMS & Component Synthesis Engine (Post-Contract Production Only)
         elif tool_name == "framer_sync_cms":
@@ -1246,8 +1394,7 @@ class OmniRouteBrain:
             c_id = arguments.get("collection_id", "")
             items_list = arguments.get("items", [])
             p_id = arguments.get("project_id")
-            res = await asyncio.to_thread(FramerBridge.sync_cms_items, collection_id=c_id, items=items_list, project_id=p_id)
-            return res
+            return await asyncio.to_thread(FramerBridge.sync_cms_items, collection_id=c_id, items=items_list, project_id=p_id)
 
         elif tool_name == "framer_generate_code_component":
             from ghost.workers.framer import FramerBridge
@@ -1256,13 +1403,12 @@ class OmniRouteBrain:
             arch_idx = int(arguments.get("archetype", 1))
             m_spring = bool(arguments.get("motion_spring", True))
             style = ARCHETYPE_STYLES.get(arch_idx, ARCHETYPE_STYLES[1])
-            res = await asyncio.to_thread(
+            return await asyncio.to_thread(
                 FramerBridge.generate_framer_component,
                 name=c_name,
                 style_tokens=style,
                 motion_spring=m_spring
             )
-            return res
 
         # 16. Native OS Accessibility Engine (agent-desktop)
         elif tool_name == "agent_desktop_command":
@@ -1276,9 +1422,9 @@ class OmniRouteBrain:
             is_headed = bool(arguments.get("headed", False))
 
             if action == "snapshot":
-                res = await AgentDesktopBridge.snapshot(app=app_name)
+                return await AgentDesktopBridge.snapshot(app=app_name)
             elif action == "find":
-                res = await AgentDesktopBridge.find(query=text_val, role=role_val, name=text_val, app=app_name)
+                return await AgentDesktopBridge.find(query=text_val, role=role_val, name=text_val, app=app_name)
             elif action in ["click", "double_click", "right_click", "type", "press", "scroll", "focus"]:
                 cmd_map = {
                     "click": "click",
@@ -1291,7 +1437,7 @@ class OmniRouteBrain:
                 }
                 cmd_exec = cmd_map.get(action, action)
                 val = text_val or key_val
-                res = await AgentDesktopBridge.action(
+                return await AgentDesktopBridge.action(
                     command=cmd_exec,
                     target_ref=target_ref,
                     value=val,
@@ -1299,41 +1445,36 @@ class OmniRouteBrain:
                     app=app_name
                 )
             else:
-                res = {"ok": False, "error": f"Unsupported agent_desktop action: {action}"}
-            return {"status": "success" if res.get("ok", True) else "error", "result": res}
+                return {"error": f"Unsupported agent_desktop action: {action}"}
 
         # 17. Deterministic Git Engine (with Headless SSH_ASKPASS support)
         elif tool_name == "git_action":
             from ghost.mcp.bridge import GitBridge
             raw_cmd = arguments.get("command", "status").strip()
             repo_path = arguments.get("repo_dir", REPO_DIR)
-            pass_key = arguments.get("passphrase") or "5437"
             parts = [p.strip() for p in raw_cmd.split() if p.strip()]
             if parts and parts[0] == "git":
                 parts = parts[1:]
-            res = await GitBridge.run_git(args=parts, repo_dir=repo_path, passphrase=pass_key)
-            return {"status": "success" if res.get("success", False) else "error", "result": res}
+            return await GitBridge.run_git(args=parts, repo_dir=repo_path)
 
         # 18. Safe System CLI Run Fallback
         elif tool_name == "system_run":
             cmd = arguments.get("command", "")
-            res = await ShellExecutor.run(cmd)
-            return {"status": "success", "result": res}
+            return await ShellExecutor.run(cmd)
 
         # Directives / Memory
         elif tool_name == "manage_directives":
             op = arguments.get("operation")
             cnt = arguments.get("content", "")
             if op == "add_fact":
-                res = DirectiveManager.add_directive(cnt, category="facts")
+                return DirectiveManager.add_directive(cnt, category="facts")
             elif op == "add_directive":
-                res = DirectiveManager.add_directive(cnt, category="directives")
+                return DirectiveManager.add_directive(cnt, category="directives")
             elif op == "list":
-                res = DirectiveManager.list_all()
+                return DirectiveManager.list_all()
             elif op == "remove":
-                res = DirectiveManager.remove_directive(cnt)
+                return DirectiveManager.remove_directive(cnt)
             else:
-                res = {"error": "Invalid operation"}
-            return {"status": "success", "result": res}
+                return {"error": "Invalid operation"}
 
-        return {"status": "error", "message": f"Tool {tool_name} not recognized"}
+        return {"error": f"Tool {tool_name} not recognized"}
