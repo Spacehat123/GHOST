@@ -19,6 +19,7 @@ configs/*.local.*
 !.env.example
 
 # --- Personal & Runtime Data ---
+graphify-out/
 data/*.db
 data/*.sqlite*
 data/conversation_history.json

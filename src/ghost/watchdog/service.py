@@ -1,36 +1,74 @@
-"""Autonomous AGI Watchdog & Signal Bus for Ghost Agency Operations.
+"""Autonomous AGI Watchdog & Cognitive Signal Bus for Ghost Agency Operations.
 Dual-Trigger Architecture:
 1. Event-Driven Signal Listener: Fast webhook / event queue for incoming client comms
-   (WhatsApp, Email, Slack) and worker completion signals (OpenCode / DeepSeek).
+   (WhatsApp, Email, Slack) and worker completion signals with lossless SQLite persistence.
 2. Periodic Operations Patrol: Background task running every 30m auditing pipeline health,
    flagging stale client replies (>24h), and logging summaries to Obsidian Daily Log.
 """
 import asyncio
 import os
 import time
+import json
+import sqlite3
+import hashlib
 import logging
 from typing import Dict, Any, List, Optional, Callable
 from ghost.crm.db import CRMDatabase
 
 logger = logging.getLogger("ghost.watchdog")
 
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+DATA_DIR = os.path.join(REPO_DIR, "data")
+EVENTS_DB_PATH = os.environ.get("GHOST_EVENTS_DB", os.path.join(DATA_DIR, "events.db"))
 DAILY_LOG_PATH = os.environ.get("OBSIDIAN_DAILY_LOG_PATH", os.path.expanduser("~/Obsidian Vault/Ghost/Daily Log.md"))
+DEFAULT_PATROL_INTERVAL = int(os.environ.get("GHOST_WATCHDOG_INTERVAL", "1800"))  # 30 minutes default cadence
 
 class AutonomousWatchdog:
     _instance: Optional["AutonomousWatchdog"] = None
 
-    def __init__(self, patrol_interval_seconds: int = 86400):  # 24-hour periodic sweep cadence
-        self.patrol_interval = patrol_interval_seconds
+    def __init__(self, patrol_interval_seconds: Optional[int] = None, db_path: Optional[str] = None):
+        self.patrol_interval = patrol_interval_seconds or DEFAULT_PATROL_INTERVAL
+        self.db_path = db_path or EVENTS_DB_PATH
         self.is_running = False
         self._patrol_task: Optional[asyncio.Task] = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
         self._broadcast_callbacks: List[Callable[[Dict[str, Any]], Any]] = []
+        self._init_db()
 
     @classmethod
     def get_instance(cls) -> "AutonomousWatchdog":
         if cls._instance is None:
             cls._instance = AutonomousWatchdog()
         return cls._instance
+
+    def _get_connection(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_db(self) -> None:
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        conn = self._get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_events (
+                    id TEXT PRIMARY KEY,
+                    signature TEXT UNIQUE,
+                    event_type TEXT,
+                    source TEXT,
+                    summary TEXT,
+                    payload_json TEXT,
+                    urgency TEXT,
+                    occurrence_count INTEGER DEFAULT 1,
+                    first_seen_at REAL,
+                    last_seen_at REAL,
+                    occurrences_json TEXT,
+                    status TEXT DEFAULT 'unprocessed'
+                )
+                """)
+        finally:
+            conn.close()
 
     def register_broadcast_callback(self, cb: Callable[[Dict[str, Any]], Any]):
         """Register listener (e.g. WebSocket broadcast) for real-time notifications."""
@@ -47,20 +85,74 @@ class AutonomousWatchdog:
     ) -> Dict[str, Any]:
         """
         Ingest an operational event (client message, worker completion, deal alert).
-        Immediately notifies the operator via Desktop HUD and WebSocket broadcast.
+        Performs lossless persistence in SQLite with signature deduplication.
+        Preserves trace history of multiple occurrences without silent dropping.
         """
+        now = time.time()
+        payload_dict = payload or {}
+        payload_str = json.dumps(payload_dict, sort_keys=True)
+        payload_hash = hashlib.sha256(payload_str.encode()).hexdigest()[:16]
+        signature = hashlib.sha256(f"{source}:{event_type}:{payload_hash}".encode()).hexdigest()
+
+        event_id = f"evt_{int(now * 1000)}"
+        occurrence_count = 1
+
+        # Check existing signature for lossless deduplication
+        conn = self._get_connection()
+        try:
+            with conn:
+                existing = conn.execute(
+                    "SELECT * FROM system_events WHERE signature = ?", (signature,)
+                ).fetchone()
+
+                if existing:
+                    # Event is a duplicate: update count, last_seen_at, and append to occurrences history
+                    event_id = existing["id"]
+                    occurrence_count = existing["occurrence_count"] + 1
+                    try:
+                        occ_list = json.loads(existing["occurrences_json"] or "[]")
+                    except Exception:
+                        occ_list = []
+                    occ_list.append({"timestamp": now, "summary": summary})
+
+                    conn.execute("""
+                    UPDATE system_events
+                    SET occurrence_count = ?, last_seen_at = ?, occurrences_json = ?
+                    WHERE signature = ?
+                    """, (occurrence_count, now, json.dumps(occ_list), signature))
+                    logger.info(
+                        f"Watchdog Duplicate Signal Recorded [{source} -> {event_type}]: "
+                        f"Occurrence #{occurrence_count} for signature {signature[:8]}."
+                    )
+                else:
+                    # New event
+                    occ_list = [{"timestamp": now, "summary": summary}]
+                    conn.execute("""
+                    INSERT INTO system_events (
+                        id, signature, event_type, source, summary, payload_json, urgency,
+                        occurrence_count, first_seen_at, last_seen_at, occurrences_json, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        event_id, signature, event_type, source, summary, payload_str, urgency,
+                        1, now, now, json.dumps(occ_list), "unprocessed"
+                    ))
+                    logger.info(f"Watchdog Signal Persisted [{source} -> {event_type}]: {summary}")
+        finally:
+            conn.close()
+
         event = {
             "type": "watchdog_event",
+            "id": event_id,
+            "signature": signature,
             "event_type": event_type,
             "source": source,
             "summary": summary,
-            "payload": payload or {},
+            "payload": payload_dict,
             "urgency": urgency,
-            "timestamp": time.time(),
+            "occurrence_count": occurrence_count,
+            "timestamp": now,
             "time_str": time.strftime("%H:%M:%S")
         }
-
-        logger.info(f"Watchdog Signal [{source} -> {event_type}]: {summary}")
 
         # Send native desktop notification via notify-send
         try:
@@ -83,7 +175,7 @@ class AutonomousWatchdog:
                 logger.warning(f"Error in watchdog broadcast callback: {e}")
 
         # Log into CRM interactions if linked to a client
-        client_slug = (payload or {}).get("client_slug")
+        client_slug = payload_dict.get("client_slug")
         if client_slug:
             try:
                 crm = CRMDatabase.get_instance()
@@ -97,6 +189,30 @@ class AutonomousWatchdog:
                 logger.warning(f"Could not log interaction for signal: {e}")
 
         return event
+
+    def get_unprocessed_events(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Retrieve pending events requiring cognitive assessment."""
+        conn = self._get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM system_events WHERE status = 'unprocessed' ORDER BY last_seen_at DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def mark_event_processed(self, event_id: str, status: str = "processed") -> None:
+        """Mark an event as handled."""
+        conn = self._get_connection()
+        try:
+            with conn:
+                conn.execute(
+                    "UPDATE system_events SET status = ? WHERE id = ?",
+                    (status, event_id)
+                )
+        finally:
+            conn.close()
 
     def start_patrol(self):
         """Start the background operations patrol loop."""
@@ -152,7 +268,6 @@ class AutonomousWatchdog:
 
                 matched_client = client_by_email.get(sender_email)
                 if matched_client:
-                    # Log inbound email to CRM interaction history and Obsidian note
                     slug = matched_client["slug"]
                     crm.log_interaction(
                         client_slug=slug,
@@ -168,7 +283,6 @@ class AutonomousWatchdog:
                         urgency="normal"
                     )
                 else:
-                    # Generic high-priority alert if contains hospitality/client keywords
                     lower_subj = subject.lower()
                     if any(k in lower_subj for k in ["booking", "quote", "website", "proposal", "contract"]):
                         await self.emit_signal(
@@ -207,7 +321,6 @@ class AutonomousWatchdog:
             deal_val = float(c.get("deal_value") or 0.0)
             total_pipeline_val += deal_val
 
-            # Flag clients waiting on reply in pitch_sent or negotiating stages
             if status in ["pitch_sent", "negotiating"]:
                 last_updated = c.get("updated_at") or now
                 if now - last_updated > one_day:
@@ -219,7 +332,6 @@ class AutonomousWatchdog:
                         "deal_value": deal_val
                     })
 
-        # If stale deals detected, trigger high-priority alert
         if stale_clients:
             stale_summary = ", ".join([f"{s['name']} ({s['hours_idle']}h)" for s in stale_clients[:3]])
             await self.emit_signal(
@@ -230,7 +342,7 @@ class AutonomousWatchdog:
                 urgency="critical"
             )
 
-        # 3. Proactive Vercel Token Expiry Check
+        # Proactive Vercel Token Expiry Check
         try:
             from ghost.workers.deploy import VercelDeployer
             v_status = await VercelDeployer.check_token_status()
@@ -245,7 +357,6 @@ class AutonomousWatchdog:
         except Exception as e:
             logger.warning(f"Watchdog vercel token probe note: {e}")
 
-        # Append sweep summary to Obsidian Daily Log
         sweep_report = {
             "timestamp": now,
             "time_str": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -263,7 +374,6 @@ class AutonomousWatchdog:
         if not os.path.exists(DAILY_LOG_PATH):
             return
 
-        date_hdr = time.strftime("%Y-%m-%d")
         time_hdr = time.strftime("%H:%M:%S")
         stale_line = f"- [ ] **Follow-up Alert:** {len(report['stale_clients'])} deals pending response >24h." if report['stale_clients'] else "- [x] Pipeline responsive (0 stale leads)."
 

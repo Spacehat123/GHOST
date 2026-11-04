@@ -1,24 +1,32 @@
-"""Ghost Agent Core integrating Native Function Calling Loop, OmniRoute Streaming, and Barge-In."""
+"""Ghost Agent Core integrating Native Function Calling Loop, OmniRoute Streaming, and Barge-In.
+Implements non-negotiable architectural principles:
+1. Strict Tool Argument Validation (Zero guessing or silent repairs).
+2. Four-Dimensional Bounded Loops (Max model rounds, tool calls, elapsed time, token ceilings).
+3. Deterministic Pre-Execution Instruction Compliance Gate.
+4. Three-Layer Memory Integration & Cumulative Multi-Turn Task Token Accounting.
+"""
 import asyncio
 import os
 import json
 import logging
 import datetime
+import time
 from typing import AsyncGenerator, Dict, Any, Optional, List
 
 logger = logging.getLogger("ghost.core")
 
 from ghost.core.brain import OmniRouteBrain, GHOST_TOOLS, CONFIGS_DIR
 from ghost.core.follow import DirectiveManager
-
-TOKEN_STATS_PATH = os.path.join(CONFIGS_DIR, "token_stats.json")
+from ghost.core.validator import ToolArgumentValidator
+from ghost.core.token_tracker import TaskTokenTracker, TOKEN_STATS_PATH
+from ghost.core.memory import WorkingMemory, EpisodicMemoryStore
+from ghost.core.instructions import InstructionComplianceGate
 
 def _compute_relative_time(last_ts_str: Optional[str]) -> str:
     """Compute human-friendly relative time difference since last interaction."""
     if not last_ts_str:
         return "First deployment / fresh boot"
     try:
-        # Expected format: %Y-%m-%d %H:%M:%S %Z or parse prefix
         parts = last_ts_str.split()
         if len(parts) >= 2:
             date_time_str = f"{parts[0]} {parts[1]}"
@@ -69,8 +77,11 @@ class GhostAgent:
     """
     Agent orchestrator running full OpenAI function-calling loops with OmniRoute:
     1. Sends user input with GHOST_TOOLS function definitions.
-    2. If tool_calls emitted: yields tool_start -> executes Python tool -> sends tool result back.
-    3. Streams final spoken Simon Riley tactical response.
+    2. Validates arguments strictly against schema (no guessing or silent repair).
+    3. Evaluates deterministic instruction compliance gate before execution.
+    4. Enforces 4D bounded loops (rounds, tools, time, tokens).
+    5. Accumulates cumulative multi-turn token accounting.
+    6. Streams final spoken Simon Riley tactical response.
     """
 
     def __init__(self, system_prompt: Optional[str] = None):
@@ -81,7 +92,11 @@ class GhostAgent:
         logger.info("GhostAgent: Barge-in interruption triggered")
         self._interrupt_event.set()
 
-    async def ask_stream(self, user_text: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def ask_stream(
+        self,
+        user_text: str,
+        task_context: Optional[Dict[str, Any]] = None
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream conversational agent turn with real-time tool calls and token delivery.
         """
@@ -106,8 +121,35 @@ class GhostAgent:
         client = OmniRouteBrain.get_client()
         model = OmniRouteBrain._config.get("model", "antigravity/gemini-3.8-flash-low")
 
-        # Load active persistent directives
+        # Initialize Bounded Loop Guard Parameters (4 Dimensions)
+        task_id = f"task_{int(time.time() * 1000)}"
+        task_start_time = time.time()
+        max_model_rounds = int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "10"))
+        max_tool_executions = int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "15"))
+        max_task_elapsed_seconds = float(os.environ.get("GHOST_MAX_TASK_ELAPSED_SECONDS", "120.0"))
+        max_task_total_tokens = int(os.environ.get("GHOST_MAX_TASK_TOTAL_TOKENS", "60000"))
+
+        # Initialize Working Memory & Token Tracker
+        working_memory = WorkingMemory(task_id=task_id, active_goal=user_text)
+        task_tracker = TaskTokenTracker(task_id=task_id, model=model)
+
+        # Load active persistent directives (Core Memory)
         directives_context = DirectiveManager.get_snapshot()
+
+        # Retrieve relevant lessons from Episodic Memory
+        episodic_store = EpisodicMemoryStore()
+        relevant_episodes = episodic_store.retrieve_relevant(user_text, limit=2)
+        episodic_banner = ""
+        if relevant_episodes:
+            ep_lines = []
+            for ep in relevant_episodes:
+                q = ep.get("query", "")
+                outcome = ep.get("outcome", "")
+                lesson = ep.get("lessons_learned", "")
+                if lesson or outcome:
+                    ep_lines.append(f"- Past: '{q[:40]}...' -> Outcome: {outcome[:40]}, Lesson: {lesson[:50]}")
+            if ep_lines:
+                episodic_banner = "\n\n[EPISODIC MEMORY - RELEVANT LESSONS & PAST OUTCOMES]\n" + "\n".join(ep_lines)
 
         # Compute live temporal context
         now_dt = datetime.datetime.now().astimezone()
@@ -122,9 +164,13 @@ class GhostAgent:
             f"- State: Resumed active mission from persistent memory ledger ({len(OmniRouteBrain._history)} turns recorded)\n"
         )
 
-        system_content = OmniRouteBrain.SYSTEM_PROMPT + temporal_banner
+        system_content = OmniRouteBrain.SYSTEM_PROMPT + temporal_banner + episodic_banner
         if directives_context:
             system_content += f"\n\n{directives_context}"
+
+        # Token categorization breakdown attribution
+        task_tracker.record_category_tokens("memory", max(1, len(directives_context + episodic_banner) // 4))
+        task_tracker.record_category_tokens("tool_definitions", max(1, len(json.dumps(GHOST_TOOLS)) // 4))
 
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": system_content}
@@ -135,14 +181,27 @@ class GhostAgent:
             messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
         messages.append({"role": "user", "content": user_text})
 
-        # Loop to handle function calling and multi-step tool execution (unlimited operational turns)
-        current_turn = 0
-        latest_turn_tokens = 0
+        # Loop to handle function calling and multi-step tool execution
+        total_model_rounds = 0
+        total_tool_executions = 0
         operator_aborted = False
+        limit_breached: Optional[str] = None
         tool_call_history: List[Dict[str, Any]] = []
 
         while True:
-            current_turn += 1
+            # 4-Dimensional Bounded Agent Loop Check
+            if total_model_rounds >= max_model_rounds:
+                limit_breached = f"Maximum model rounds ({max_model_rounds}) reached."
+            elif total_tool_executions >= max_tool_executions:
+                limit_breached = f"Maximum tool executions ({max_tool_executions}) reached."
+            elif (time.time() - task_start_time) >= max_task_elapsed_seconds:
+                limit_breached = f"Task execution time limit ({max_task_elapsed_seconds}s) exceeded."
+            elif task_tracker.total_tokens >= max_task_total_tokens:
+                limit_breached = f"Task token ceiling ({max_task_total_tokens}) reached."
+
+            if limit_breached:
+                logger.warning(f"GhostAgent Bounded Loop Ceiling Reached: {limit_breached}")
+                break
 
             if self._interrupt_event.is_set():
                 yield {"type": "state", "state": "INTERRUPTED"}
@@ -162,6 +221,9 @@ class GhostAgent:
                 tool_calls_accumulator = {}
                 content_accumulator = []
                 is_speaking = False
+                round_prompt_tokens = 0
+                round_completion_tokens = 0
+                round_total_tokens = 0
 
                 async for chunk in stream:
                     if self._interrupt_event.is_set():
@@ -169,8 +231,9 @@ class GhostAgent:
                         return
 
                     if hasattr(chunk, "usage") and chunk.usage:
-                        # Take the latest turn usage snapshot (not compounding total_tokens across multiple turns)
-                        latest_turn_tokens = (chunk.usage.total_tokens or 0)
+                        round_prompt_tokens = getattr(chunk.usage, "prompt_tokens", 0) or 0
+                        round_completion_tokens = getattr(chunk.usage, "completion_tokens", 0) or 0
+                        round_total_tokens = getattr(chunk.usage, "total_tokens", 0) or 0
 
                     if not chunk.choices:
                         continue
@@ -204,6 +267,15 @@ class GhostAgent:
                         content_accumulator.append(clean_token)
                         yield {"type": "token", "text": clean_token}
 
+                # Update cumulative task token accounting
+                total_model_rounds += 1
+                if round_total_tokens == 0:
+                    round_prompt_tokens = sum(len(str(m.get("content", ""))) for m in messages) // 4
+                    round_completion_tokens = len("".join(content_accumulator)) // 4
+                    round_total_tokens = max(1, round_prompt_tokens + round_completion_tokens)
+
+                task_tracker.add_turn_usage(round_prompt_tokens, round_completion_tokens, round_total_tokens)
+
                 # Check if model requested tool execution
                 if tool_calls_accumulator:
                     # Construct assistant message with tool calls
@@ -227,10 +299,85 @@ class GhostAgent:
                     # Execute each tool call
                     for tc_info in tool_calls_accumulator.values():
                         tool_name = tc_info["name"]
+
+                        # 4D Bounds Pre-Execution Check
+                        if total_tool_executions >= max_tool_executions:
+                            limit_breached = f"Maximum tool executions ({max_tool_executions}) reached."
+                            break
+                        if (time.time() - task_start_time) >= max_task_elapsed_seconds:
+                            limit_breached = f"Task execution time limit ({max_task_elapsed_seconds}s) exceeded."
+                            break
+                        if task_tracker.total_tokens >= max_task_total_tokens:
+                            limit_breached = f"Task token ceiling ({max_task_total_tokens}) reached."
+                            break
+
+                        raw_args_str = tc_info.get("arguments", "")
                         try:
-                            args = json.loads(tc_info["arguments"]) if tc_info["arguments"] else {}
+                            initial_args = json.loads(raw_args_str) if raw_args_str else {}
+                            if not isinstance(initial_args, dict):
+                                initial_args = {}
                         except Exception:
-                            args = {}
+                            initial_args = {}
+
+                        # 1. DETERMINISTIC INSTRUCTION COMPLIANCE GATE (Pre-Execution Safety Firewall)
+                        is_allowed, violation = InstructionComplianceGate.check_pre_execution(
+                            tool_name=tool_name,
+                            arguments=initial_args,
+                            task_context=task_context
+                        )
+                        if not is_allowed and violation:
+                            logger.warning(
+                                f"GhostAgent Instruction Compliance Gate Violation: "
+                                f"{tool_name} blocked by {violation.get('compliance_rule')}"
+                            )
+                            yield {
+                                "type": "tool_start",
+                                "tool": tool_name,
+                                "arguments": initial_args
+                            }
+                            yield {
+                                "type": "tool_end",
+                                "tool": tool_name,
+                                "result": violation
+                            }
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc_info["id"],
+                                "content": json.dumps(violation)
+                            })
+                            continue
+
+                        # 2. STRICT TOOL ARGUMENT SCHEMA VALIDATION (Zero Guesses, No Silent Repairs)
+                        is_valid, parsed_args, val_err = ToolArgumentValidator.validate(tool_name, raw_args_str)
+                        if not is_valid:
+                            logger.warning(f"GhostAgent Tool Argument Schema Violation [{tool_name}]: {val_err}")
+                            schema_err_result = {
+                                "ok": False,
+                                "status": "failed",
+                                "tool": tool_name,
+                                "action": "validate_arguments",
+                                "error": val_err,
+                                "verified": False,
+                                "schema_violation": True
+                            }
+                            yield {
+                                "type": "tool_start",
+                                "tool": tool_name,
+                                "arguments": {}
+                            }
+                            yield {
+                                "type": "tool_end",
+                                "tool": tool_name,
+                                "result": schema_err_result
+                            }
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc_info["id"],
+                                "content": json.dumps(schema_err_result)
+                            })
+                            continue
+
+                        args = parsed_args or {}
 
                         # Serialize arguments deterministically for deduplication check
                         try:
@@ -260,8 +407,7 @@ class GhostAgent:
                             })
                             continue
 
-                        # Deduplication Guard & Failure Circuit Breaker:
-                        # Check consecutive attempts of the identical tool call and arguments
+                        # Deduplication Guard & Failure Circuit Breaker
                         consecutive_identical = 0
                         prev_results = []
                         for prev in reversed(tool_call_history):
@@ -275,7 +421,7 @@ class GhostAgent:
                             if isinstance(r, dict):
                                 if r.get("error"):
                                     return True
-                                if r.get("status") in ["error", "failed"]:
+                                if r.get("status") in ["error", "failed", "blocked"]:
                                     return True
                                 if r.get("success") is False or r.get("ok") is False or r.get("allowed") is False:
                                     return True
@@ -286,8 +432,6 @@ class GhostAgent:
                                     return True
                             return False
 
-                        # Circuit Breaker: If called 3 consecutive times with identical args
-                        # and prior executions yielded errors or identical results, intercept immediately
                         if consecutive_identical >= 2:
                             has_error = any(_is_error_result(r) for r in prev_results)
                             has_identical = (
@@ -334,22 +478,25 @@ class GhostAgent:
                                     "result": res
                                 })
 
-                                # If repeated beyond 3 attempts, halt the loop and force spoken synthesis to operator
                                 if consecutive_identical >= 3:
                                     logger.warning("GhostAgent: Halting spinning execution loop to force operator consultation.")
                                     operator_aborted = True
 
                                 continue
 
-                        # 1. Yield UI state update showing tool execution
+                        # Yield UI state update showing tool execution
                         yield {
                             "type": "tool_start",
                             "tool": tool_name,
                             "arguments": args
                         }
 
-                        # 2. Execute Python primitive natively
+                        # Execute Python primitive natively
                         res = await OmniRouteBrain.execute_tool_call(tool_name, args)
+                        total_tool_executions += 1
+                        task_tracker.record_tool_call()
+                        task_tracker.record_category_tokens("tool_outputs", max(1, len(json.dumps(res)) // 4))
+                        working_memory.add_tool_result(tool_name, str(args.get("action", "")), res)
 
                         # Record execution in deduplication history
                         tool_call_history.append({
@@ -358,7 +505,7 @@ class GhostAgent:
                             "result": res
                         })
 
-                        # 3. Yield UI event for completion
+                        # Yield UI event for completion
                         yield {
                             "type": "tool_end",
                             "tool": tool_name,
@@ -366,14 +513,13 @@ class GhostAgent:
                         }
 
                         # Interactive Authorization Modal Handling
-                        # If operator explicitly denies authorization on a gated action
                         if tool_name == "desktop_control" and args.get("action") in ["request_authorization", "request_consent", "authorize"]:
                             allowed = res.get("result", {}).get("allowed") if isinstance(res.get("result"), dict) else res.get("allowed")
                             if allowed is False:
                                 operator_aborted = True
                                 logger.info("Operator denied authorization. Aborting tool loop to final synthesis.")
 
-                        # 4. Feed REAL tool output back into conversation messages
+                        # Feed REAL tool output back into conversation messages
                         data_uri = res.get("data_uri") if isinstance(res, dict) else None
                         if not data_uri and isinstance(res, dict) and isinstance(res.get("result"), dict):
                             data_uri = res["result"].get("data_uri")
@@ -384,7 +530,6 @@ class GhostAgent:
                                 "tool_call_id": tc_info["id"],
                                 "content": json.dumps({"status": "success", "info": "Screen captured successfully. Visual snapshot attached below."})
                             })
-                            # Append user vision payload containing base64 JPEG
                             messages.append({
                                 "role": "user",
                                 "content": [
@@ -404,11 +549,10 @@ class GhostAgent:
                                 "content": json.dumps(res)
                             })
 
-                    # If operator explicitly denied authorization, exit tool loop immediately to final synthesis pass
-                    if operator_aborted:
+                    if limit_breached or operator_aborted:
                         break
 
-                    # Loop back to generate model's spoken response with tool results!
+                    # Loop back to generate model's spoken response with tool results
                     yield {"type": "state", "state": "THINKING"}
                     continue
 
@@ -419,15 +563,23 @@ class GhostAgent:
                         turn_ts = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
                         OmniRouteBrain.record_turn(role="user", content=user_text, timestamp=turn_ts)
                         OmniRouteBrain.record_turn(role="assistant", content=assistant_text, timestamp=turn_ts)
+                        episodic_store.record_episode(
+                            task_id=task_id,
+                            query=user_text,
+                            summary=assistant_text[:100],
+                            outcome="completed",
+                            importance=0.7
+                        )
 
-                    # Calculate / estimate token metrics accurately using the peak turn tokens
-                    if latest_turn_tokens == 0:
-                        prompt_chars = sum(len(str(m.get("content", ""))) for m in messages)
-                        resp_chars = len(assistant_text)
-                        latest_turn_tokens = max(1, (prompt_chars + resp_chars) // 4)
-
-                    token_stats = _update_token_stats(latest_turn_tokens)
-                    yield {"type": "token_stats", "last": token_stats["last"], "today": token_stats["today"]}
+                    # Persist cumulative task token metrics
+                    global_stats = task_tracker.save_to_disk()
+                    yield {
+                        "type": "token_stats",
+                        "last": task_tracker.total_tokens,
+                        "today": global_stats["today"],
+                        "cost_usd": task_tracker.cost_usd,
+                        "tracker": task_tracker.to_dict()
+                    }
 
                     yield {"type": "state", "state": "IDLE"}
                     return
@@ -443,10 +595,18 @@ class GhostAgent:
                 yield {"type": "state", "state": "IDLE"}
                 return
 
-        # If the tool loop exhausted max turns, execute a mandatory final synthesis pass with NO tools
-        # to ensure Ghost speaks a closing response to the user instead of going silent/IDLE.
+        # Final Synthesis Pass: Invoked when bounded loop ceiling is reached or operator aborted
         try:
             yield {"type": "state", "state": "THINKING"}
+
+            if limit_breached:
+                halt_instruction = (
+                    f"[TASK HALTED: BOUNDED LOOP CEILING BREACHED]\n"
+                    f"Ceiling condition triggered: {limit_breached}\n"
+                    f"Summarize what was completed and explicitly detail what remains unfinished (remaining_work)."
+                )
+                messages.append({"role": "user", "content": halt_instruction})
+
             final_stream = await client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -456,6 +616,9 @@ class GhostAgent:
 
             content_accumulator = []
             is_speaking = False
+            syn_prompt = 0
+            syn_comp = 0
+            syn_total = 0
 
             async for chunk in final_stream:
                 if self._interrupt_event.is_set():
@@ -463,7 +626,9 @@ class GhostAgent:
                     return
 
                 if hasattr(chunk, "usage") and chunk.usage:
-                    latest_turn_tokens = max(latest_turn_tokens, (chunk.usage.total_tokens or 0))
+                    syn_prompt = getattr(chunk.usage, "prompt_tokens", 0) or 0
+                    syn_comp = getattr(chunk.usage, "completion_tokens", 0) or 0
+                    syn_total = getattr(chunk.usage, "total_tokens", 0) or 0
 
                 if not chunk.choices:
                     continue
@@ -483,14 +648,31 @@ class GhostAgent:
                 turn_ts = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
                 OmniRouteBrain.record_turn(role="user", content=user_text, timestamp=turn_ts)
                 OmniRouteBrain.record_turn(role="assistant", content=assistant_text, timestamp=turn_ts)
+                episodic_store.record_episode(
+                    task_id=task_id,
+                    query=user_text,
+                    summary=assistant_text[:100],
+                    outcome="halted_limit_breached" if limit_breached else "aborted",
+                    error=limit_breached or "operator_aborted",
+                    importance=0.8
+                )
 
-            if latest_turn_tokens == 0:
-                prompt_chars = sum(len(str(m.get("content", ""))) for m in messages)
-                resp_chars = len(assistant_text)
-                latest_turn_tokens = max(1, (prompt_chars + resp_chars) // 4)
+            if syn_total == 0:
+                syn_prompt = sum(len(str(m.get("content", ""))) for m in messages) // 4
+                syn_comp = len(assistant_text) // 4
+                syn_total = max(1, syn_prompt + syn_comp)
 
-            token_stats = _update_token_stats(latest_turn_tokens)
-            yield {"type": "token_stats", "last": token_stats["last"], "today": token_stats["today"]}
+            task_tracker.add_turn_usage(syn_prompt, syn_comp, syn_total)
+            task_tracker.record_category_tokens("final_synthesis", syn_total)
+
+            global_stats = task_tracker.save_to_disk()
+            yield {
+                "type": "token_stats",
+                "last": task_tracker.total_tokens,
+                "today": global_stats["today"],
+                "cost_usd": task_tracker.cost_usd,
+                "tracker": task_tracker.to_dict()
+            }
 
         except Exception as e:
             logger.error(f"Final synthesis pass error: {e}", exc_info=True)
