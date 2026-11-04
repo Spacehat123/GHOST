@@ -4,9 +4,11 @@ import hashlib
 import hmac
 import json
 import os
+import tempfile
 import unittest
 from decimal import Decimal
 
+from ghost.crm.db import CRMDatabase
 from ghost.workers.payments import (
     PaymentEvent,
     ManualBankProvider,
@@ -16,6 +18,16 @@ from ghost.workers.payments import (
 
 
 class TestPayments(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.tmpdir.name, "test_payments_crm.db")
+        self.crm = CRMDatabase(db_path=self.db_path)
+        CRMDatabase._instance = self.crm
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+        CRMDatabase._instance = None
 
     def test_manual_bank_instructions(self):
         """ManualBankProvider formats instructions correctly from config."""
