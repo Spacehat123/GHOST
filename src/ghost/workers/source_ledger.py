@@ -8,7 +8,7 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple, List
 
 
 COUNTRY_CURRENCY_MAP = {

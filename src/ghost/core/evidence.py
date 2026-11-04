@@ -153,6 +153,42 @@ def verify_evidence_item(item: Dict[str, Any], context: Optional[Dict[str, Any]]
         if not str(output).strip():
             return False, "Command evidence requires non-empty 'output' tail", None
 
+        # Check against real recorded tool call in mission store
+        from ghost.core.mission import MissionStore
+        ctx = context or {}
+        store = ctx.get("store") or MissionStore.get_instance()
+        mission_id = ctx.get("mission_id") or item.get("mission_id")
+        tool_call_id = item.get("tool_call_id") or item.get("call_id") or item.get("id")
+
+        if tool_call_id:
+            rec = store.get_tool_call(tool_call_id)
+            if not rec:
+                return False, f"Command evidence references unknown or unrecorded tool_call_id: '{tool_call_id}'. Only real tool calls can serve as command evidence.", None
+            if mission_id and rec.get("mission_id") != mission_id:
+                return False, f"Tool call '{tool_call_id}' belongs to mission '{rec.get('mission_id')}', not current mission '{mission_id}'.", None
+            if rec.get("exit_code") != 0:
+                return False, f"Recorded tool call '{tool_call_id}' failed with exit code {rec.get('exit_code')}.", None
+            enriched["tool_call_id"] = tool_call_id
+            enriched["real_command"] = rec.get("command")
+            enriched["real_exit_code"] = rec.get("exit_code")
+            enriched["verified_by_store"] = True
+        elif mission_id:
+            recorded_calls = store.get_tool_calls_for_mission(mission_id)
+            matched_call = None
+            cmd_clean = cmd.strip()
+            for call in recorded_calls:
+                call_cmd = str(call.get("command", "")).strip()
+                if (cmd_clean == call_cmd or cmd_clean in call_cmd or call_cmd in cmd_clean) and call.get("exit_code") == 0:
+                    matched_call = call
+                    break
+            
+            if not matched_call:
+                return False, f"Command '{cmd}' does not match any real tool call executed in mission '{mission_id}'. Faked or unexecuted command evidence rejected.", None
+
+            enriched["tool_call_id"] = matched_call["id"]
+            enriched["real_exit_code"] = matched_call["exit_code"]
+            enriched["verified_by_tool_call"] = True
+
         return True, "Command execution exit 0 verified", enriched
 
     # 3. Screenshot Evidence
@@ -229,6 +265,37 @@ def verify_evidence_item(item: Dict[str, Any], context: Optional[Dict[str, Any]]
                 return False, "Test output did not indicate success (OK or passed)", None
         else:
             return False, "Test evidence requires 'pass_count' > 0 or output with OK status", None
+
+        # Check against real recorded tool call or test report if in a mission
+        from ghost.core.mission import MissionStore
+        ctx = context or {}
+        store = ctx.get("store") or MissionStore.get_instance()
+        mission_id = ctx.get("mission_id") or item.get("mission_id")
+        tool_call_id = item.get("tool_call_id") or item.get("call_id") or item.get("id")
+
+        if tool_call_id:
+            rec = store.get_tool_call(tool_call_id)
+            if not rec:
+                return False, f"Test evidence references unknown tool_call_id: '{tool_call_id}'.", None
+            if rec.get("exit_code") != 0:
+                return False, f"Recorded test tool call '{tool_call_id}' failed with exit code {rec.get('exit_code')}.", None
+            rec_out = str(rec.get("output", ""))
+            if "FAILED" in rec_out:
+                return False, f"Recorded tool call '{tool_call_id}' contains test failures.", None
+            enriched["tool_call_id"] = tool_call_id
+            enriched["verified_by_store"] = True
+        elif mission_id:
+            report_path = item.get("report_path") or item.get("path")
+            has_valid_report = report_path and os.path.exists(report_path) and os.path.getsize(report_path) > 0
+            recorded_calls = store.get_tool_calls_for_mission(mission_id)
+            has_recorded_test_run = any(
+                ("test" in str(c.get("command", "")).lower() or "test" in str(c.get("tool_name", "")).lower())
+                and c.get("exit_code") == 0
+                for c in recorded_calls
+            )
+
+            if not has_valid_report and not has_recorded_test_run:
+                return False, f"Test suite evidence rejected: no test execution tool call was recorded in mission '{mission_id}' and no verified report file exists on disk.", None
 
         return True, "Test suite execution verified with passing count", enriched
 

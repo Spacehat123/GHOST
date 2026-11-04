@@ -11,6 +11,7 @@ import json
 import time
 import sqlite3
 import logging
+from datetime import datetime, timezone
 from enum import Enum
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, List, Optional, Union
@@ -225,7 +226,69 @@ class MissionStore:
                     PRIMARY KEY (mission_id, id),
                     FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
                 );
+
+                CREATE TABLE IF NOT EXISTS tool_calls (
+                    id TEXT PRIMARY KEY,
+                    mission_id TEXT NOT NULL,
+                    task_id TEXT,
+                    tool_name TEXT NOT NULL,
+                    command TEXT DEFAULT '',
+                    exit_code INTEGER DEFAULT 0,
+                    output TEXT DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    metadata TEXT DEFAULT '{}',
+                    FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
+                );
             """)
+
+    def record_tool_call(
+        self,
+        call_id: str,
+        mission_id: str,
+        tool_name: str,
+        command: Optional[str] = None,
+        exit_code: Optional[int] = 0,
+        output: Optional[str] = None,
+        task_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Persist real executed tool call details for deterministic evidence verification."""
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO tool_calls
+                (id, mission_id, task_id, tool_name, command, exit_code, output, created_at, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                (
+                    str(call_id),
+                    str(mission_id),
+                    str(task_id or ""),
+                    str(tool_name),
+                    str(command or ""),
+                    int(exit_code) if exit_code is not None else 0,
+                    str(output or "")[:20000],
+                    datetime.now(timezone.utc).isoformat(),
+                    json.dumps(metadata or {})
+                )
+            )
+
+    def get_tool_call(self, call_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve tool call execution record by ID."""
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM tool_calls WHERE id = ?;", (str(call_id),)).fetchone()
+            if row:
+                return dict(row)
+            return None
+
+    def get_tool_calls_for_mission(self, mission_id: str) -> List[Dict[str, Any]]:
+        """Retrieve all executed tool calls recorded for a mission."""
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM tool_calls WHERE mission_id = ? ORDER BY created_at ASC;",
+                (str(mission_id),)
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     def create_mission(
         self,
@@ -488,7 +551,8 @@ class MissionStore:
             ok, err_msg, verified_items = verify_task_evidence(
                 task_acceptance=target_task.acceptance,
                 evidence_required=target_task.evidence_required,
-                evidence_items=new_evidence
+                evidence_items=new_evidence,
+                context={"mission_id": mission_id, "task_id": task_id, "store": self}
             )
             if not ok:
                 raise ValueError(f"Evidence verification failed for task '{task_id}': {err_msg}")

@@ -361,3 +361,129 @@ class TestPlanFirstGateAndAgent(unittest.IsolatedAsyncioTestCase):
         t1 = next(t for t in updated_m.tasks if t.id == "t1")
         self.assertEqual(t1.status, TaskStatus.done)
         self.assertGreater(len(t1.evidence), 0)
+
+    def test_command_evidence_rejected_without_real_tool_execution(self):
+        """Ghost cannot fake command exit 0 without executing a real tool call in this mission."""
+        mission = self.store.create_mission(
+            goal="Command Safety Test",
+            tasks=[
+                {
+                    "id": "t1",
+                    "title": "Compile Assets",
+                    "description": "Run build",
+                    "acceptance": ["Exit 0"],
+                    "evidence_required": ["command"]
+                }
+            ]
+        )
+        self.store.update_task(mission.id, "t1", status=TaskStatus.in_progress)
+
+        # Faked evidence that model typed in without any tool execution
+        faked_ev = [{
+            "type": "command",
+            "command": "npm run build:prod",
+            "exit_code": 0,
+            "output": "Simulated successful build"
+        }]
+
+        with self.assertRaises(ValueError) as ctx:
+            self.store.update_task(mission.id, "t1", status=TaskStatus.done, evidence=faked_ev)
+        self.assertIn("does not match any real tool call", str(ctx.exception))
+
+    def test_command_evidence_accepted_with_real_tool_call_recorded(self):
+        """When tool call is executed and recorded in mission store, command evidence passes."""
+        mission = self.store.create_mission(
+            goal="Real Tool Execution Test",
+            tasks=[
+                {
+                    "id": "t1",
+                    "title": "Compile Assets",
+                    "description": "Run build",
+                    "acceptance": ["Exit 0"],
+                    "evidence_required": ["command"]
+                }
+            ]
+        )
+        self.store.update_task(mission.id, "t1", status=TaskStatus.in_progress)
+
+        # Record real tool call
+        self.store.record_tool_call(
+            call_id="call_npm_build_99",
+            mission_id=mission.id,
+            tool_name="system_run",
+            command="npm run build:prod",
+            exit_code=0,
+            output="Build finished in 1.4s"
+        )
+
+        real_ev = [{
+            "type": "command",
+            "tool_call_id": "call_npm_build_99",
+            "command": "npm run build:prod",
+            "exit_code": 0,
+            "output": "Build finished in 1.4s"
+        }]
+
+        t1 = self.store.update_task(mission.id, "t1", status=TaskStatus.done, evidence=real_ev)
+        self.assertEqual(t1.status, TaskStatus.done)
+        self.assertTrue(t1.evidence[0].get("verified_by_store"))
+
+    @patch("ghost.core.brain.OmniRouteBrain.get_client")
+    async def test_mission_create_automatically_wires_mission_runner(self, mock_get_client):
+        """When mission_create succeeds, ask_stream automatically wires in MissionRunner."""
+        agent = GhostAgent()
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        tc_create = MagicMock()
+        tc_create.index = 0
+        tc_create.id = "call_create_mission_01"
+        tc_create.function.name = "mission_create"
+        tc_create.function.arguments = json.dumps({
+            "goal": "Build High Polish Flagship",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "title": "Inventory Assets",
+                    "description": "Check files",
+                    "acceptance": ["Assets checked"],
+                    "evidence_required": ["file"]
+                }
+            ]
+        })
+
+        async def stream_turn(*args, **kwargs):
+            messages = kwargs.get("messages", [])
+            last_msg = str(messages[-1].get("content", ""))
+            # If sub-task is being executed by MissionRunner
+            if "Executing Task t1" in last_msg or "status='done'" in last_msg:
+                # Mock sub-task completing
+                valid_path = os.path.join(self.temp_dir.name, "report.txt")
+                with open(valid_path, "w") as f:
+                    f.write("Inventory complete")
+                tc_upd = MagicMock()
+                tc_upd.index = 0
+                tc_upd.id = "call_task_done"
+                tc_upd.function.name = "mission_update_task"
+                tc_upd.function.arguments = json.dumps({
+                    "task_id": "t1",
+                    "status": "done",
+                    "result_summary": "Files verified",
+                    "evidence": [{"type": "file", "path": valid_path}]
+                })
+                yield DummyChunk(tool_calls=[tc_upd], usage=DummyUsage(10, 10, 20))
+            else:
+                # Top level turn calls mission_create
+                yield DummyChunk(tool_calls=[tc_create], usage=DummyUsage(15, 10, 25))
+
+        mock_client.chat.completions.create = AsyncMock(side_effect=stream_turn)
+
+        events = []
+        async for event in agent.ask_stream("build a 3d site for Topaz Detailing"):
+            events.append(event)
+
+        # Confirm that MissionRunner was invoked and emitted mission/task lifecycle events
+        event_types = [e.get("type") for e in events]
+        self.assertIn("mission", event_types)
+        mission_events = [e.get("event") for e in events if e.get("type") == "mission"]
+        self.assertTrue(any(ev in ["mission_started", "task_started", "task_completed"] for ev in mission_events))

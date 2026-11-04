@@ -247,6 +247,39 @@ class GhostAgent:
             pass
 
         if active_mission:
+            # Handle operator approval response or resume commands when active mission exists
+            if not task_context:
+                clean_cmd = user_text.lower().strip()
+                approval_task = next((t for t in active_mission.tasks if t.task_type == "approval" and t.status != TaskStatus.done), None)
+                if approval_task and clean_cmd in ["approve", "approved", "proceed", "yes", "confirm"]:
+                    store.update_task(
+                        mission_id=active_mission.id,
+                        task_id=approval_task.id,
+                        status=TaskStatus.done,
+                        result_summary=f"Operator confirmation received: '{user_text}'",
+                        evidence=[{"type": "command", "command": "operator_approval", "exit_code": 0, "output": "Operator approved execution via conversational prompt"}]
+                    )
+                    active_mission.status = "in_progress"
+                    store.update_mission(active_mission)
+                    yield {"type": "state", "state": "THINKING"}
+                    yield {"type": "token", "text": f"Operator approval confirmed for task {approval_task.id}. Resuming mission execution with MissionRunner...\n"}
+                    runner = MissionRunner(agent=self, store=store)
+                    async for m_event in runner.run(active_mission.id):
+                        yield m_event
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+
+                if clean_cmd in ["continue mission", "resume mission", "resume"]:
+                    active_mission.status = "in_progress"
+                    store.update_mission(active_mission)
+                    yield {"type": "state", "state": "THINKING"}
+                    yield {"type": "token", "text": f"Resuming mission '{active_mission.goal}' via MissionRunner...\n"}
+                    runner = MissionRunner(agent=self, store=store)
+                    async for m_event in runner.run(active_mission.id):
+                        yield m_event
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+
             mission_tasks_repr = []
             for t in active_mission.tasks:
                 stat_str = f"[{t.status.value.upper()}]"
@@ -623,6 +656,36 @@ class GhostAgent:
                         task_tracker.record_category_tokens("tool_outputs", max(1, len(json.dumps(res)) // 4))
                         working_memory.add_tool_result(tool_name, str(args.get("action", "")), res)
 
+                        # Record real tool execution in MissionStore for deterministic evidence verification
+                        m_id = (task_context or {}).get("mission_id") or getattr(active_mission, "id", None)
+                        if m_id:
+                            try:
+                                c_exit = 0
+                                if isinstance(res, dict):
+                                    if "returncode" in res:
+                                        c_exit = int(res["returncode"])
+                                    elif "exit_code" in res:
+                                        c_exit = int(res["exit_code"])
+                                    elif res.get("ok") is False or res.get("success") is False or res.get("error"):
+                                        c_exit = 1
+                                c_cmd = args.get("command") or str(args.get("action", "")) or tool_name
+                                c_out = res.get("stdout") or res.get("output") or res.get("result") if isinstance(res, dict) else str(res)
+                                if c_out is None:
+                                    c_out = json.dumps(res) if isinstance(res, dict) else str(res)
+
+                                MissionStore.get_instance().record_tool_call(
+                                    call_id=tc_info["id"],
+                                    mission_id=m_id,
+                                    task_id=(task_context or {}).get("task_id"),
+                                    tool_name=tool_name,
+                                    command=str(c_cmd),
+                                    exit_code=c_exit,
+                                    output=str(c_out),
+                                    metadata={"args": args, "status": res.get("status") if isinstance(res, dict) else None}
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed recording tool call {tc_info['id']}: {e}")
+
                         # Record execution in deduplication history
                         tool_call_history.append({
                             "name": tool_name,
@@ -649,6 +712,21 @@ class GhostAgent:
                                 "event": tool_name,
                                 "data": res
                             }
+
+                            # If mission_create was just executed from a top-level turn, wire in MissionRunner
+                            if tool_name == "mission_create" and not task_context:
+                                new_m_id = res.get("mission_id")
+                                if new_m_id:
+                                    yield {"type": "state", "state": "THINKING"}
+                                    yield {
+                                        "type": "token",
+                                        "text": f"\n\nMission plan verified with {len(res.get('tasks', []))} tasks. Commencing sequential execution via MissionRunner...\n"
+                                    }
+                                    runner = MissionRunner(agent=self, store=MissionStore.get_instance())
+                                    async for m_event in runner.run(new_m_id):
+                                        yield m_event
+                                    yield {"type": "state", "state": "IDLE"}
+                                    return
 
                         # Interactive Authorization Modal Handling
                         if tool_name == "desktop_control" and args.get("action") in ["request_authorization", "request_consent", "authorize"]:
