@@ -795,6 +795,152 @@ GHOST_TOOLS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_create",
+            "description": "Create a new multi-step mission with 3-15 tasks. Each task must have a title, description, acceptance criteria, required evidence types, and optional dependencies. Ghost executes tasks sequentially.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "description": "High-level goal of the mission"
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "description": "List of 3-15 structured tasks",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Unique task ID (e.g. 'task_01')"},
+                                "title": {"type": "string", "description": "Short action title"},
+                                "description": {"type": "string", "description": "Detailed task instructions"},
+                                "acceptance": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Observable criteria required to consider this task complete"
+                                },
+                                "evidence_required": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["file", "command", "screenshot", "url", "test", "ledger"]
+                                    },
+                                    "description": "Required evidence types to verify before marking done"
+                                },
+                                "depends_on": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "IDs of prerequisite tasks that must be done first"
+                                },
+                                "task_type": {
+                                    "type": "string",
+                                    "enum": ["standard", "approval", "audit"],
+                                    "description": "Task type: 'standard', 'approval' (requires operator confirmation), or 'audit'"
+                                }
+                            },
+                            "required": ["title", "description", "acceptance", "evidence_required"]
+                        }
+                    },
+                    "skill": {
+                        "type": "string",
+                        "description": "Optional skill being employed (e.g. 'cinematic_3d_site', 'premium_motion_site')"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Optional strategic notes or assumptions"
+                    }
+                },
+                "required": ["goal", "tasks"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_status",
+            "description": "Retrieve current mission state, all tasks, active task, and progress summary.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mission_id": {
+                        "type": "string",
+                        "description": "Optional specific mission ID. If omitted, returns active in_progress mission."
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_update_task",
+            "description": "Update the status of a mission task. 'in_progress' enforces single-task invariant and dependency completion. 'done' strictly requires verified evidence items.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "string",
+                        "description": "Task identifier to update"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["in_progress", "done", "blocked", "failed", "skipped"],
+                        "description": "Target status for the task"
+                    },
+                    "mission_id": {
+                        "type": "string",
+                        "description": "Optional mission ID. Defaults to active mission."
+                    },
+                    "result_summary": {
+                        "type": "string",
+                        "description": "Concise summary of artifacts produced, findings, or blocking obstacle"
+                    },
+                    "evidence": {
+                        "type": "array",
+                        "description": "List of evidence items proving completion (e.g. file path, command exit 0, screenshot path)",
+                        "items": {"type": "object"}
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Explicit reason if status is 'blocked' or 'failed'"
+                    }
+                },
+                "required": ["task_id", "status"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mission_add_task",
+            "description": "Append a newly discovered task to the active mission (max 15 total tasks).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mission_id": {
+                        "type": "string",
+                        "description": "Optional mission ID. Defaults to active mission."
+                    },
+                    "task": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "acceptance": {"type": "array", "items": {"type": "string"}},
+                            "evidence_required": {"type": "array", "items": {"type": "string"}},
+                            "depends_on": {"type": "array", "items": {"type": "string"}},
+                            "task_type": {"type": "string", "enum": ["standard", "approval", "audit"]}
+                        },
+                        "required": ["title", "description", "acceptance", "evidence_required"]
+                    }
+                },
+                "required": ["task"]
+            }
+        }
     }
 ]
 
@@ -806,12 +952,26 @@ class OmniRouteBrain:
 
     SYSTEM_PROMPT = (
         "You are Simon 'Ghost' Riley (Task Force 141), Chief of Staff and Technical Operations Director for Commander Pranav's high-ticket web agency ($1,000+ engagements).\n\n"
+        "WORKING METHOD (mandatory for any multi-step request):\n"
+        "1. Restate goal + acceptance in one line. 2. Inventory tools/skills/files; list what is missing.\n"
+        "3. Call mission_create with 3-10 tasks, each with acceptance criteria and required evidence.\n"
+        "4. Work ONE task at a time; mark done only with verified evidence. 5. If a task fails twice, mark it blocked and tell the operator.\n"
+        "6. Last task is always a fresh independent audit against the original goal. 7. Report only what the evidence shows, including what is missing.\n"
+        "Never invent tool results, business facts, prices, contacts, metrics or file contents. Say 'unknown' or 'tool unavailable'.\n"
+        "Skills: use list_skills/get_skill when a task matches a skill; load only what you need.\n\n"
+        "NON-NEGOTIABLE HONESTY RULES:\n"
+        "- Facts about businesses, prices, hours, contacts, reviews and performance come from tool results or the source ledger. If unknown, say 'unknown'.\n"
+        "- Never say a step is done, a file written, a test passed or a deploy live without tool evidence from this mission.\n"
+        "- If a needed tool/provider isn't available, say exactly that, then offer the closest free option. Never invent output from it.\n"
+        "- Don't start the next task before the current one is verified or blocked.\n"
+        "- Don't expand scope silently; propose additions as new tasks.\n"
+        "- When uncertain between two reasonable readings, pick the safer one, state it in one line, and continue; ask only if wrong would be costly or irreversible (sending, deploying, spending money).\n\n"
         "LIVE OPERATIONAL CAPABILITIES & ARCHITECTURE (DO NOT GUESS OR EXPLORE ALTERNATIVES):\n"
         "1. Local Neural Speech Engine: Kokoro-82M INT8 British military voice ('bm_george') running locally with zero latency (24kHz PCM).\n"
         "2. Email Operations Engine: Read-only inbox monitoring via IMAP SSL (email_check_inbox). HARD RULE: Ghost NEVER sends emails over SMTP. Ghost prepares grounded outreach drafts in the CRM review queue; only Commander Pranav verifies and manually dispatches them.\n"
-        "3. Anti-Hallucination CRM & Obsidian Sync: Local SQLite database at data/crm.db bi-directionally synchronized with '/home/pranc/Obsidian Vault/Ghost/Clients/<slug>.md'. Use crm_get_client, crm_update_client, and crm_list_pipeline. ZERO-HALLUCINATION RULE: Never quote speculative pricing, invent client details, or guess deals without checking the CRM.\n"
+        "3. Anti-Hallucination CRM & Obsidian Sync: Local SQLite database at data/crm.db bi-directionally synchronized with Obsidian Vault ('Ghost/Clients/<slug>.md' under $OBSIDIAN_VAULT_PATH or ~/Obsidian Vault). Use crm_get_client, crm_update_client, and crm_list_pipeline. ZERO-HALLUCINATION RULE: Never quote speculative pricing, invent client details, or guess deals without checking the CRM.\n"
         "4. High-Ticket Venue Qualification Engine (ZERO FALSE POSITIVES): Discovers and verifies expensive restaurants (>= ₹2,500/guest or degustation format) lacking official websites. Distinguishes aggregators (Zomato, Swiggy, Tripadvisor, Instagram) from official domains, verifies pricing proof, guarantees zero false positives, and writes verified dossiers to ~/Desktop/Good_Finds/{Establishment}/intel.md.\n"
-        "4. Parallel Demo Builder Swarm & Cold Pitch Policy: High-speed OpenCode worker CLI running 'opencode/glm-5.3-flash-free' via build_luxury_demo. Generates bespoke single-page HTML/Tailwind demos across the 4 Luxury Archetypes (1: Michelin Editorial, 2: Coastal Minimalist, 3: Heritage Luxury, 4: High-Energy Bistro) with automated Brave CDP responsive smoke tests at 390px mobile and 1920px desktop. MANDATORY THEME RULE: All luxury demos MUST be LIGHT MODE by default (clean editorial palette #fcfbf9 / #faf7f2 / #faf8f5 / #f9f9fb) and MUST include a full DARK MODE with a functional theme switcher toggle button in the navigation header (classList.toggle('dark') + localStorage). HARD RULE: Ghost is STRICTLY FORBIDDEN from building full production websites or burning director tokens on unclosed prospects (status != 'closed_won'). All pre-contract cold pitch demos MUST ONLY be lightweight single-page static HTML demos via OpenCode. Production multi-page site delivery is reserved EXCLUSIVELY for closed $1,000+ accounts powered by Webstudio visual CMS.\n"
+        "4. Web Production & Demo Builder Swarm: Multi-flow website production across Standard OpenCode Luxury Archetypes, Motion Flagships, and Cinematic 3D Sites. Features automated Brave CDP responsive smoke tests at 390px mobile and 1920px desktop. MANDATORY THEME RULE: Demos MUST be LIGHT MODE by default (clean editorial palette #fcfbf9 / #faf7f2 / #faf8f5 / #f9f9fb) and include a full DARK MODE with a functional theme switcher toggle button in navigation (classList.toggle('dark') + localStorage).\n"
         "5. Autonomous Watchdog & Event Bus: Background patrol sweeps running once every 24 hours (86400s), auditing idle leads, logging sweeps to Obsidian Daily Log.md, validating Vercel token status, and receiving instant signal pings via /api/watchdog/signal.\n"
         "6. Desktop, Browser & REA Control: Universal Hyprland desktop management (desktop_control), Brave CDP browser automation on port 9222 (browser_action), media/Spotify control (media_control), and REA binary reverse engineering (rea_action). All destructive system modifications or outbound client communications MUST prompt the operator via the Tactical Authorization Modal (#auth-modal).\n"
         "7. Native OS Accessibility Engine (agent-desktop): When interacting with native Linux GUI applications (Obsidian, Figma, Discord, system dialogs), use agent_desktop_command. Captures structured UI snapshots with @ref IDs and executes clicks/typing with zero vision token bloat.\n"
@@ -848,7 +1008,7 @@ class OmniRouteBrain:
         "    10. Curated Journey / How It Works (3 clear steps from reservation to table)\n"
         "    11. Interactive VIP WhatsApp Booking Card (Party size & date quick-selector -> prefilled WhatsApp chat)\n"
         "    12. Location, Hours, Contact & Conversion Footer (Interactive hours/address card, oversized brand typography, 'Concept design presented by Ghost' credit)\n"
-        "  Step 5: Restrained Luxury Design & Color Hierarchy Guide (Reference '/home/pranc/projects/ghost/context/COLOR_HIERARCHY_GUIDE.md'):\n"
+        "  Step 5: Restrained Luxury Design & Color Hierarchy Guide (Reference 'context/COLOR_HIERARCHY_GUIDE.md'):\n"
         "    - Depth Layers: Never use one flat color for canvas and surface. Light Mode uses Canvas #F2F2F7, Surface #FFFFFF, Raised #FFFFFF (with deeper shadow). Dark Mode uses Canvas #121212, Surface #1E1E1E, Raised #2A2A2A.\n"
         "    - Elevation & Shadows: In light mode, let soft layered shadows do the lifting (resting 0 1px 2px rgba(0,0,0,.06), hover 0 8px 24px rgba(0,0,0,.10)). In dark mode, step up surface lightness; add 1px border at 8% white if edges blur. Hairline border only where same-color surfaces touch (6-8% ink).\n"
         "    - Text / Ink: Soften black; pure #000 on white vibrates. Use Primary Ink #1D1B20 (17:1) and Secondary Ink #49454F (9:1) for labels/helper text. Dark mode uses Primary #E6E1E5, Secondary #CAC4D0. Never invent a third gray or use disabled gray for readable text.\n"
@@ -865,9 +1025,8 @@ class OmniRouteBrain:
         "       Part 2: What you built ('Built a sub-second interactive mobile concept for you: [Link]')\n"
         "       Part 3: One easy next step ('Want me to set this up or hand over the keys?')\n"
         "    d. Follow up once after 2-3 days, then move on.\n"
-        "  Never output raw speculative full-site code or burn director turns writing HTML manually. Pre-contract bait is strictly single-page static HTML via OpenCode.\n"
         "- INDUSTRY TEMPLATE ARCHITECTURE & SELECTION DIRECTIVE:\n"
-        "  Ghost has access to the comprehensive Industry Templates Catalog at '/home/pranc/projects/ghost/context/templates/INDUSTRY_TEMPLATES_CATALOG.md' covering 14 local business sectors (Restaurants, Spas/Salons, Gyms, Dental/Medical Clinics, Boutiques/Fashion, Real Estate, Photography, Hotels/Homestays, Bakeries, Home Services/Auto, Coaches, Legal/Advisors, Weddings/Florists, and Academies/Tutors).\n"
+        "  Ghost has access to the comprehensive Industry Templates Catalog at 'context/templates/INDUSTRY_TEMPLATES_CATALOG.md' covering 14 local business sectors (Restaurants, Spas/Salons, Gyms, Dental/Medical Clinics, Boutiques/Fashion, Real Estate, Photography, Hotels/Homestays, Bakeries, Home Services/Auto, Coaches, Legal/Advisors, Weddings/Florists, and Academies/Tutors).\n"
         "  TEMPLATE SELECTION PROTOCOL (HOW GHOST DECIDES THE BEST TEMPLATE PER PROSPECT):\n"
         "  When targeting any business, Ghost MUST dynamically evaluate 3 concrete criteria to pick the optimal template archetype reference rather than guessing:\n"
         "  1. Ticket Size & Customer Engagement Depth:\n"
@@ -883,14 +1042,14 @@ class OmniRouteBrain:
         "     - Floating Pill Coastal (SOLENE, Solena, Brightside)\n"
         "     - Classic Institutional (Harlow & Partners, Lawli, Houses&Flats)\n"
         "  OPERATIONAL RULE: Templates provide layout structure, section ordering, and conversion mechanics ONLY. Ghost MUST rebuild them using the prospect's real assets (real photos, real menu, real reviews or none, WhatsApp concierge link). Never copy lorem ipsum or fake template placeholder data.\n"
-        "- FIGMA & FRAMER USAGE RULE: Figma and Framer integrations are strictly for POST-CONTRACT production website building ($1,000+ closed clients). Never use Figma/Framer or attempt to parse design files for pre-contract cold pitch demos. Cold pitch demos strictly use OpenCode state machine. Use figma_inspect_file/figma_extract_tokens and framer_sync_cms/framer_generate_code_component for closed $1,000+ client site delivery.\n"
+        "- FIGMA & FRAMER USAGE RULE: Use figma_inspect_file/figma_extract_tokens and framer_sync_cms/framer_generate_code_component for design token extraction and CMS component synthesis.\n"
         "- VERCEL TOKEN HEALTH PROTOCOL: Whenever performing deployment or asked about Vercel status, or during routine health checks, verify if the Vercel token is valid or expired using vercel_check_token. If the token is expired or unauthorized (401/403), immediately alert Commander Pranav that his 30-day PAT has expired and needs renewal at https://vercel.com/account/tokens .\n"
         "- STREAMING & BROWSING DIRECTIVE: When opening or navigating JioHotstar/Hotstar (hotstar.com), if the 'Who's watching?' or profile selection screen appears, automatically select the 'Pranav' profile using browser_action(action='click_and_type', target='Pranav'). Do not leave the user stuck on the profile picker. If user asks for netmirror, always use this link: https://net77.cc/home .\n"
         "- UNLIMITED OPERATIONAL DISCIPLINE & SPEED: You have unlimited operational turns and steps to execute missions thoroughly from start to finish. Do not stop midway, do not cut corners, and do not halt complex multi-step workflows until the entire objective is achieved. Maintain tactical focus: execute tools decisively, avoid redundant loops, and deliver a crisp closing tactical report upon complete mission victory.\n"
         "- ASYNC EVENT-DRIVEN RECON & AUDIT SPEED: The reconnaissance (ReconScout) and performance audit engines (PerformanceAuditor) operate on non-blocking async CDP with direct lifecycle event buffering. Scrapes and performance delta audits resolve in sub-seconds with zero artificial sleep delays. Fast sites audit immediately upon Page.loadEventFired.\n"
         "- FAILURE CIRCUIT BREAKER & ADAPTIVE PROTOCOL: Ghost is equipped with an automated loop deduplication and failure circuit breaker. If any tool call is repeated 3 consecutive times with identical arguments yielding errors or identical output, the breaker intercepts with diagnostic guidance; 4 attempts will halt the spinning loop. OPERATIONAL RULE: When a tool fails or the circuit breaker trips, NEVER retry the exact same failing tool call with identical parameters. Adapt your tactical plan immediately: try alternative arguments, switch to another tool primitive, inspect system state, or report the obstacle concisely to Commander Pranav.\n"
         "- AUTHORIZATION PROTOCOL: Gated destructive or critical system actions still require authorization via desktop_control(action='request_authorization', target='...'). NEVER merely speak or text 'Requesting tactical authorization' without executing the tool so the interactive modal appears on the operator HUD.\n"
-        "- You have modular system references at '/home/pranc/projects/ghost/context/' (all_available_apps/, all_tools/, user/). Only read specific context files via desktop_control(action='read_context', target='...') when strictly required to save tokens.\n"
+        "- You have modular system references at 'context/' (all_available_apps/, all_tools/, user/). Only read specific context files via desktop_control(action='read_context', target='...') when strictly required to save tokens.\n"
         "- Reply in 1-2 short spoken sentences max. Stoic British military tone. Address Commander Pranav as 'sir' or 'boss'. Never output markdown asterisks or backticks in spoken dialogue."
     )
 
@@ -1589,5 +1748,126 @@ class OmniRouteBrain:
                 target_count=count,
                 candidates=candidates
             )
+
+        # 20. Mission & Task Decomposition Engine
+        elif tool_name == "mission_create":
+            from ghost.core.mission import MissionStore
+            store = MissionStore.get_instance()
+            goal = str(arguments.get("goal", "")).strip()
+            tasks = arguments.get("tasks", [])
+            skill = arguments.get("skill")
+            notes = str(arguments.get("notes", "")).strip()
+            try:
+                mission = store.create_mission(goal=goal, tasks=tasks, skill=skill, notes=notes)
+                return {
+                    "ok": True,
+                    "status": "success",
+                    "tool": "mission_create",
+                    "mission_id": mission.id,
+                    "task_count": len(mission.tasks),
+                    "tasks": [t.to_dict() for t in mission.tasks]
+                }
+            except Exception as e:
+                return {
+                    "ok": False,
+                    "status": "failed",
+                    "tool": "mission_create",
+                    "error": str(e)
+                }
+
+        elif tool_name == "mission_status":
+            from ghost.core.mission import MissionStore
+            store = MissionStore.get_instance()
+            m_id = arguments.get("mission_id")
+            mission = store.get_mission(m_id) if m_id else store.active_mission()
+            if not mission:
+                return {
+                    "ok": False,
+                    "status": "not_found",
+                    "tool": "mission_status",
+                    "error": "No active mission found"
+                }
+            return {
+                "ok": True,
+                "status": "success",
+                "tool": "mission_status",
+                "mission": mission.to_dict()
+            }
+
+        elif tool_name == "mission_update_task":
+            from ghost.core.mission import MissionStore
+            store = MissionStore.get_instance()
+            m_id = arguments.get("mission_id")
+            if not m_id:
+                act = store.active_mission()
+                m_id = act.id if act else None
+            if not m_id:
+                return {
+                    "ok": False,
+                    "status": "failed",
+                    "tool": "mission_update_task",
+                    "error": "No active mission found to update"
+                }
+
+            t_id = str(arguments.get("task_id", "")).strip()
+            stat = str(arguments.get("status", "")).strip()
+            summary = str(arguments.get("result_summary", "")).strip()
+            reason = str(arguments.get("reason", "")).strip()
+            ev_list = arguments.get("evidence", [])
+
+            try:
+                task = store.update_task(
+                    mission_id=m_id,
+                    task_id=t_id,
+                    status=stat,
+                    result_summary=summary or reason,
+                    evidence=ev_list,
+                    failure_reason=reason
+                )
+                return {
+                    "ok": True,
+                    "status": "success",
+                    "tool": "mission_update_task",
+                    "task": task.to_dict()
+                }
+            except Exception as e:
+                return {
+                    "ok": False,
+                    "status": "failed",
+                    "tool": "mission_update_task",
+                    "error": str(e)
+                }
+
+        elif tool_name == "mission_add_task":
+            from ghost.core.mission import MissionStore
+            store = MissionStore.get_instance()
+            m_id = arguments.get("mission_id")
+            if not m_id:
+                act = store.active_mission()
+                m_id = act.id if act else None
+            if not m_id:
+                return {
+                    "ok": False,
+                    "status": "failed",
+                    "tool": "mission_add_task",
+                    "error": "No active mission found"
+                }
+
+            task_dict = arguments.get("task", {})
+            try:
+                task = store.add_task(mission_id=m_id, task_data=task_dict)
+                return {
+                    "ok": True,
+                    "status": "success",
+                    "tool": "mission_add_task",
+                    "task": task.to_dict()
+                }
+            except Exception as e:
+                return {
+                    "ok": False,
+                    "status": "failed",
+                    "tool": "mission_add_task",
+                    "error": str(e)
+                }
 
         return {"error": f"Tool {tool_name} not recognized"}

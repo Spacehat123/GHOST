@@ -358,7 +358,7 @@ class CoreMemoryStore:
                 {
                     "id": "fact_002",
                     "type": "fact",
-                    "content": "Primary workspace is /home/pranc/projects.",
+                    "content": f"Primary workspace is {os.environ.get('GHOST_WORKSPACE_ROOT', os.path.expanduser('~/projects'))}.",
                     "source": "user_confirmed",
                     "confidence": 1.0,
                     "importance": 0.9,

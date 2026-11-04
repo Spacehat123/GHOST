@@ -21,6 +21,66 @@ from ghost.core.validator import ToolArgumentValidator
 from ghost.core.token_tracker import TaskTokenTracker, TOKEN_STATS_PATH
 from ghost.core.memory import WorkingMemory, EpisodicMemoryStore
 from ghost.core.instructions import InstructionComplianceGate
+from ghost.core.mission import (
+    MissionStore,
+    Mission,
+    Task,
+    TaskStatus,
+    TaskBudget,
+    MAX_MISSION_ELAPSED_SECONDS,
+    DEFAULT_MAX_MISSION_TOKENS
+)
+
+BUILD_TOOLS = {
+    "build_luxury_demo",
+    "deploy_demo_vercel",
+    "motion_site_builder",
+    "three_site_builder"
+}
+
+def needs_plan(user_text: str, context: Optional[Dict[str, Any]] = None) -> bool:
+    """
+    Determines if a request requires a structured mission plan first.
+    Plan is required when:
+    1. An active mission is already in progress.
+    2. The user request involves complex multi-step delivery (building, deploying, pitching,
+       campaigns, 3D sites, motion sites, multi-phase audits).
+    3. The user explicitly requests a plan or mission.
+    Simple single-action requests, queries, status checks, and unit tests bypass planning.
+    """
+    try:
+        store = MissionStore.get_instance()
+        if store.active_mission():
+            return True
+    except Exception:
+        pass
+
+    text = user_text.lower().strip()
+
+    # Explicit plan / mission commands
+    if any(p in text for p in ["create a mission", "make a plan", "plan-first", "create mission", "new mission"]):
+        return True
+
+    # Check for simple bypass queries
+    SIMPLE_PREFIXES = [
+        "who are you", "what time", "what is", "status", "how do", "where is",
+        "play ", "pause", "resume", "volume", "check email", "list ", "read ",
+        "run loop test"
+    ]
+    if any(text.startswith(p) or text == p for p in SIMPLE_PREFIXES):
+        return False
+
+    # Multi-step complex triggers
+    COMPLEX_TRIGGERS = [
+        "build a 3d site", "build 3d site", "build a site", "build site",
+        "build motion site", "motion site", "run a campaign", "run campaign",
+        "deploy demo", "scout expensive venues", "batch demo", "audit pipeline",
+        "redesign"
+    ]
+    if any(trigger in text for trigger in COMPLEX_TRIGGERS):
+        return True
+
+    return False
 
 def _compute_relative_time(last_ts_str: Optional[str]) -> str:
     """Compute human-friendly relative time difference since last interaction."""
@@ -176,10 +236,35 @@ class GhostAgent:
             {"role": "system", "content": system_content}
         ]
 
-        # Append rolling conversational history (last 8 turns, extracting standard role & content)
-        for h in OmniRouteBrain._history[-8:]:
-            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
-        messages.append({"role": "user", "content": user_text})
+        # Context Loading: Active Mission context takes precedence over rolling chat history
+        active_mission = None
+        try:
+            store = MissionStore.get_instance()
+            active_mission = store.active_mission()
+        except Exception:
+            pass
+
+        if active_mission:
+            mission_tasks_repr = []
+            for t in active_mission.tasks:
+                stat_str = f"[{t.status.value.upper()}]"
+                summary_str = f" - Summary: {t.result_summary}" if t.result_summary else ""
+                mission_tasks_repr.append(f"{stat_str} {t.id}: {t.title}{summary_str}")
+
+            mission_banner = (
+                f"\n\n[ACTIVE MISSION CONTEXT]\n"
+                f"- Mission ID: {active_mission.id}\n"
+                f"- Goal: {active_mission.goal}\n"
+                f"- Tasks:\n" + "\n".join(f"  {line}" for line in mission_tasks_repr) + "\n"
+                f"Work strictly on the current runnable task. Mark done with verified evidence."
+            )
+            messages.append({"role": "system", "content": mission_banner})
+            messages.append({"role": "user", "content": user_text})
+        else:
+            # Append rolling conversational history (last 8 turns, extracting standard role & content)
+            for h in OmniRouteBrain._history[-8:]:
+                messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+            messages.append({"role": "user", "content": user_text})
 
         # Loop to handle function calling and multi-step tool execution
         total_model_rounds = 0
@@ -347,6 +432,44 @@ class GhostAgent:
                             })
                             continue
 
+                        # 1b. DETERMINISTIC PLAN-FIRST GATE (Block build tools before mission creation)
+                        if needs_plan(user_text, task_context) and tool_name in BUILD_TOOLS:
+                            active_m = None
+                            try:
+                                active_m = MissionStore.get_instance().active_mission()
+                            except Exception:
+                                pass
+                            if not active_m:
+                                logger.warning(f"GhostAgent Plan-First Gate: {tool_name} blocked pending mission_create.")
+                                plan_violation = {
+                                    "ok": False,
+                                    "status": "blocked",
+                                    "tool": tool_name,
+                                    "action": "execute",
+                                    "error": (
+                                        "Plan-First Gate Violation: Complex multi-step operations require a mission plan first. "
+                                        "Call mission_create with 3-10 structured tasks before executing build tools."
+                                    ),
+                                    "verified": False,
+                                    "compliance_rule": "PLAN_FIRST_GATE"
+                                }
+                                yield {
+                                    "type": "tool_start",
+                                    "tool": tool_name,
+                                    "arguments": initial_args
+                                }
+                                yield {
+                                    "type": "tool_end",
+                                    "tool": tool_name,
+                                    "result": plan_violation
+                                }
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc_info["id"],
+                                    "content": json.dumps(plan_violation)
+                                })
+                                continue
+
                         # 2. STRICT TOOL ARGUMENT SCHEMA VALIDATION (Zero Guesses, No Silent Repairs)
                         is_valid, parsed_args, val_err = ToolArgumentValidator.validate(tool_name, raw_args_str)
                         if not is_valid:
@@ -511,6 +634,19 @@ class GhostAgent:
                             "tool": tool_name,
                             "result": res
                         }
+
+                        # Broadcast mission updates to Command Deck WebSocket
+                        if tool_name in ["mission_create", "mission_update_task", "mission_add_task"] and isinstance(res, dict) and res.get("ok"):
+                            try:
+                                from ghost.server.agency_api import broadcast_agency_event
+                                broadcast_agency_event("mission_event", res)
+                            except Exception:
+                                pass
+                            yield {
+                                "type": "mission",
+                                "event": tool_name,
+                                "data": res
+                            }
 
                         # Interactive Authorization Modal Handling
                         if tool_name == "desktop_control" and args.get("action") in ["request_authorization", "request_consent", "authorize"]:
@@ -680,3 +816,212 @@ class GhostAgent:
             yield {"type": "token", "text": "Tactical action completed, boss."}
 
         yield {"type": "state", "state": "IDLE"}
+
+
+class MissionRunner:
+    """
+    Sequential Mission Runner executing tasks one by one.
+    Enforces non-negotiable architectural invariants:
+    1. Dedicated bounded loop per task with fresh TaskBudget.
+    2. Strict evidence verification before marking done.
+    3. Exactly 1 repair retry on unverified/missing evidence before marking blocked.
+    4. Auto-pauses and notifies operator if mission cap (time/tokens) is reached.
+    5. Real-time WebSocket emission of task lifecycle events to Command Deck.
+    """
+
+    def __init__(self, agent: Optional[GhostAgent] = None, store: Optional[MissionStore] = None):
+        self.agent = agent or GhostAgent()
+        self.store = store or MissionStore.get_instance()
+
+    async def run(
+        self,
+        mission_id: str,
+        max_elapsed_seconds: float = MAX_MISSION_ELAPSED_SECONDS,
+        max_total_tokens: int = DEFAULT_MAX_MISSION_TOKENS
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        mission = self.store.get_mission(mission_id)
+        if not mission:
+            yield {"type": "mission", "event": "error", "error": f"Mission '{mission_id}' not found."}
+            return
+
+        yield {"type": "mission", "event": "mission_started", "mission": mission.to_dict()}
+        try:
+            from ghost.server.agency_api import broadcast_agency_event
+            broadcast_agency_event("mission_event", {"event": "mission_started", "mission": mission.to_dict()})
+        except Exception:
+            pass
+
+        start_time = time.time()
+
+        while True:
+            mission = self.store.get_mission(mission_id)
+            if not mission or mission.status != "in_progress":
+                break
+
+            # Mission Cap Checks
+            elapsed = (time.time() - start_time) + mission.total_elapsed
+            if elapsed >= max_elapsed_seconds:
+                mission.status = "paused"
+                mission.notes = f"Mission paused: Elapsed time ({elapsed:.1f}s) reached cap ({max_elapsed_seconds}s)."
+                self.store.update_mission(mission)
+                yield {"type": "mission", "event": "mission_paused", "reason": mission.notes}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "mission_paused", "reason": mission.notes})
+                except Exception:
+                    pass
+                break
+
+            if mission.total_tokens >= max_total_tokens:
+                mission.status = "paused"
+                mission.notes = f"Mission paused: Cumulative tokens ({mission.total_tokens}) reached cap ({max_total_tokens})."
+                self.store.update_mission(mission)
+                yield {"type": "mission", "event": "mission_paused", "reason": mission.notes}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "mission_paused", "reason": mission.notes})
+                except Exception:
+                    pass
+                break
+
+            # Find next runnable task
+            task = self.store.next_runnable_task(mission_id)
+            if not task:
+                all_done = all(t.status in (TaskStatus.done, TaskStatus.skipped) for t in mission.tasks)
+                if all_done:
+                    mission.status = "completed"
+                    self.store.update_mission(mission)
+                    yield {"type": "mission", "event": "mission_completed", "mission": mission.to_dict()}
+                    try:
+                        broadcast_agency_event("mission_event", {"event": "mission_completed", "mission": mission.to_dict()})
+                    except Exception:
+                        pass
+                else:
+                    has_blocked = any(t.status in (TaskStatus.blocked, TaskStatus.failed) for t in mission.tasks)
+                    if has_blocked:
+                        mission.status = "blocked"
+                        self.store.update_mission(mission)
+                        yield {"type": "mission", "event": "mission_blocked", "mission": mission.to_dict()}
+                        try:
+                            broadcast_agency_event("mission_event", {"event": "mission_blocked", "mission": mission.to_dict()})
+                        except Exception:
+                            pass
+                break
+
+            # Operator Approval Task Gate
+            if task.task_type == "approval":
+                mission.status = "paused_for_approval"
+                self.store.update_mission(mission)
+                yield {"type": "mission", "event": "approval_required", "task": task.to_dict()}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "approval_required", "task": task.to_dict()})
+                except Exception:
+                    pass
+                break
+
+            # Transition task to in_progress if not already
+            if task.status != TaskStatus.in_progress:
+                try:
+                    task = self.store.update_task(mission_id, task.id, status=TaskStatus.in_progress)
+                except Exception as e:
+                    logger.error(f"Failed to start task {task.id}: {e}")
+                    break
+
+            yield {"type": "mission", "event": "task_started", "task": task.to_dict()}
+            try:
+                broadcast_agency_event("mission_event", {"event": "task_started", "task": task.to_dict()})
+            except Exception:
+                pass
+
+            # Execute dedicated bounded loop with fresh budget
+            task_prompt = (
+                f"Executing Mission '{mission.goal}'\n"
+                f"You are executing Task {task.id}: '{task.title}'\n"
+                f"Description: {task.description}\n"
+                f"Acceptance Criteria:\n" + "\n".join(f"- {a}" for a in task.acceptance) + "\n"
+                f"Required Evidence Types: {', '.join(task.evidence_required)}\n"
+                f"Work strictly on this task. When completed, you MUST call mission_update_task with status='done', "
+                f"result_summary, and verified evidence matching all required evidence types."
+            )
+
+            task_env = {
+                "GHOST_MAX_MODEL_ROUNDS": str(task.budget.max_model_rounds),
+                "GHOST_MAX_TOOL_EXECUTIONS": str(task.budget.max_tool_executions),
+                "GHOST_MAX_TASK_ELAPSED_SECONDS": str(task.budget.max_task_elapsed_seconds),
+                "GHOST_MAX_TASK_TOTAL_TOKENS": str(task.budget.max_task_total_tokens)
+            }
+
+            orig_env = {k: os.environ.get(k) for k in task_env}
+            try:
+                os.environ.update(task_env)
+                async for event in self.agent.ask_stream(
+                    task_prompt,
+                    task_context={"mission_id": mission_id, "task_id": task.id}
+                ):
+                    yield event
+            finally:
+                for k, v in orig_env.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+
+            # Inspect task completion state in store
+            refreshed_m = self.store.get_mission(mission_id)
+            current_t = next((t for t in refreshed_m.tasks if t.id == task.id), None) if refreshed_m else None
+
+            if current_t and current_t.status == TaskStatus.done:
+                yield {"type": "mission", "event": "task_completed", "task": current_t.to_dict()}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "task_completed", "task": current_t.to_dict()})
+                except Exception:
+                    pass
+                continue
+
+            # If task not done, attempt exactly 1 repair retry
+            if task.attempts < 2:
+                repair_prompt = (
+                    f"Task {task.id} ('{task.title}') has not been marked 'done' with verified evidence.\n"
+                    f"Acceptance criteria: {task.acceptance}\n"
+                    f"Required evidence types: {task.evidence_required}\n"
+                    f"Execute remaining work and call mission_update_task with status='done', result_summary, and evidence."
+                )
+                try:
+                    os.environ.update(task_env)
+                    async for event in self.agent.ask_stream(
+                        repair_prompt,
+                        task_context={"mission_id": mission_id, "task_id": task.id}
+                    ):
+                        yield event
+                finally:
+                    for k, v in orig_env.items():
+                        if v is None:
+                            os.environ.pop(k, None)
+                        else:
+                            os.environ[k] = v
+
+            # Final check for this task
+            refreshed_m = self.store.get_mission(mission_id)
+            final_t = next((t for t in refreshed_m.tasks if t.id == task.id), None) if refreshed_m else None
+
+            if final_t and final_t.status == TaskStatus.done:
+                yield {"type": "mission", "event": "task_completed", "task": final_t.to_dict()}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "task_completed", "task": final_t.to_dict()})
+                except Exception:
+                    pass
+            else:
+                fail_reason = (
+                    f"Task execution budget exhausted without verified evidence for: {', '.join(task.acceptance)}"
+                )
+                try:
+                    self.store.update_task(mission_id, task.id, status=TaskStatus.blocked, failure_reason=fail_reason)
+                except Exception as e:
+                    logger.warning(f"Failed setting blocked status on {task.id}: {e}")
+
+                mission.status = "blocked"
+                self.store.update_mission(mission)
+                yield {"type": "mission", "event": "task_blocked", "task_id": task.id, "reason": fail_reason}
+                try:
+                    broadcast_agency_event("mission_event", {"event": "task_blocked", "task_id": task.id, "reason": fail_reason})
+                except Exception:
+                    pass
+                break
