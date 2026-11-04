@@ -1,0 +1,10 @@
+{
+  "provider": "manual_bank",
+  "bank_details_text": null,
+  "upi_id": null,
+  "razorpay": {
+    "key_id_env": "RAZORPAY_KEY_ID",
+    "key_secret_env": "RAZORPAY_KEY_SECRET",
+    "webhook_secret_env": "RAZORPAY_WEBHOOK_SECRET"
+  }
+}

@@ -23,6 +23,7 @@ data/*.sqlite*
 data/conversation_history.json
 data/user_profile.json
 data/private/
+data/documents/
 logs/
 *.log
 

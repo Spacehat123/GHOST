@@ -318,7 +318,7 @@ class CRMDatabase:
         # Package any extra metadata into gaps_json if provided
         gaps_json = lead_data.get("gaps_json")
         extra = {}
-        for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+        for k in ("audit_data", "instagram", "facebook", "has_social", "email", "legal_name", "deal_value", "contact_name", "deal_overrides"):
             if lead_data.get(k) is not None:
                 extra[k] = lead_data[k]
         if extra:
@@ -443,7 +443,7 @@ class CRMDatabase:
                 try:
                     extra = json.loads(data["gaps_json"])
                     if isinstance(extra, dict):
-                        for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+                        for k in ("audit_data", "instagram", "facebook", "has_social", "email", "legal_name", "deal_value", "contact_name", "deal_overrides"):
                             if k in extra and k not in data:
                                 data[k] = extra[k]
                 except Exception:
@@ -471,7 +471,7 @@ class CRMDatabase:
                     try:
                         extra = json.loads(r["gaps_json"])
                         if isinstance(extra, dict):
-                            for k in ("audit_data", "instagram", "facebook", "has_social", "email"):
+                            for k in ("audit_data", "instagram", "facebook", "has_social", "email", "legal_name", "deal_value", "contact_name", "deal_overrides"):
                                 if k in extra and k not in r:
                                     r[k] = extra[k]
                     except Exception:
@@ -842,6 +842,14 @@ class CRMDatabase:
             cur = conn.cursor()
             cur.execute("SELECT * FROM documents WHERE lead_id = ? ORDER BY created_at DESC", (lead_id.strip(),))
             return [dict(r) for r in cur.fetchall()]
+
+    def update_document_status(self, doc_id: str, status: str) -> bool:
+        """Update the status of a document (e.g. draft, lawyer_reviewed, sent, signed)."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE documents SET status = ? WHERE id = ?", (status.strip(), doc_id.strip()))
+            conn.commit()
+            return cur.rowcount > 0
 
     # =========================================================================
     # Obsidian Vault Sync
