@@ -12,12 +12,18 @@ from ghost.voice.duplex import DuplexCoordinator, VoiceState
 from ghost.voice.kokoro import KokoroSpeechEngine, split_clauses
 from ghost.watchdog.service import AutonomousWatchdog
 from ghost.mcp.bridge import register_auth_callback
+from ghost.server.agency_api import (
+    agency_router,
+    _event_subscribers,
+    get_or_create_session_token
+)
 import edge_tts
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ghost.server")
 
 app = FastAPI(title="Ghost Voice Assistant & OmniRoute Neural Runtime")
+app.include_router(agency_router)
 
 agent = GhostAgent()
 duplex = DuplexCoordinator(on_interrupt=agent.interrupt)
@@ -293,3 +299,42 @@ async def websocket_endpoint(websocket: WebSocket):
             current_task.cancel()
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+
+
+@app.websocket("/ws/events")
+async def ws_agency_events(websocket: WebSocket):
+    """WebSocket endpoint for live agency event streaming."""
+    import hmac
+    import time
+    token = websocket.query_params.get("token")
+    client_host = websocket.client.host if websocket.client else ""
+    if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+        await websocket.close(code=1008)
+        return
+
+    expected = get_or_create_session_token()
+    if not token or not hmac.compare_digest(token.strip(), expected):
+        await websocket.close(code=1008)
+        return
+
+    await websocket.accept()
+    logger.info("Command Deck connected to /ws/events.")
+
+    queue = asyncio.Queue()
+
+    def _on_event(event_type: str, payload: dict):
+        try:
+            queue.put_nowait({"type": event_type, "payload": payload, "time": time.time()})
+        except Exception:
+            pass
+
+    _event_subscribers.append(_on_event)
+    try:
+        while True:
+            evt = await queue.get()
+            await websocket.send_json(evt)
+    except WebSocketDisconnect:
+        logger.info("Command Deck disconnected from /ws/events.")
+    finally:
+        if _on_event in _event_subscribers:
+            _event_subscribers.remove(_on_event)

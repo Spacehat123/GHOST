@@ -335,10 +335,18 @@ class CRMDatabase:
 
         with self._get_connection() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT id FROM leads WHERE slug = ?", (slug,))
+            cur.execute("SELECT id, gaps_json FROM leads WHERE slug = ?", (slug,))
             existing = cur.fetchone()
 
             if existing:
+                if existing["gaps_json"]:
+                    try:
+                        base_dict = json.loads(existing["gaps_json"])
+                        if isinstance(base_dict, dict):
+                            base_dict.update(extra)
+                            gaps_json = json.dumps(base_dict)
+                    except Exception:
+                        pass
                 cur.execute("""
                     UPDATE leads SET
                         batch_id = COALESCE(?, batch_id),
@@ -464,6 +472,28 @@ class CRMDatabase:
                     "SELECT * FROM leads WHERE batch_id = ? ORDER BY score_total DESC, created_at ASC",
                     (batch_id.strip(),)
                 )
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                r["needs_confirmation"] = bool(r.get("needs_confirmation"))
+                if r.get("gaps_json"):
+                    try:
+                        extra = json.loads(r["gaps_json"])
+                        if isinstance(extra, dict):
+                            for k in ("audit_data", "instagram", "facebook", "has_social", "email", "legal_name", "deal_value", "contact_name", "deal_overrides"):
+                                if k in extra and k not in r:
+                                    r[k] = extra[k]
+                    except Exception:
+                        pass
+            return rows
+
+    def get_all_leads(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve all leads, optionally filtered by status."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            if status:
+                cur.execute("SELECT * FROM leads WHERE status = ? ORDER BY score_total DESC, created_at ASC", (status.strip().lower(),))
+            else:
+                cur.execute("SELECT * FROM leads ORDER BY score_total DESC, created_at ASC")
             rows = [dict(r) for r in cur.fetchall()]
             for r in rows:
                 r["needs_confirmation"] = bool(r.get("needs_confirmation"))
@@ -814,6 +844,24 @@ class CRMDatabase:
             cur = conn.cursor()
             cur.execute("SELECT * FROM drafts WHERE lead_id = ? ORDER BY created_at DESC", (lead_id.strip(),))
             return [dict(r) for r in cur.fetchall()]
+
+    def get_draft(self, draft_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a single draft by ID."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM drafts WHERE id = ?", (draft_id.strip(),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_daily_sends_count(self) -> int:
+        """Count drafts marked as sent today (last 24 hours)."""
+        now = time.time()
+        start_of_day = now - (now % 86400)
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM drafts WHERE status = 'sent' AND sent_at >= ?", (start_of_day,))
+            row = cur.fetchone()
+            return row[0] if row else 0
 
     def add_document(
         self,
