@@ -1056,6 +1056,110 @@ GHOST_TOOLS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_skills",
+            "description": "List all available modular skills and workflows available in context/skills/.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_skill",
+            "description": "Load the complete markdown instructions and examples for a specialized agency skill.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Skill name (e.g. 'cinematic_3d_site')"
+                    }
+                },
+                "required": ["name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "assess_3d_fit",
+            "description": "Evaluates whether a lead justifies an expensive 3D website build. Evaluates sector, budget, hero object, and blockers.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lead_slug": {
+                        "type": "string",
+                        "description": "CRM lead slug or business identifier"
+                    },
+                    "operator_requested": {
+                        "type": "boolean",
+                        "description": "Set to true if operator explicitly commanded a 3D build"
+                    }
+                },
+                "required": ["lead_slug"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "build_3d_site",
+            "description": "Scaffolds and builds a single-page Three.js 3D site in demos/<slug>/ with camera stages, procedural audio, and source ledger. Requires operator approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "Target project slug (e.g. 'topaz-detailing')"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject object description (e.g. 'supercar', 'luxury residence', 'mechanical watch')"
+                    },
+                    "glb_path": {
+                        "type": "string",
+                        "description": "Path to verified GLB model"
+                    },
+                    "business_name": {
+                        "type": "string",
+                        "description": "Full business name"
+                    },
+                    "palette": {
+                        "type": "string",
+                        "enum": ["warm", "industrial", "winter"],
+                        "description": "Atmospheric palette"
+                    },
+                    "operator_approved": {
+                        "type": "boolean",
+                        "description": "Must be true (operator confirmation required)"
+                    }
+                },
+                "required": ["slug", "subject", "glb_path", "operator_approved"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "qa_3d_site",
+            "description": "Performs headless visual and interaction QA on a built Three.js site in demos/<slug>/.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "demo_dir": {
+                        "type": "string",
+                        "description": "Directory path of the 3D demo"
+                    }
+                },
+                "required": ["demo_dir"]
+            }
+        }
     }
 ]
 
@@ -2031,5 +2135,54 @@ class OmniRouteBrain:
                 "script": script,
                 "policy": "Global toggle muted by default, single move sound, no hover overlap."
             }
+
+        # 22. Skills & 3D Site Building Engine
+        elif tool_name == "list_skills":
+            from ghost.core.skills import list_skills
+            skills = list_skills()
+            return {
+                "ok": True,
+                "status": "success",
+                "tool": "list_skills",
+                "count": len(skills),
+                "skills": skills
+            }
+
+        elif tool_name == "get_skill":
+            from ghost.core.skills import get_skill
+            sname = str(arguments.get("name", "")).strip()
+            return get_skill(sname)
+
+        elif tool_name == "assess_3d_fit":
+            from ghost.workers.fit_3d import Fit3DAssessor
+            lslug = str(arguments.get("lead_slug", "")).strip()
+            op_req = bool(arguments.get("operator_requested", False))
+            # Retrieve CRM client data if exists
+            from ghost.crm.db import CRMDatabase
+            crm = CRMDatabase.get_instance()
+            client_data = crm.get_client(lslug) or {}
+            return Fit3DAssessor.assess(lead_slug=lslug, lead_data=client_data, operator_requested=op_req)
+
+        elif tool_name == "build_3d_site":
+            from ghost.workers.three_site_builder import ThreeSiteBuilder
+            slug = str(arguments.get("slug", "")).strip()
+            subj = str(arguments.get("subject", "")).strip()
+            glb_p = str(arguments.get("glb_path", "")).strip()
+            bname = arguments.get("business_name")
+            pal = str(arguments.get("palette", "warm")).strip()
+            op_app = bool(arguments.get("operator_approved", False))
+            return ThreeSiteBuilder.build(
+                slug=slug,
+                subject=subj,
+                glb_path=glb_p,
+                business_name=bname,
+                palette=pal,
+                operator_approved=op_app
+            )
+
+        elif tool_name == "qa_3d_site":
+            from ghost.workers.three_qa import ThreeQA
+            d_dir = str(arguments.get("demo_dir", "")).strip()
+            return await ThreeQA.run_qa(demo_dir=d_dir)
 
         return {"error": f"Tool {tool_name} not recognized"}

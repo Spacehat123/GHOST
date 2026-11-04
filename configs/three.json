@@ -1,0 +1,15 @@
+{
+  "budgets": {
+    "max_triangles": 300000,
+    "max_texture_size": 2048,
+    "max_file_size_mb": 8.0,
+    "target_fps_desktop": 55,
+    "target_fps_mobile": 30,
+    "max_load_time_seconds": 3.0
+  },
+  "viewports": {
+    "desktop": {"width": 1440, "height": 900},
+    "mobile": {"width": 390, "height": 844}
+  },
+  "default_stages_count": 5
+}

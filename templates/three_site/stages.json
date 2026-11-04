@@ -1,0 +1,47 @@
+[
+  {
+    "stage": 1,
+    "name": "Establishing Angle",
+    "camera": {"x": 5.0, "y": 3.0, "z": 6.0},
+    "target": {"x": 0.0, "y": 1.0, "z": 0.0},
+    "fov": 35,
+    "headline": "Monolithic Form in Context",
+    "description": "Architectural purity defined by restrained material balance and natural illumination."
+  },
+  {
+    "stage": 2,
+    "name": "Material Rhythm",
+    "camera": {"x": 2.5, "y": 1.8, "z": 4.0},
+    "target": {"x": 0.0, "y": 1.0, "z": 0.0},
+    "fov": 30,
+    "headline": "Precision Tactility",
+    "description": "Sub-millimeter joints and PBR material reflections reacting dynamically to ambient light."
+  },
+  {
+    "stage": 3,
+    "name": "Sculptural Silhouette",
+    "camera": {"x": -3.5, "y": 2.2, "z": 4.5},
+    "target": {"x": -0.5, "y": 1.2, "z": 0.0},
+    "fov": 32,
+    "headline": "Sculptural Volume",
+    "description": "Cantilevered planes and geometric intersections creating calibrated shadow depth."
+  },
+  {
+    "stage": 4,
+    "name": "Threshold Detail",
+    "camera": {"x": 0.0, "y": 4.5, "z": 3.5},
+    "target": {"x": 0.0, "y": 0.8, "z": 0.0},
+    "fov": 38,
+    "headline": "Spatial Continuity",
+    "description": "Seamless transitions between structural envelope and interior threshold."
+  },
+  {
+    "stage": 5,
+    "name": "Editorial Specification Offset",
+    "camera": {"x": -4.5, "y": 1.8, "z": 5.5},
+    "target": {"x": 1.5, "y": 1.0, "z": 0.0},
+    "fov": 28,
+    "headline": "Enduring Legacy",
+    "description": "Bespoke engineering crafted for permanence and uncompromising luxury standards."
+  }
+]
