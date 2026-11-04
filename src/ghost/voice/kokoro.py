@@ -78,34 +78,35 @@ class KokoroSpeechEngine:
             except Exception as e:
                 logger.warning(f"preload_dlls failed: {e}")
 
-        want_gpu = KOKORO_DEVICE in ("auto", "cuda") and "CUDAExecutionProvider" in ort.get_available_providers()
+        device = (os.environ.get("KOKORO_DEVICE") or KOKORO_DEVICE).lower()
         sess = None
 
-        if want_gpu and os.path.exists(MODEL_FP32):
-            so = ort.SessionOptions()
-            so.log_severity_level = 2  # show provider-load warnings
-            try:
-                sess = ort.InferenceSession(
-                    MODEL_FP32,
-                    so,
-                    providers=[("CUDAExecutionProvider", {
-                        "device_id": 0,
-                        "cudnn_conv_algo_search": "HEURISTIC",
-                        "arena_extend_strategy": "kSameAsRequested",
-                        "gpu_mem_limit": 2 * 1024 ** 3,  # 1650 has 4 GB; leave room for display
-                    }), "CPUExecutionProvider"],
-                )
-                if sess.get_providers()[0] != "CUDAExecutionProvider":
-                    logger.warning(
-                        "CUDA requested but session is on CPU; falling back to INT8 CPU path. "
-                        "Run scripts/kokoro_gpu_diagnose.py"
+        if device in ("auto", "cuda"):
+            if "CUDAExecutionProvider" in ort.get_available_providers() and os.path.exists(MODEL_FP32):
+                so = ort.SessionOptions()
+                so.log_severity_level = 2  # show provider-load warnings
+                try:
+                    sess = ort.InferenceSession(
+                        MODEL_FP32,
+                        so,
+                        providers=[("CUDAExecutionProvider", {
+                            "device_id": 0,
+                            "cudnn_conv_algo_search": "HEURISTIC",
+                            "arena_extend_strategy": "kSameAsRequested",
+                            "gpu_mem_limit": 2 * 1024 ** 3,  # 1650 has 4 GB; leave room for display
+                        }), "CPUExecutionProvider"],
                     )
+                    if sess.get_providers()[0] != "CUDAExecutionProvider":
+                        logger.warning(
+                            "CUDA requested but session is on CPU; falling back to INT8 CPU path. "
+                            "Run scripts/kokoro_gpu_diagnose.py"
+                        )
+                        sess = None
+                except Exception as e:
+                    logger.warning(f"CUDA session failed ({e}); falling back to CPU")
                     sess = None
-            except Exception as e:
-                logger.warning(f"CUDA session failed ({e}); falling back to CPU")
-                sess = None
 
-            if sess is None and KOKORO_DEVICE == "cuda":
+            if sess is None and device == "cuda":
                 raise RuntimeError("KOKORO_DEVICE=cuda but the CUDA provider could not start")
 
         if sess is None:  # CPU path

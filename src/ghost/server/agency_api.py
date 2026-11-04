@@ -4,7 +4,7 @@ inspecting leads, reviewing outreach drafts, generating closing packs, and manag
 Strict human-in-the-loop: Ghost prepares drafts; Pranav verifies and sends.
 Nothing is auto-sent or auto-charged.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from decimal import Decimal
 import os
 import json
