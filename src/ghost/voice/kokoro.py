@@ -11,8 +11,11 @@ from typing import AsyncGenerator, List, Optional, Tuple
 
 logger = logging.getLogger("ghost.voice.kokoro")
 
-KOKORO_MODEL_PATH = os.environ.get("KOKORO_MODEL_PATH", os.path.expanduser("~/.local/share/cool-shell/models/kokoro/kokoro-v1.0.int8.onnx"))
-KOKORO_VOICES_PATH = os.environ.get("KOKORO_VOICES_PATH", os.path.expanduser("~/.local/share/cool-shell/models/kokoro/voices-v1.0.bin"))
+KOKORO_DIR = os.path.expanduser("~/.local/share/cool-shell/models/kokoro")
+MODEL_FP32 = os.environ.get("KOKORO_MODEL_FP32", os.path.join(KOKORO_DIR, "kokoro-v1.0.onnx"))
+MODEL_INT8 = os.environ.get("KOKORO_MODEL_INT8", os.path.join(KOKORO_DIR, "kokoro-v1.0.int8.onnx"))
+KOKORO_VOICES_PATH = os.environ.get("KOKORO_VOICES_PATH", os.path.join(KOKORO_DIR, "voices-v1.0.bin"))
+KOKORO_DEVICE = os.environ.get("KOKORO_DEVICE", "auto").lower()
 
 def split_clauses(text: str) -> List[str]:
     """
@@ -57,44 +60,86 @@ class KokoroSpeechEngine:
         return cls._instance
 
     def initialize(self):
-        """Pre-load Kokoro ONNX model and voice weights into memory."""
+        """Pre-load Kokoro ONNX model and voice weights into memory (GPU or CPU)."""
         if self._initialized:
-            return
-
-        if not os.path.exists(KOKORO_MODEL_PATH) or not os.path.exists(KOKORO_VOICES_PATH):
-            self._init_error = f"Kokoro files missing at {KOKORO_MODEL_PATH}"
-            logger.warning(self._init_error)
             return
 
         try:
             import onnxruntime as ort
             from kokoro_onnx import Kokoro
-
-            sess_opts = ort.SessionOptions()
-            sess_opts.inter_op_num_threads = 1
-            sess_opts.intra_op_num_threads = 4  # Optimized for 4-core intra-op execution
-            sess_opts.log_severity_level = 3
-
-            avail = ort.get_available_providers()
-            providers = []
-            if "CUDAExecutionProvider" in avail:
-                providers.append("CUDAExecutionProvider")
-            providers.append("CPUExecutionProvider")
-
-            try:
-                sess = ort.InferenceSession(KOKORO_MODEL_PATH, sess_opts, providers=providers)
-                self._active_provider = sess.get_providers()[0] if sess.get_providers() else "CPUExecutionProvider"
-                self._kokoro = Kokoro.from_session(sess, KOKORO_VOICES_PATH)
-            except Exception as e:
-                logger.info(f"Direct session failed, loading default Kokoro: {e}")
-                self._kokoro = Kokoro(KOKORO_MODEL_PATH, KOKORO_VOICES_PATH)
-                self._active_provider = "CPUExecutionProvider"
-
-            self._initialized = True
-            logger.info(f"Kokoro-82M INT8 voice engine online. Active provider: {self._active_provider}")
         except Exception as e:
-            self._init_error = str(e)
-            logger.error(f"Failed to initialize KokoroSpeechEngine: {e}")
+            self._init_error = f"onnxruntime or kokoro_onnx import failed: {e}"
+            logger.error(self._init_error)
+            return
+
+        if hasattr(ort, "preload_dlls"):
+            try:
+                ort.preload_dlls()  # loads CUDA/cuDNN from pip nvidia-* wheels
+            except Exception as e:
+                logger.warning(f"preload_dlls failed: {e}")
+
+        want_gpu = KOKORO_DEVICE in ("auto", "cuda") and "CUDAExecutionProvider" in ort.get_available_providers()
+        sess = None
+
+        if want_gpu and os.path.exists(MODEL_FP32):
+            so = ort.SessionOptions()
+            so.log_severity_level = 2  # show provider-load warnings
+            try:
+                sess = ort.InferenceSession(
+                    MODEL_FP32,
+                    so,
+                    providers=[("CUDAExecutionProvider", {
+                        "device_id": 0,
+                        "cudnn_conv_algo_search": "HEURISTIC",
+                        "arena_extend_strategy": "kSameAsRequested",
+                        "gpu_mem_limit": 2 * 1024 ** 3,  # 1650 has 4 GB; leave room for display
+                    }), "CPUExecutionProvider"],
+                )
+                if sess.get_providers()[0] != "CUDAExecutionProvider":
+                    logger.warning(
+                        "CUDA requested but session is on CPU; falling back to INT8 CPU path. "
+                        "Run scripts/kokoro_gpu_diagnose.py"
+                    )
+                    sess = None
+            except Exception as e:
+                logger.warning(f"CUDA session failed ({e}); falling back to CPU")
+                sess = None
+
+            if sess is None and KOKORO_DEVICE == "cuda":
+                raise RuntimeError("KOKORO_DEVICE=cuda but the CUDA provider could not start")
+
+        if sess is None:  # CPU path
+            so = ort.SessionOptions()
+            so.intra_op_num_threads = os.cpu_count() or 4
+            so.inter_op_num_threads = 1
+            path = MODEL_INT8 if os.path.exists(MODEL_INT8) else MODEL_FP32
+            if not os.path.exists(path):
+                self._init_error = f"Kokoro model missing at {path}"
+                logger.warning(self._init_error)
+                return
+            try:
+                sess = ort.InferenceSession(path, so, providers=["CPUExecutionProvider"])
+            except Exception as e:
+                self._init_error = f"Failed to initialize CPU inference session: {e}"
+                logger.error(self._init_error)
+                return
+
+        if not os.path.exists(KOKORO_VOICES_PATH):
+            self._init_error = f"Kokoro voices file missing at {KOKORO_VOICES_PATH}"
+            logger.warning(self._init_error)
+            return
+
+        try:
+            self._active_provider = sess.get_providers()[0]
+            self._kokoro = Kokoro.from_session(sess, KOKORO_VOICES_PATH)
+            self._initialized = True
+            logger.warning(f"Kokoro online. Provider={self._active_provider}")
+
+            # warm-up: first call pays kernel/cache setup; do it now, not on user's first sentence
+            for t in ("Online.", "Understood, boss. Three demos are ready for review."):
+                self._kokoro.create(t, voice=self.voice, speed=1.05, lang="en-gb")
+        except Exception as e:
+            logger.warning(f"Kokoro initialization warm-up or setup failed: {e}")
 
     def is_available(self) -> bool:
         return self._initialized and self._kokoro is not None

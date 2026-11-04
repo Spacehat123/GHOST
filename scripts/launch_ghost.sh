@@ -5,7 +5,7 @@
 # ==============================================================================
 set -e
 
-GHOST_ROOT="/home/pranc/projects/ghost"
+GHOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GHOST_URL="http://localhost:8765/"
 OMNIROUTE_URL="http://127.0.0.1:20128/api/health"
 ICON_PATH="${GHOST_ROOT}/assets/ghost-icon.png"
@@ -46,11 +46,32 @@ fi
 if ! curl -s --max-time 2 "http://127.0.0.1:8765/" >/dev/null 2>&1; then
     echo "[Ghost Launcher] Ghost server not detected on 8765. Launching Uvicorn daemon with CUDA GPU speech..."
     cd "${GHOST_ROOT}"
-    if [ -f "/home/pranc/kokoro-gpu/run_ghost_gpu.sh" ]; then
-        setsid /home/pranc/kokoro-gpu/run_ghost_gpu.sh -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
+    
+    VENV_PY=""
+    if [ -x "${HOME}/.venvs/ghost-gpu/bin/python" ]; then
+        VENV_PY="${HOME}/.venvs/ghost-gpu/bin/python"
+    elif [ -x "${HOME}/kokoro-gpu/.venv/bin/python" ]; then
+        VENV_PY="${HOME}/kokoro-gpu/.venv/bin/python"
     else
-        PYTHONPATH="${GHOST_ROOT}/src" setsid python3 -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
+        VENV_PY="python3"
     fi
+
+    NVLIBS=$(${VENV_PY} - <<'EOF' 2>/dev/null || true
+import glob, os
+try:
+    import nvidia
+    root = list(nvidia.__path__)[0]
+    libs = sorted(glob.glob(os.path.join(root, "*", "lib")))
+    print(":".join(libs))
+except Exception:
+    pass
+EOF
+    )
+    if [ -n "${NVLIBS}" ]; then
+        export LD_LIBRARY_PATH="${NVLIBS}:${LD_LIBRARY_PATH:-}"
+    fi
+
+    PYTHONPATH="${GHOST_ROOT}/src" setsid "${VENV_PY}" -m uvicorn ghost.server.app:app --host 127.0.0.1 --port 8765 </dev/null >/tmp/ghost-server.log 2>&1 &
     
     echo "[Ghost Launcher] Waiting for Ghost HTTP endpoint..."
     for i in {1..30}; do

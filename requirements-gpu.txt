@@ -1,0 +1,10 @@
+# Kokoro CUDA GPU Execution Runtime Dependencies (GTX 1650 / Turing / CUDA 12)
+kokoro-onnx
+onnxruntime-gpu
+soundfile
+numpy
+nvidia-cudnn-cu12
+nvidia-cublas-cu12
+nvidia-cuda-runtime-cu12
+nvidia-cufft-cu12
+nvidia-curand-cu12

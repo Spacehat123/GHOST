@@ -162,17 +162,21 @@ async def get_tts(
         if clauses:
             target_text = clauses[0]
 
-    # 1. Primary: Local Kokoro-82M INT8 (British military persona bm_george)
+    # 1. Primary: Local Kokoro ONNX (British military persona bm_george)
+    import time
+    t0 = time.perf_counter()
     try:
         kokoro = KokoroSpeechEngine.get_instance()
         if kokoro.is_available():
             audio_bytes, mime = await kokoro.synthesize_wav(target_text, voice="bm_george", speed=1.05)
+            synth_ms = int((time.perf_counter() - t0) * 1000)
             if audio_bytes:
                 return Response(
                     content=audio_bytes,
                     media_type=mime,
                     headers={
                         "X-Provider": kokoro.get_active_provider(),
+                        "X-Synth-Ms": str(synth_ms),
                         "X-Clause-Count": str(len(split_clauses(clean_text)))
                     }
                 )
@@ -192,8 +196,17 @@ async def get_tts(
             if chunk["type"] == "audio":
                 audio_chunks.append(chunk["data"])
 
+        synth_ms = int((time.perf_counter() - t0) * 1000)
         audio_bytes = b"".join(audio_chunks)
-        return Response(content=audio_bytes, media_type="audio/mpeg")
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "X-Provider": "EdgeTTS",
+                "X-Synth-Ms": str(synth_ms),
+                "X-Clause-Count": str(len(split_clauses(clean_text)))
+            }
+        )
     except Exception as e:
         logger.error(f"TTS generation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
