@@ -37,9 +37,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgThinking = document.getElementById('cfg-thinking');
   const saveStatus = document.getElementById('save-status');
 
-  // Initialize Glowing Multi-Filament Orbital Sphere
+  // Initialize Cybernetic 3D Gyroscope & HUD Emblem (§9)
   const orb = new GhostOrb(orbCanvas);
+  window.ghostOrb = orb;
   let currentState = 'IDLE';
+
+  orb.onIntroDone = () => {
+    if (telemetryStateStat && telemetryStatusTag) {
+      telemetryStateStat.textContent = 'ONLINE';
+      telemetryStatusTag.textContent = '[READY]';
+      telemetryStatusTag.style.color = '#10b981';
+      telemetryStatusTag.style.textShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+    }
+  };
 
   // Bottom Telemetry Elements
   const telemetryStateStat = document.getElementById('telemetry-state-stat');
@@ -640,13 +650,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnHudDev) {
     btnHudDev.addEventListener('click', () => {
-      // Toggle emblem vector stencil text between ROSE and GHOST
-      const newText = orb.emblemText === 'ROSE' ? 'GHOST' : 'ROSE';
-      orb.setEmblemText(newText);
-      btnHudDev.textContent = `DEV [${newText}]`;
-      btnHudDev.classList.toggle('active', newText === 'GHOST');
+      // Replay cinematic intro sequence on DEV click (§9.4)
+      orb.startIntro(true);
     });
   }
+
+  // Keyboard shortcut: Shift + I to replay intro (§9.4)
+  document.addEventListener('keydown', (e) => {
+    if (e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+      orb.startIntro(true);
+    }
+  });
 
   // Global click resume audio context
   document.body.addEventListener('click', () => {

@@ -55,6 +55,15 @@ class TestGuiHudEmblem(unittest.TestCase):
         self.assertIn("drawStencilText", content)
         self.assertIn("particles", content)
         self.assertIn("#ff0055", content)  # Hot neon crimson
+        # Intro timeline, 3D math & audio capabilities
+        self.assertIn("startIntro(", content)
+        self.assertIn("skipIntro(", content)
+        self.assertIn("seek(", content)
+        self.assertIn("introPose(", content)
+        self.assertIn("rotXYZ(", content)
+        self.assertIn("project(", content)
+        self.assertIn("strokeArc3D(", content)
+        self.assertIn("class GhostIntroAudio", content)
 
     def test_app_js_hud_wiring(self):
         content = self.app_js.read_text(encoding="utf-8")
@@ -65,6 +74,9 @@ class TestGuiHudEmblem(unittest.TestCase):
         self.assertIn("clean-focus", content)
         self.assertIn("telemetryStateStat", content)
         self.assertIn("telemetryStatusTag", content)
+        self.assertIn("window.ghostOrb = orb", content)
+        self.assertIn("orb.startIntro", content)
+        self.assertIn("orb.onIntroDone", content)
 
 if __name__ == "__main__":
     unittest.main()
