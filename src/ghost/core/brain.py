@@ -941,6 +941,121 @@ GHOST_TOOLS = [
                 "required": ["task"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "glb_inspect",
+            "description": "Inspects a 3D GLB model's binary geometry directly. Returns triangle count, meshes, materials, textures, animations, bounds, and CLI optimization hints.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to the .glb file to inspect"
+                    }
+                },
+                "required": ["file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "glb_optimize",
+            "description": "Optimizes a GLB model using @gltf-transform/cli. Always works on a copy and never mutates the original in place. Returns unavailable status if CLI is missing.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source_path": {
+                        "type": "string",
+                        "description": "Path to original GLB model"
+                    },
+                    "output_path": {
+                        "type": "string",
+                        "description": "Optional destination path for optimized model (defaults to <name>_optimized.glb)"
+                    },
+                    "options": {
+                        "type": "object",
+                        "properties": {
+                            "compress": {"type": "string", "enum": ["draco", "meshopt"], "description": "Compression algorithm"}
+                        }
+                    }
+                },
+                "required": ["source_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_glb",
+            "description": "Searches curated open-licensed 3D GLB repositories (CC0 / CC-BY). Rejects Non-Commercial (NC) and No-Derivatives (ND) models. Requires operator approval before download.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search terms for 3D model (e.g. 'vintage camera', 'luxury helmet', 'automobile')"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of candidates (default 5)"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_image_asset",
+            "description": "Generates image assets using configured free providers (Cloudflare, Hugging Face, Gemini, Three.js Scene Render). Returns explicit unavailable status if unconfigured. Never fakes output.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Descriptive concept visual prompt"
+                    },
+                    "destination_dir": {
+                        "type": "string",
+                        "description": "Directory where image will be saved"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Target filename (e.g. 'hero_concept.jpg')"
+                    },
+                    "size": {
+                        "type": "string",
+                        "description": "Image dimensions (default 1024x1024)"
+                    },
+                    "preferred_provider": {
+                        "type": "string",
+                        "description": "Optional preferred provider ('cloudflare', 'huggingface', 'google_ai_studio', 'scene_render')"
+                    }
+                },
+                "required": ["prompt", "destination_dir"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_procedural_audio",
+            "description": "Generates standalone zero-asset procedural Web Audio synthesis code. Default muted, 1 sound per move, no overlap.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "palette": {
+                        "type": "string",
+                        "enum": ["warm", "industrial", "winter"],
+                        "description": "Sound aesthetic palette"
+                    }
+                }
+            }
+        }
     }
 ]
 
@@ -1869,5 +1984,52 @@ class OmniRouteBrain:
                     "tool": "mission_add_task",
                     "error": str(e)
                 }
+
+        # 21. Free Asset Stack & GLB Tools
+        elif tool_name == "glb_inspect":
+            from ghost.workers.glb_tools import GLBTools
+            f_path = str(arguments.get("file_path", "")).strip()
+            return GLBTools.inspect(f_path)
+
+        elif tool_name == "glb_optimize":
+            from ghost.workers.glb_tools import GLBTools
+            src = str(arguments.get("source_path", "")).strip()
+            dest = arguments.get("output_path")
+            opts = arguments.get("options")
+            return await GLBTools.optimize(source_path=src, output_path=dest, options=opts)
+
+        elif tool_name == "find_glb":
+            from ghost.workers.find_glb import GLBDiscovery
+            q = str(arguments.get("query", "")).strip()
+            lim = int(arguments.get("max_results", 5))
+            return GLBDiscovery.find_glb(query=q, max_results=lim)
+
+        elif tool_name == "generate_image_asset":
+            from ghost.workers.asset_providers import AssetManager
+            prompt = str(arguments.get("prompt", "")).strip()
+            dest_dir = str(arguments.get("destination_dir", "/tmp")).strip()
+            fname = str(arguments.get("filename", "hero.jpg")).strip()
+            sz = str(arguments.get("size", "1024x1024")).strip()
+            pref = arguments.get("preferred_provider")
+            return AssetManager.generate_image(
+                prompt=prompt,
+                destination_dir=dest_dir,
+                filename=fname,
+                size=sz,
+                preferred_provider=pref
+            )
+
+        elif tool_name == "get_procedural_audio":
+            from ghost.workers.audio_manager import ProceduralAudioManager
+            pal = str(arguments.get("palette", "warm")).strip()
+            script = ProceduralAudioManager.get_procedural_audio_script(palette=pal)
+            return {
+                "ok": True,
+                "status": "success",
+                "tool": "get_procedural_audio",
+                "palette": pal,
+                "script": script,
+                "policy": "Global toggle muted by default, single move sound, no hover overlap."
+            }
 
         return {"error": f"Tool {tool_name} not recognized"}

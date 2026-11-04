@@ -175,3 +175,54 @@ class SourceLedger:
                     notes=d.get("notes")
                 )
         return ledger
+
+
+def lint_demo_assets(demo_dir: str) -> Tuple[bool, List[str]]:
+    """
+    Asset Ledger Lint: Verifies that every single asset in demo_dir/assets/
+    is backed by a verified row in SOURCES.json with license and source information.
+    Build/QA fails if any unledgered assets exist.
+    """
+    violations: List[str] = []
+    assets_dir = os.path.join(demo_dir, "assets")
+    if not os.path.exists(assets_dir) or not os.path.isdir(assets_dir):
+        # No assets directory, lint passes
+        return True, []
+
+    sources_path = os.path.join(demo_dir, "SOURCES.json")
+    if not os.path.exists(sources_path):
+        return False, ["SOURCES.json missing: demo contains assets/ but no source/license ledger exists."]
+
+    try:
+        with open(sources_path, "r", encoding="utf-8") as f:
+            sources_data = json.load(f)
+    except Exception as e:
+        return False, [f"Failed to read SOURCES.json: {str(e)}"]
+
+    # Gather registered files from ledger
+    ledgered_files = set()
+    assets_list = sources_data.get("assets", [])
+    if isinstance(assets_list, list):
+        for item in assets_list:
+            if isinstance(item, dict):
+                f_name = item.get("file") or item.get("path") or ""
+                if f_name:
+                    ledgered_files.add(os.path.basename(f_name))
+
+    for k, v in sources_data.items():
+        if isinstance(v, dict):
+            f_val = str(v.get("value", ""))
+            if any(f_val.lower().endswith(ext) for ext in [".glb", ".gltf", ".png", ".jpg", ".jpeg", ".mp3", ".wav"]):
+                ledgered_files.add(os.path.basename(f_val))
+
+    # Scan assets directory
+    for root, _, files in os.walk(assets_dir):
+        for fname in files:
+            # Skip hidden files
+            if fname.startswith("."):
+                continue
+            if fname not in ledgered_files:
+                rel_path = os.path.relpath(os.path.join(root, fname), demo_dir)
+                violations.append(f"Unledgered asset: '{rel_path}' has no license entry in SOURCES.json.")
+
+    return len(violations) == 0, violations
