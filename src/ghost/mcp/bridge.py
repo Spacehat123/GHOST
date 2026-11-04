@@ -1656,6 +1656,9 @@ class GitBridge:
         Executes git commands with automatic headless SSH passkey handling.
         Captures exact stdout, stderr, and return code.
         """
+        if isinstance(args, str):
+            args = args.split()
+
         if not repo_dir:
             repo_dir = REPO_DIR
 
