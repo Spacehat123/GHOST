@@ -41,11 +41,44 @@ document.addEventListener('DOMContentLoaded', () => {
   const orb = new GhostOrb(orbCanvas);
   let currentState = 'IDLE';
 
+  // Bottom Telemetry Elements
+  const telemetryStateStat = document.getElementById('telemetry-state-stat');
+  const telemetryStatusTag = document.querySelector('.telemetry-status-tag');
+
   function updateState(state) {
     currentState = state;
     orb.setState(state);
     statusLabel.textContent = state;
     statusContainer.className = `hud-status status-${state}`;
+
+    if (telemetryStateStat && telemetryStatusTag) {
+      if (state === 'LISTENING') {
+        telemetryStateStat.textContent = 'RECEIVING DUPLEX';
+        telemetryStatusTag.textContent = '[MIC ACTIVE]';
+        telemetryStatusTag.style.color = '#00f0ff';
+        telemetryStatusTag.style.textShadow = '0 0 8px rgba(0, 240, 255, 0.5)';
+      } else if (state === 'THINKING') {
+        telemetryStateStat.textContent = 'PROCESSING NEURAL';
+        telemetryStatusTag.textContent = '[THINKING]';
+        telemetryStatusTag.style.color = '#c084fc';
+        telemetryStatusTag.style.textShadow = '0 0 8px rgba(192, 132, 252, 0.5)';
+      } else if (state === 'SPEAKING') {
+        telemetryStateStat.textContent = 'SYNTHESIZING SPEECH';
+        telemetryStatusTag.textContent = '[TRANSMITTING]';
+        telemetryStatusTag.style.color = '#ff0055';
+        telemetryStatusTag.style.textShadow = '0 0 8px rgba(255, 0, 85, 0.6)';
+      } else if (state === 'INTERRUPTED') {
+        telemetryStateStat.textContent = 'BARGE-IN PURGE';
+        telemetryStatusTag.textContent = '[INTERRUPTED]';
+        telemetryStatusTag.style.color = '#f59e0b';
+        telemetryStatusTag.style.textShadow = '0 0 8px rgba(245, 158, 11, 0.6)';
+      } else {
+        telemetryStateStat.textContent = 'ONLINE';
+        telemetryStatusTag.textContent = '[READY]';
+        telemetryStatusTag.style.color = '#10b981';
+        telemetryStatusTag.style.textShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+      }
+    }
   }
 
   // Settings Modal Logic
@@ -551,6 +584,67 @@ document.addEventListener('DOMContentLoaded', () => {
         ws.send(JSON.stringify({ action: 'auth_response', auth_id: currentAuthId, allowed: false }));
         currentAuthId = null;
       }
+    });
+  }
+
+  // Tactical Pill HUD Buttons (Reference Video)
+  const btnHudHistory = document.getElementById('btn-hud-history');
+  const btnHudLogs = document.getElementById('btn-hud-logs');
+  const btnHudDev = document.getElementById('btn-hud-dev');
+  const btnHudClear = document.getElementById('btn-hud-clear');
+
+  if (btnHudClear) {
+    btnHudClear.addEventListener('click', () => {
+      document.body.classList.toggle('clean-focus');
+      btnHudClear.classList.toggle('active', document.body.classList.contains('clean-focus'));
+    });
+  }
+
+  // Click canvas or press Escape to exit clean focus view
+  if (orbCanvas) {
+    orbCanvas.addEventListener('click', () => {
+      if (document.body.classList.contains('clean-focus')) {
+        document.body.classList.remove('clean-focus');
+        if (btnHudClear) btnHudClear.classList.remove('active');
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('clean-focus')) {
+      document.body.classList.remove('clean-focus');
+      if (btnHudClear) btnHudClear.classList.remove('active');
+    }
+  });
+
+  if (btnHudHistory) {
+    btnHudHistory.addEventListener('click', () => {
+      if (transcriptBubble) {
+        transcriptBubble.scrollIntoView({ behavior: 'smooth' });
+        transcriptBubble.style.borderColor = 'rgba(255, 0, 85, 0.6)';
+        setTimeout(() => {
+          transcriptBubble.style.borderColor = '';
+        }, 1200);
+      }
+    });
+  }
+
+  if (btnHudLogs) {
+    btnHudLogs.addEventListener('click', () => {
+      const openBtn = document.getElementById('btn-open-deck');
+      if (openBtn) openBtn.click();
+      const eventsTab = document.querySelector('.deck-tab-btn[data-view="events"]');
+      if (eventsTab) eventsTab.click();
+    });
+  }
+
+  if (btnHudDev) {
+    btnHudDev.addEventListener('click', () => {
+      // Toggle emblem vector stencil text between ROSE and GHOST
+      const newText = orb.emblemText === 'ROSE' ? 'GHOST' : 'ROSE';
+      orb.setEmblemText(newText);
+      btnHudDev.textContent = `DEV [${newText}]`;
+      btnHudDev.classList.toggle('active', newText === 'GHOST');
     });
   }
 

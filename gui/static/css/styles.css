@@ -472,3 +472,87 @@ body {
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
+
+/* ==============================================================================
+   Tactical Pill HUD Buttons & Telemetry Bar (Reference Video Aesthetic)
+   ============================================================================== */
+.hud-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 0.5rem;
+}
+
+.hud-pill-btn {
+  background: rgba(12, 16, 26, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.32rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-pill-btn:hover {
+  background: rgba(255, 0, 85, 0.15);
+  border-color: rgba(255, 0, 85, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+.hud-pill-btn.active {
+  background: rgba(255, 0, 85, 0.25);
+  border-color: #ff0055;
+  color: #ffffff;
+}
+
+/* Bottom Telemetry HUD Line */
+.bottom-hud-bar {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 2rem;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.hud-telemetry-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.telemetry-status-tag {
+  color: #10b981; /* Terminal green status */
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.telemetry-divider {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Clean Focus View (Triggered by CLEAR VIEW button) */
+body.clean-focus .top-hud,
+body.clean-focus .bottom-hud-bar,
+body.clean-focus #transcript-bubble,
+body.clean-focus .bottom-bar {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+body.clean-focus {
+  cursor: none;
+}
+

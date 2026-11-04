@@ -1,11 +1,12 @@
 /**
- * Ghost / Rose Multi-Filament Harmonized Orbital Wave Sphere
- * Renders the exact visual signature from CONTEXT.md Section 1:
- * - Radiant white-hot core (#ffffff -> electric cyan #93c5fd)
- * - Concentric outer halos (#1e295d -> #3b42c4)
- * - Inner cyan aura (#525ceb -> #60a5fa)
- * - 6 intertwined harmonic sinusoidal orbital filaments responding to live audio FFT bins:
- *   r(theta) = R_base + sum_{k=1}^3 A_k * sin(n_k * theta + omega_k * t + phi_k)
+ * Cybernetic Animated HUD Emblem Engine for Ghost / Rose
+ * Reconstructs the exact visual signature from ghost-intro-11s.mp4:
+ * - Multi-tiered counter-rotating concentric segmented geometric rings
+ * - Radial compass / targeting reticle dial with degree ticks and crosshairs
+ * - Live audio-reactive waveform / equalizer ring modulating with speech FFT
+ * - Intense glowing neon magenta / crimson core with multi-stage bloom
+ * - Stylized cybernetic stencil typography ("ROSE" / "GHOST")
+ * - Ambient micro-particle embers with orbital physics
  */
 class GhostOrb {
   constructor(canvas) {
@@ -13,63 +14,103 @@ class GhostOrb {
     this.ctx = canvas.getContext('2d');
     this.state = 'IDLE';
     this.amplitude = 0.05;
+    this.targetAmplitude = 0.05;
     this.time = 0;
-    // FFT frequency bins array for live reactivity
+
+    // 6-band audio FFT energy buffer
     this.audioBins = new Float32Array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);
 
-    // Color palettes mapped strictly to CONTEXT.md Section 1
+    // Active emblem text mode ("ROSE" by default per reference video)
+    this.emblemText = 'ROSE';
+
+    // State color palettes (Vibrant neon crimson / magenta cybernetic aesthetic)
     this.palettes = {
       IDLE: {
-        core: '#ffffff',
-        cyanAura: 'rgba(96, 165, 250, 0.85)',
-        innerAura: 'rgba(82, 92, 235, 0.65)',
-        midHalo: 'rgba(59, 66, 196, 0.65)',     // #3b42c4 (65% opacity)
-        outerHalo: 'rgba(30, 41, 93, 0.30)',     // #1e295d (30% opacity)
-        filaments: [147, 197, 253]               // #93c5fd
+        coreGlow: '#ff0055',
+        neonAccent: '#ff2a70',
+        ringSecondary: 'rgba(255, 42, 112, 0.55)',
+        ringTertiary: 'rgba(255, 0, 85, 0.25)',
+        crosshair: 'rgba(255, 255, 255, 0.45)',
+        textCore: '#ffffff',
+        textGlow: '#ff0055',
+        particleColor: '255, 42, 112',
+        speedMult: 1.0,
+        bloomAlpha: 0.18
       },
       LISTENING: {
-        core: '#ffffff',
-        cyanAura: 'rgba(6, 182, 212, 0.9)',
-        innerAura: 'rgba(14, 165, 233, 0.75)',
-        midHalo: 'rgba(3, 105, 161, 0.65)',
-        outerHalo: 'rgba(8, 47, 73, 0.35)',
-        filaments: [56, 189, 248]
+        coreGlow: '#ff0055',
+        neonAccent: '#00f0ff', // Electric cyan accents in reticle when listening
+        ringSecondary: 'rgba(0, 240, 255, 0.75)',
+        ringTertiary: 'rgba(255, 42, 112, 0.35)',
+        crosshair: 'rgba(0, 240, 255, 0.85)',
+        textCore: '#ffffff',
+        textGlow: '#ff2a70',
+        particleColor: '0, 240, 255',
+        speedMult: 1.6,
+        bloomAlpha: 0.25
       },
       THINKING: {
-        core: '#ffffff',
-        cyanAura: 'rgba(192, 132, 252, 0.9)',
-        innerAura: 'rgba(147, 51, 234, 0.7)',
-        midHalo: 'rgba(107, 33, 168, 0.65)',
-        outerHalo: 'rgba(59, 7, 100, 0.35)',
-        filaments: [216, 180, 254]
+        coreGlow: '#c084fc', // Purple / high computational frequency
+        neonAccent: '#e879f9',
+        ringSecondary: 'rgba(192, 132, 252, 0.75)',
+        ringTertiary: 'rgba(232, 121, 249, 0.35)',
+        crosshair: 'rgba(255, 255, 255, 0.7)',
+        textCore: '#ffffff',
+        textGlow: '#c084fc',
+        particleColor: '192, 132, 252',
+        speedMult: 2.8,
+        bloomAlpha: 0.3
       },
       SPEAKING: {
-        core: '#ffffff',
-        cyanAura: 'rgba(147, 197, 253, 0.95)',
-        innerAura: 'rgba(82, 92, 235, 0.8)',
-        midHalo: 'rgba(59, 66, 196, 0.75)',
-        outerHalo: 'rgba(30, 41, 93, 0.40)',
-        filaments: [147, 197, 253]
+        coreGlow: '#ff0055',
+        neonAccent: '#ffffff',
+        ringSecondary: 'rgba(255, 255, 255, 0.85)',
+        ringTertiary: 'rgba(255, 42, 112, 0.45)',
+        crosshair: 'rgba(255, 255, 255, 0.95)',
+        textCore: '#ffffff',
+        textGlow: '#ff0055',
+        particleColor: '255, 80, 140',
+        speedMult: 2.0,
+        bloomAlpha: 0.35
       },
       INTERRUPTED: {
-        core: '#ffffff',
-        cyanAura: 'rgba(251, 191, 36, 0.9)',
-        innerAura: 'rgba(217, 119, 6, 0.75)',
-        midHalo: 'rgba(180, 83, 9, 0.65)',
-        outerHalo: 'rgba(69, 26, 3, 0.35)',
-        filaments: [252, 211, 77]
+        coreGlow: '#f59e0b', // Amber / gold flare
+        neonAccent: '#fbbf24',
+        ringSecondary: 'rgba(245, 158, 11, 0.75)',
+        ringTertiary: 'rgba(251, 191, 36, 0.3)',
+        crosshair: 'rgba(255, 255, 255, 0.8)',
+        textCore: '#ffffff',
+        textGlow: '#f59e0b',
+        particleColor: '245, 158, 11',
+        speedMult: 3.5,
+        bloomAlpha: 0.4
       }
     };
 
-    // Filament configuration: 6 intertwined harmonic orbitals
-    this.filamentParams = [
-      { order1: 3, order2: 5, speed: 0.9,  phase: 0.0,              radiusFactor: 1.14 },
-      { order1: 4, order2: 2, speed: -0.75, phase: Math.PI / 3,      radiusFactor: 1.18 },
-      { order1: 5, order2: 3, speed: 1.1,  phase: (2 * Math.PI) / 3, radiusFactor: 1.22 },
-      { order1: 2, order2: 4, speed: -0.85, phase: Math.PI,          radiusFactor: 1.26 },
-      { order1: 4, order2: 6, speed: 1.05, phase: (4 * Math.PI) / 3, radiusFactor: 1.30 },
-      { order1: 3, order2: 2, speed: -1.2, phase: (5 * Math.PI) / 3, radiusFactor: 1.34 }
-    ];
+    // Initialize 55 orbiting micro-particles (embers)
+    this.particles = [];
+    for (let i = 0; i < 55; i++) {
+      this.particles.push({
+        radiusFactor: 1.1 + Math.random() * 0.95,
+        angle: Math.random() * Math.PI * 2,
+        angularSpeed: (Math.random() * 0.008 + 0.002) * (Math.random() > 0.5 ? 1 : -1),
+        radialOscillationSpeed: Math.random() * 0.03 + 0.01,
+        radialAmp: Math.random() * 12 + 4,
+        size: Math.random() * 1.8 + 0.8,
+        baseAlpha: Math.random() * 0.6 + 0.25,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    // Rotational offsets for concentric rings
+    this.rotOuterTicks = 0;
+    this.rotSegmentedTrack = 0;
+    this.rotInnerDashes = 0;
+    this.rotGearCore = 0;
+
+    // Scanline & glitch state
+    this.glitchTimer = 0;
+    this.glitchOffset = 0;
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -88,119 +129,434 @@ class GhostOrb {
 
   setState(state) {
     this.state = state || 'IDLE';
+    this.glitchTimer = 6; // Trigger slight digital strobe on state change
   }
 
   setAmplitude(amp) {
-    // Smooth live RMS reactivity
-    this.amplitude = this.amplitude * 0.75 + amp * 0.25;
+    this.targetAmplitude = Math.max(0.02, Math.min(1.0, amp));
   }
 
   setAudioBins(bins) {
     if (!bins || bins.length < 6) return;
     for (let i = 0; i < 6; i++) {
-      this.audioBins[i] = this.audioBins[i] * 0.7 + bins[i] * 0.3;
+      this.audioBins[i] = this.audioBins[i] * 0.65 + bins[i] * 0.35;
     }
   }
 
+  setEmblemText(text) {
+    if (text) this.emblemText = text.toUpperCase();
+  }
+
+  /**
+   * Draws pure vector stylized cybernetic stencil typography ("ROSE" or "GHOST")
+   */
+  drawStencilText(ctx, cx, cy, baseRadius, palette) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Apply glitch displacement on audio spikes or state transitions
+    if (this.glitchTimer > 0) {
+      this.glitchTimer--;
+      const gx = (Math.random() - 0.5) * 4;
+      const gy = (Math.random() - 0.5) * 2;
+      ctx.translate(gx, gy);
+    }
+
+    const scale = (baseRadius / 150) * (1.0 + this.amplitude * 0.08);
+    ctx.scale(scale, scale);
+
+    const isSpeaking = this.state === 'SPEAKING';
+    const textGlow = isSpeaking ? 30 : (16 + this.amplitude * 14);
+
+    ctx.shadowColor = palette.textGlow;
+    ctx.shadowBlur = textGlow;
+    ctx.fillStyle = palette.textCore;
+    ctx.strokeStyle = palette.neonAccent;
+    ctx.lineWidth = 1.2;
+
+    if (this.emblemText === 'ROSE') {
+      this._drawRoseGlyph(ctx);
+    } else {
+      this._drawGhostGlyph(ctx);
+    }
+
+    // Horizontal cybernetic cut/slash overlay line
+    ctx.beginPath();
+    ctx.strokeStyle = '#06070a';
+    ctx.lineWidth = 2.2;
+    ctx.moveTo(-50, 0);
+    ctx.lineTo(50, 0);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  _drawRoseGlyph(ctx) {
+    // Cybernetic Stencil "ROSE" Vector Construction
+    // R [-40, -18]
+    ctx.beginPath();
+    ctx.moveTo(-40, 16); ctx.lineTo(-40, -16); ctx.lineTo(-24, -16);
+    ctx.lineTo(-20, -12); ctx.lineTo(-20, -2); ctx.lineTo(-25, 0);
+    ctx.lineTo(-18, 16); ctx.lineTo(-24, 16); ctx.lineTo(-29, 2);
+    ctx.lineTo(-34, 2); ctx.lineTo(-34, 16); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // R inner hole
+    ctx.fillStyle = '#07090e';
+    ctx.beginPath();
+    ctx.moveTo(-34, -4); ctx.lineTo(-34, -11); ctx.lineTo(-26, -11);
+    ctx.lineTo(-25, -9); ctx.lineTo(-25, -6); ctx.lineTo(-27, -4);
+    ctx.closePath();
+    ctx.fill();
+
+    // O [-14, 8] (Hexagonal cybernetic ring)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-10, -16); ctx.lineTo(4, -16); ctx.lineTo(8, -8);
+    ctx.lineTo(8, 8); ctx.lineTo(4, 16); ctx.lineTo(-10, 16);
+    ctx.lineTo(-14, 8); ctx.lineTo(-14, -8); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // O inner hole
+    ctx.fillStyle = '#07090e';
+    ctx.beginPath();
+    ctx.moveTo(-7, -10); ctx.lineTo(1, -10); ctx.lineTo(3, -5);
+    ctx.lineTo(3, 5); ctx.lineTo(1, 10); ctx.lineTo(-7, 10);
+    ctx.lineTo(-9, 5); ctx.lineTo(-9, -5); ctx.closePath();
+    ctx.fill();
+
+    // S [14, 34] (Angular cybernetic S)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(34, -16); ctx.lineTo(18, -16); ctx.lineTo(14, -8);
+    ctx.lineTo(28, -5); ctx.lineTo(34, 1); ctx.lineTo(34, 16);
+    ctx.lineTo(18, 16); ctx.lineTo(14, 8); ctx.lineTo(20, 8);
+    ctx.lineTo(28, 11); ctx.lineTo(28, 0); ctx.lineTo(14, -2);
+    ctx.lineTo(14, -16); ctx.lineTo(34, -16); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // E [38, 56]
+    ctx.beginPath();
+    ctx.moveTo(56, -16); ctx.lineTo(38, -16); ctx.lineTo(38, 16);
+    ctx.lineTo(56, 16); ctx.lineTo(56, 11); ctx.lineTo(44, 11);
+    ctx.lineTo(44, 3); ctx.lineTo(52, 3); ctx.lineTo(52, -2);
+    ctx.lineTo(44, -2); ctx.lineTo(44, -11); ctx.lineTo(56, -11);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+
+  _drawGhostGlyph(ctx) {
+    ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('GHOST', 0, 0);
+    ctx.strokeText('GHOST', 0, 0);
+  }
+
   animate() {
-    this.time += 0.022;
+    this.time += 0.024;
+    // Smooth amplitude interpolation
+    this.amplitude += (this.targetAmplitude - this.amplitude) * 0.15;
+
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
     const cx = this.width / 2;
-    const cy = this.height / 2;
-    // Base radius derived from viewport
-    const baseRadius = Math.min(this.width, this.height) * 0.175;
+    // Optical center slightly raised like reference monitor
+    const cy = this.height / 2 - 20;
+
+    // Scale responsive base radius
+    const baseRadius = Math.max(110, Math.min(this.width, this.height) * 0.165);
     const palette = this.palettes[this.state] || this.palettes.IDLE;
-    const [fr, fg, fb] = palette.filaments;
+    const speed = palette.speedMult;
 
-    // 1. Concentric Outer Ambient Halo (#1e295d at 30% opacity extending to 1.8x base radius)
-    const outerHaloRadius = baseRadius * (1.8 + this.amplitude * 0.3);
-    const outerHaloGrad = ctx.createRadialGradient(cx, cy, baseRadius * 0.3, cx, cy, outerHaloRadius);
-    outerHaloGrad.addColorStop(0, palette.midHalo);
-    outerHaloGrad.addColorStop(0.55, palette.outerHalo);
-    outerHaloGrad.addColorStop(1, 'rgba(2, 4, 8, 0)');
+    // Advance ring rotation angles at differentiated velocities
+    this.rotOuterTicks += 0.0035 * speed;
+    this.rotSegmentedTrack += -0.009 * speed;
+    this.rotInnerDashes += 0.018 * speed;
+    this.rotGearCore += -0.025 * speed;
 
-    ctx.fillStyle = outerHaloGrad;
+    // -------------------------------------------------------------
+    // 1. AMBIENT BACKGROUND BLOOM (Deep crimson/magenta radial aura)
+    // -------------------------------------------------------------
+    const auraRadius = baseRadius * (2.1 + this.amplitude * 0.4);
+    const auraGrad = ctx.createRadialGradient(cx, cy, baseRadius * 0.2, cx, cy, auraRadius);
+    auraGrad.addColorStop(0, `rgba(255, 0, 85, ${palette.bloomAlpha * 1.4})`);
+    auraGrad.addColorStop(0.45, `rgba(255, 42, 112, ${palette.bloomAlpha * 0.7})`);
+    auraGrad.addColorStop(0.8, `rgba(180, 0, 60, ${palette.bloomAlpha * 0.2})`);
+    auraGrad.addColorStop(1, 'rgba(4, 6, 12, 0)');
+
+    ctx.fillStyle = auraGrad;
     ctx.beginPath();
-    ctx.arc(cx, cy, outerHaloRadius, 0, Math.PI * 2);
+    ctx.arc(cx, cy, auraRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Concentric Inner Halo (#3b42c4 at 65% opacity) & Inner Cyan Aura (#525ceb -> #60a5fa)
-    const innerHaloRadius = baseRadius * (1.15 + this.amplitude * 0.2);
-    const innerHaloGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerHaloRadius);
-    innerHaloGrad.addColorStop(0, palette.cyanAura);
-    innerHaloGrad.addColorStop(0.45, palette.innerAura);
-    innerHaloGrad.addColorStop(0.85, palette.midHalo);
-    innerHaloGrad.addColorStop(1, 'rgba(5, 8, 17, 0)');
+    // -------------------------------------------------------------
+    // 2. AMBIENT ORBITING MICRO-PARTICLES (Embers)
+    // -------------------------------------------------------------
+    ctx.save();
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      p.angle += p.angularSpeed * speed;
+      const r = baseRadius * p.radiusFactor + Math.sin(this.time * p.radialOscillationSpeed + p.phase) * p.radialAmp;
+      const px = cx + Math.cos(p.angle) * r;
+      const py = cy + Math.sin(p.angle) * r;
 
-    ctx.fillStyle = innerHaloGrad;
+      const alpha = p.baseAlpha * (0.6 + Math.sin(this.time * 3 + p.phase) * 0.4);
+      ctx.fillStyle = `rgba(${palette.particleColor}, ${alpha})`;
+      ctx.shadowColor = `rgba(${palette.particleColor}, 0.8)`;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 3. OUTER TELEMETRY DIAL & COMPASS TICKS (R ~ 1.55x)
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.rotOuterTicks);
+
+    const rOuter = baseRadius * 1.52;
+    ctx.strokeStyle = palette.ringTertiary;
+    ctx.lineWidth = 1.0;
     ctx.beginPath();
-    ctx.arc(cx, cy, innerHaloRadius, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(0, 0, rOuter, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // 3. The 6 Intertwined Harmonic Filaments (CONTEXT.md Section 1.1)
-    // Formula: r(theta) = R_base + sum_{k=1}^3 A_k * sin(n_k * theta + omega_k * t + phi_k)
-    const pointsPerLoop = 180;
-    const isSpeakingOrListening = (this.state === 'SPEAKING' || this.state === 'LISTENING');
+    // Radial degree ticks around circumference (72 ticks)
+    const tickCount = 72;
+    for (let t = 0; t < tickCount; t++) {
+      const angle = (t / tickCount) * Math.PI * 2;
+      const isMajor = (t % 6 === 0);
+      const isCardinal = (t % 18 === 0);
+      const len = isCardinal ? 12 : (isMajor ? 8 : 4);
 
-    for (let f = 0; f < 6; f++) {
-      const p = this.filamentParams[f];
-      const binEnergy = this.audioBins[f] || 0.1;
-      // High-frequency organic deformation responding to FFT frequency bins
-      const dynamicAmp1 = (isSpeakingOrListening ? (16 + binEnergy * 42) : 10) * (1.0 + this.amplitude * 1.2);
-      const dynamicAmp2 = (isSpeakingOrListening ? (10 + binEnergy * 28) : 6);
-      const dynamicAmp3 = (isSpeakingOrListening ? (6 + binEnergy * 16) : 3);
+      const r1 = rOuter - len;
+      const r2 = rOuter;
 
-      const fBaseRadius = baseRadius * p.radiusFactor;
+      const x1 = Math.cos(angle) * r1;
+      const y1 = Math.sin(angle) * r1;
+      const x2 = Math.cos(angle) * r2;
+      const y2 = Math.sin(angle) * r2;
 
       ctx.beginPath();
-      for (let i = 0; i <= pointsPerLoop; i++) {
-        const theta = (i / pointsPerLoop) * Math.PI * 2;
-
-        // 3 harmonic sinusoidal components
-        const h1 = Math.sin(p.order1 * theta + p.speed * this.time + p.phase);
-        const h2 = Math.sin(p.order2 * theta - (p.speed * 0.7) * this.time + p.phase * 1.5);
-        const h3 = Math.cos((p.order1 + p.order2) * theta + this.time * 0.5);
-
-        const r = fBaseRadius + (h1 * dynamicAmp1) + (h2 * dynamicAmp2) + (h3 * dynamicAmp3);
-        const x = cx + Math.cos(theta) * r;
-        const y = cy + Math.sin(theta) * r;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-
-      // Delicate electric-blue / state glowing stroke
-      const filamentAlpha = 0.55 + Math.sin(this.time * 2.5 + f * 1.1) * 0.2;
-      ctx.strokeStyle = `rgba(${fr}, ${fg}, ${fb}, ${filamentAlpha})`;
-      ctx.lineWidth = 1.35;
-      ctx.shadowColor = `rgba(${fr}, ${fg}, ${fb}, 0.85)`;
-      ctx.shadowBlur = 12;
+      ctx.strokeStyle = isMajor ? palette.neonAccent : palette.ringSecondary;
+      ctx.lineWidth = isMajor ? 1.5 : 0.8;
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
     }
 
-    // 4. Radiant White-Hot Core (scales smoothly with live RMS volume 1.0x to 1.35x)
-    const coreScale = 1.0 + Math.min(0.35, this.amplitude * 0.35);
-    const coreRadius = baseRadius * 0.32 * coreScale;
-
-    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius);
-    coreGrad.addColorStop(0, '#ffffff');
-    coreGrad.addColorStop(0.35, '#ffffff');
-    coreGrad.addColorStop(0.70, '#93c5fd'); // Electric cyan transition
-    coreGrad.addColorStop(1, 'rgba(147, 197, 253, 0)');
-
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 24 + this.amplitude * 18;
-    ctx.fillStyle = coreGrad;
+    // Rotating telemetry scan arc
     ctx.beginPath();
-    ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = palette.neonAccent;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = palette.coreGlow;
+    ctx.shadowBlur = 12;
+    ctx.arc(0, 0, rOuter, 0, Math.PI * 0.28);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 4. CORNER TACTICAL HUD BRACKETS & CARDINAL CROSSHAIRS
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Fixed cardinal crosshair guides
+    const chLen = baseRadius * 1.68;
+    ctx.strokeStyle = palette.crosshair;
+    ctx.lineWidth = 0.9;
+    ctx.setLineDash([4, 6]);
+
+    // Horizontal & Vertical axes
+    ctx.beginPath();
+    ctx.moveTo(-chLen, 0); ctx.lineTo(-baseRadius * 1.25, 0);
+    ctx.moveTo(baseRadius * 1.25, 0); ctx.lineTo(chLen, 0);
+    ctx.moveTo(0, -chLen); ctx.lineTo(0, -baseRadius * 1.25);
+    ctx.moveTo(0, baseRadius * 1.25); ctx.lineTo(0, chLen);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Corner targeting reticle brackets at 45°, 135°, 225°, 315°
+    const brR = baseRadius * 1.44;
+    const brAngles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
+    ctx.strokeStyle = palette.neonAccent;
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor = palette.coreGlow;
+    ctx.shadowBlur = 8;
+
+    brAngles.forEach((a) => {
+      const bx = Math.cos(a) * brR;
+      const by = Math.sin(a) * brR;
+      ctx.beginPath();
+      ctx.arc(0, 0, brR, a - 0.08, a + 0.08);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 5. COUNTER-ROTATING SEGMENTED ARC TRACKS (R ~ 1.25x - 1.35x)
+    // -------------------------------------------------------------
+    // Track A: Segmented clockwise heavy arc ring
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.rotSegmentedTrack);
+
+    const rTrackA = baseRadius * 1.32;
+    const segsA = 4;
+    for (let s = 0; s < segsA; s++) {
+      const startAngle = (s / segsA) * Math.PI * 2;
+      const endAngle = startAngle + (Math.PI * 2 / segsA) * 0.68;
+
+      ctx.beginPath();
+      ctx.strokeStyle = palette.neonAccent;
+      ctx.lineWidth = 2.4;
+      ctx.shadowColor = palette.coreGlow;
+      ctx.shadowBlur = 10;
+      ctx.arc(0, 0, rTrackA, startAngle, endAngle);
+      ctx.stroke();
+
+      // Small accent dot at end of arc
+      const dotX = Math.cos(endAngle) * rTrackA;
+      const dotY = Math.sin(endAngle) * rTrackA;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Track B: Segmented counter-clockwise dashed track
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.rotInnerDashes);
+
+    const rTrackB = baseRadius * 1.18;
+    ctx.strokeStyle = palette.ringSecondary;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([6, 9]);
+    ctx.beginPath();
+    ctx.arc(0, 0, rTrackB, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 6. AUDIO-REACTIVE EQUALIZER WAVE RING (R ~ 0.95x - 1.1x)
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    const rWaveBase = baseRadius * 0.98;
+    const wavePoints = 64;
+    ctx.beginPath();
+    for (let w = 0; w <= wavePoints; w++) {
+      const theta = (w / wavePoints) * Math.PI * 2;
+      const binIdx = Math.floor((w / wavePoints) * 6) % 6;
+      const binAmp = this.audioBins[binIdx] || 0.1;
+
+      // Harmonic sine ripple + live audio FFT displacement
+      const ripple = Math.sin(theta * 8 + this.time * 4) * 3;
+      const audioDisp = binAmp * 26 * (this.amplitude * 1.8 + 0.2);
+      const r = rWaveBase + ripple + audioDisp;
+
+      const wx = Math.cos(theta) * r;
+      const wy = Math.sin(theta) * r;
+
+      if (w === 0) ctx.moveTo(wx, wy);
+      else ctx.lineTo(wx, wy);
+    }
+    ctx.closePath();
+
+    ctx.strokeStyle = palette.neonAccent;
+    ctx.lineWidth = 1.4;
+    ctx.shadowColor = palette.coreGlow;
+    ctx.shadowBlur = 14 + this.amplitude * 16;
+    ctx.stroke();
+
+    // Radiating radial equalizer pips
+    const pipCount = 32;
+    for (let p = 0; p < pipCount; p++) {
+      const pAngle = (p / pipCount) * Math.PI * 2;
+      const pBin = this.audioBins[p % 6] || 0.1;
+      const pipH = 3 + pBin * 18 * (this.amplitude * 1.5 + 0.3);
+
+      const x1 = Math.cos(pAngle) * rWaveBase;
+      const y1 = Math.sin(pAngle) * rWaveBase;
+      const x2 = Math.cos(pAngle) * (rWaveBase + pipH);
+      const y2 = Math.sin(pAngle) * (rWaveBase + pipH);
+
+      ctx.beginPath();
+      ctx.strokeStyle = palette.neonAccent;
+      ctx.lineWidth = 1.2;
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 7. GLOWING NEON CORE RIM & NOTCHED GEAR RING (R ~ 0.78x)
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.rotGearCore);
+
+    const rCoreRim = baseRadius * 0.78;
+
+    // Glowing core boundary ring
+    ctx.beginPath();
+    ctx.strokeStyle = palette.coreGlow;
+    ctx.lineWidth = 3.0;
+    ctx.shadowColor = palette.coreGlow;
+    ctx.shadowBlur = 24 + this.amplitude * 18;
+    ctx.arc(0, 0, rCoreRim, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // High-speed notched gear ticks on the core rim (24 notches)
+    const gearCount = 24;
+    for (let g = 0; g < gearCount; g++) {
+      const gAngle = (g / gearCount) * Math.PI * 2;
+      const gx1 = Math.cos(gAngle) * (rCoreRim - 4);
+      const gy1 = Math.sin(gAngle) * (rCoreRim - 4);
+      const gx2 = Math.cos(gAngle) * (rCoreRim + 4);
+      const gy2 = Math.sin(gAngle) * (rCoreRim + 4);
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.moveTo(gx1, gy1);
+      ctx.lineTo(gx2, gy2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // -------------------------------------------------------------
+    // 8. INNER GLOW DISK & SPECULAR HIGHLIGHT
+    // -------------------------------------------------------------
+    const coreDiskR = baseRadius * 0.74;
+    const coreDiskGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreDiskR);
+    coreDiskGrad.addColorStop(0, 'rgba(255, 0, 85, 0.45)');
+    coreDiskGrad.addColorStop(0.65, 'rgba(255, 42, 112, 0.22)');
+    coreDiskGrad.addColorStop(0.95, 'rgba(10, 14, 24, 0.85)');
+    coreDiskGrad.addColorStop(1, '#06070a');
+
+    ctx.fillStyle = coreDiskGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreDiskR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Reset shadow blur
-    ctx.shadowBlur = 0;
+    // -------------------------------------------------------------
+    // 9. STYLIZED CYBERNETIC STENCIL TYPOGRAPHY ("ROSE" / "GHOST")
+    // -------------------------------------------------------------
+    this.drawStencilText(ctx, cx, cy, baseRadius, palette);
 
+    // Continue high-performance render loop
     requestAnimationFrame(this.animate);
   }
 }

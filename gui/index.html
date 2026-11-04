@@ -17,6 +17,13 @@
     </div>
     
     <div class="hud-right">
+      <div class="hud-pill-group">
+        <button id="btn-hud-history" class="hud-pill-btn" title="Interaction History">HISTORY</button>
+        <button id="btn-hud-logs" class="hud-pill-btn" title="System Logs">LOGS</button>
+        <button id="btn-hud-dev" class="hud-pill-btn" title="Developer Telemetry">DEV</button>
+        <button id="btn-hud-clear" class="hud-pill-btn" title="Toggle Clean Focus View">CLEAR VIEW</button>
+      </div>
+
       <div id="token-telemetry-chip" class="telemetry-chip" title="Active session and daily token consumption">
         <span class="telemetry-icon">⚡</span>
         <span id="token-stats-text">LAST: 0 | TODAY: 0</span>
@@ -44,6 +51,17 @@
   <!-- Fullscreen Glowing Multi-Filament Orbital Sphere -->
   <div id="canvas-container">
     <canvas id="orb-canvas"></canvas>
+  </div>
+
+  <!-- Bottom Telemetry HUD Line (Matching Reference Video) -->
+  <div class="bottom-hud-bar">
+    <div class="hud-telemetry-line">
+      <span class="telemetry-status-tag">[READY]</span>
+      <span class="telemetry-divider">&bull;</span>
+      <span id="telemetry-audio-stat">24kHz NEURAL DUPLEX</span>
+      <span class="telemetry-divider">&bull;</span>
+      <span id="telemetry-state-stat">ONLINE</span>
+    </div>
   </div>
 
   <!-- Settings Modal (Local Secure Storage) -->
