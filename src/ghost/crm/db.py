@@ -14,8 +14,9 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 
 logger = logging.getLogger("ghost.crm")
 
-CRM_DB_PATH = "/home/pranc/projects/ghost/data/crm.db"
-OBSIDIAN_CLIENTS_DIR = "/home/pranc/Obsidian Vault/Ghost/Clients"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CRM_DB_PATH = os.environ.get("GHOST_CRM_DB_PATH") or os.path.join(REPO_DIR, "data", "crm.db")
+OBSIDIAN_CLIENTS_DIR = os.environ.get("GHOST_OBSIDIAN_DIR") or os.path.expanduser("~/Obsidian Vault/Ghost/Clients")
 
 LEAD_STATUSES = {
     "harvested", "qualified", "rejected", "building", "needs_confirmation",
@@ -178,6 +179,13 @@ class CRMDatabase:
                     type TEXT NOT NULL,
                     payload_json TEXT,
                     at REAL NOT NULL
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS processed_events (
+                    event_id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL,
+                    processed_at REAL NOT NULL
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_batch ON leads(batch_id)")
@@ -803,6 +811,24 @@ class CRMDatabase:
                 except Exception:
                     r["payload"] = {}
             return rows
+
+    def has_processed_event(self, event_id: str) -> bool:
+        """Check if an external webhook event ID has already been processed."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM processed_events WHERE event_id = ?", (event_id.strip(),))
+            return cur.fetchone() is not None
+
+    def record_processed_event(self, event_id: str, provider: str = "razorpay") -> bool:
+        """Record an external webhook event ID in the database for deduplication."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT OR IGNORE INTO processed_events (event_id, provider, processed_at) VALUES (?, ?, ?)",
+                (event_id.strip(), provider.strip().lower(), time.time())
+            )
+            conn.commit()
+            return cur.rowcount > 0
 
     # =========================================================================
     # Drafts & Documents (Part 4 & 5 readiness)

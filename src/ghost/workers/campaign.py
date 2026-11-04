@@ -16,7 +16,8 @@ from ghost.workers.lead_qualifier import LeadQualifier
 
 logger = logging.getLogger("ghost.campaign")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/campaign.json"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CONFIG_PATH = os.environ.get("GHOST_CAMPAIGN_CONFIG", os.path.join(REPO_DIR, "configs/campaign.json"))
 
 CATEGORY_SYNONYM_GROUPS: List[Set[str]] = [
     {"car detailing", "auto detailing", "vehicle detailing", "car valet", "car wash", "auto valet"},

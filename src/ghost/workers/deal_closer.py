@@ -29,9 +29,10 @@ from ghost.workers.payments import get_payment_provider, PaymentProvider
 
 logger = logging.getLogger("ghost.deal_closer")
 
-CONFIG_DEAL_PATH = "/home/pranc/projects/ghost/configs/deal.json"
-TEMPLATES_DIR = "/home/pranc/projects/ghost/templates"
-DOCUMENTS_BASE_DIR = "/home/pranc/projects/ghost/data/documents"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CONFIG_DEAL_PATH = os.environ.get("GHOST_DEAL_CONFIG", os.path.join(REPO_DIR, "configs/deal.json"))
+TEMPLATES_DIR = os.environ.get("GHOST_TEMPLATES_DIR", os.path.join(REPO_DIR, "templates"))
+DOCUMENTS_BASE_DIR = os.environ.get("GHOST_DOCUMENTS_DIR", os.path.join(REPO_DIR, "data/documents"))
 
 MANDATORY_LEGAL_TOKENS = [
     "CLIENT_LEGAL_NAME",

@@ -14,6 +14,9 @@ from ghost.server.agency_api import (
 )
 
 
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), ".."))
+
+
 class TestServerAgencyAPI(unittest.TestCase):
 
     def setUp(self):
@@ -32,7 +35,7 @@ class TestServerAgencyAPI(unittest.TestCase):
         CRMDatabase._instance = None
 
     def test_auth_and_localhost_security(self):
-        """Endpoints enforce session token authentication and localhost check."""
+        """Endpoints enforce session token authentication, Host/Origin validation, and anti-DNS rebinding."""
         # 1. Missing session token returns 401
         res = self.client.get("/api/operator")
         self.assertEqual(res.status_code, 401)
@@ -48,6 +51,30 @@ class TestServerAgencyAPI(unittest.TestCase):
         data = res.json()
         self.assertIn("daily_sends_today", data)
         self.assertIn("max_sends_per_day", data)
+
+        # 4. Untrusted Host header (DNS-rebinding protection) returns 403 Forbidden
+        bad_host_res = self.client.get("/api/operator", headers={**self.auth_headers, "Host": "attacker.local:8765"})
+        self.assertEqual(bad_host_res.status_code, 403)
+        self.assertIn("Host header", bad_host_res.json()["detail"])
+
+        # 5. Untrusted Origin header returns 403 Forbidden
+        bad_origin_res = self.client.get("/api/operator", headers={**self.auth_headers, "Origin": "http://evil.com"})
+        self.assertEqual(bad_origin_res.status_code, 403)
+        self.assertIn("Origin", bad_origin_res.json()["detail"])
+
+        # 6. Untrusted Referer header returns 403 Forbidden
+        bad_ref_res = self.client.get("/api/operator", headers={**self.auth_headers, "Referer": "http://evil.com/phish"})
+        self.assertEqual(bad_ref_res.status_code, 403)
+
+        # 7. /api/auth/session is removed
+        session_res = self.client.get("/api/auth/session")
+        self.assertEqual(session_res.status_code, 404)
+
+        # 8. GET / serves HTML with meta session token
+        index_res = self.client.get("/")
+        self.assertEqual(index_res.status_code, 200)
+        self.assertIn('name="ghost-session-token"', index_res.text)
+        self.assertIn(self.token, index_res.text)
 
     def test_campaign_setup_distinct_categories_validation(self):
         """Campaign creation requires exactly 3 distinct categories; duplicates return 400."""
@@ -173,7 +200,7 @@ class TestServerAgencyAPI(unittest.TestCase):
 
     def test_template_editor_token_validation(self):
         """Template editor rejects unknown/malicious tokens with 400 Bad Request."""
-        target_file = "/home/pranc/projects/ghost/templates/outreach/whatsapp_no_site.md.j2"
+        target_file = os.path.join(REPO_DIR, "templates/outreach/whatsapp_no_site.md.j2")
         orig_content = None
         if os.path.exists(target_file):
             with open(target_file, "r", encoding="utf-8") as f:
@@ -208,7 +235,7 @@ class TestServerAgencyAPI(unittest.TestCase):
                     f.write(orig_content)
 
     def test_closing_pack_and_document_download(self):
-        """Prepare closing pack, mark lawyer reviewed, and download documents."""
+        """Prepare closing pack, mark lawyer reviewed, generate ticket, and download documents."""
         slug = "closing-api-lead"
         lead = self.crm.add_or_update_lead({
             "slug": slug,
@@ -242,13 +269,31 @@ class TestServerAgencyAPI(unittest.TestCase):
         rev_res = self.client.post(f"/api/leads/{slug}/lawyer_reviewed", headers=self.auth_headers)
         self.assertEqual(rev_res.status_code, 200)
 
-        # 3. Download document file
+        # 3. Download document file via X-Session-Token header
         down_res = self.client.get(
             f"/api/documents/{first_doc_id}/download",
             headers=self.auth_headers
         )
         self.assertEqual(down_res.status_code, 200)
         self.assertIn("text/markdown", down_res.headers.get("content-type", ""))
+
+        # 4. Generate short-lived single-use download ticket
+        ticket_res = self.client.post(f"/api/documents/{first_doc_id}/ticket", headers=self.auth_headers)
+        self.assertEqual(ticket_res.status_code, 200)
+        ticket = ticket_res.json()["ticket"]
+        self.assertTrue(len(ticket) >= 16)
+
+        # 5. Download document via ticket (without auth headers)
+        down_ticket = self.client.get(f"/api/documents/{first_doc_id}/download?ticket={ticket}")
+        self.assertEqual(down_ticket.status_code, 200)
+
+        # 6. Reusing ticket fails with 401 (single-use enforced)
+        down_reuse = self.client.get(f"/api/documents/{first_doc_id}/download?ticket={ticket}")
+        self.assertEqual(down_reuse.status_code, 401)
+
+        # 7. Raw URL token query parameter is rejected (prevents log leakage)
+        down_raw_token = self.client.get(f"/api/documents/{first_doc_id}/download?token={self.token}")
+        self.assertEqual(down_raw_token.status_code, 401)
 
     def test_live_websocket_connection_with_token(self):
         """WebSocket /ws/events connects with valid session token and rejects invalid token."""

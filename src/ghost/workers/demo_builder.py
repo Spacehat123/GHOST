@@ -20,8 +20,9 @@ from ghost.workers.resources import PREMIUM_RESOURCES, get_demo_starter_kit, lis
 
 logger = logging.getLogger("ghost.workers.demo")
 
-DEMOS_DIR = "/home/pranc/projects/ghost/demos"
-OPENCODE_BIN = "/home/pranc/.opencode/bin/opencode"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+DEMOS_DIR = os.environ.get("GHOST_DEMOS_DIR", os.path.join(REPO_DIR, "demos"))
+OPENCODE_BIN = os.environ.get("OPENCODE_BIN", os.path.expanduser("~/.opencode/bin/opencode"))
 
 # Model selection hierarchy:
 # Active designated default: opencode/glm-5.3-flash-free (high reasoning, ultra-fast)

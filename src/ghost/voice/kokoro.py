@@ -11,8 +11,8 @@ from typing import AsyncGenerator, List, Optional, Tuple
 
 logger = logging.getLogger("ghost.voice.kokoro")
 
-KOKORO_MODEL_PATH = "/home/pranc/.local/share/cool-shell/models/kokoro/kokoro-v1.0.int8.onnx"
-KOKORO_VOICES_PATH = "/home/pranc/.local/share/cool-shell/models/kokoro/voices-v1.0.bin"
+KOKORO_MODEL_PATH = os.environ.get("KOKORO_MODEL_PATH", os.path.expanduser("~/.local/share/cool-shell/models/kokoro/kokoro-v1.0.int8.onnx"))
+KOKORO_VOICES_PATH = os.environ.get("KOKORO_VOICES_PATH", os.path.expanduser("~/.local/share/cool-shell/models/kokoro/voices-v1.0.bin"))
 
 def split_clauses(text: str) -> List[str]:
     """

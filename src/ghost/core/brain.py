@@ -26,11 +26,12 @@ from ghost.mcp.bridge import (
 
 logger = logging.getLogger("ghost.brain")
 
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
 CONFIGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../configs"))
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data"))
 OMNIROUTE_CONFIG_PATH = os.path.join(CONFIGS_DIR, "omniroute.json")
 CONVERSATION_HISTORY_PATH = os.path.join(DATA_DIR, "conversation_history.json")
-OBSIDIAN_SESSION_MEMORY_PATH = "/home/pranc/Obsidian Vault/Ghost/Session Memory.md"
+OBSIDIAN_SESSION_MEMORY_PATH = os.environ.get("OBSIDIAN_SESSION_MEMORY_PATH", os.path.expanduser("~/Obsidian Vault/Ghost/Session Memory.md"))
 
 GHOST_TOOLS = [
     {
@@ -479,35 +480,6 @@ GHOST_TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "email_send_pitch",
-            "description": "Send an outbound email or client pitch via authenticated SMTP (pranav31207@gmail.com). Gated by the Tactical Authorization Modal for human-in-the-loop signoff.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "to_email": {
-                        "type": "string",
-                        "description": "Recipient email address"
-                    },
-                    "subject": {
-                        "type": "string",
-                        "description": "Email subject line"
-                    },
-                    "body": {
-                        "type": "string",
-                        "description": "Plain text email body"
-                    },
-                    "client_slug": {
-                        "type": "string",
-                        "description": "Optional client slug to log interaction to CRM"
-                    }
-                },
-                "required": ["to_email", "subject", "body"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "get_premium_resources",
             "description": "Inspect curated premium design and motion resources (KokonutUI, Magic UI, React Bits, Anime.js, Motion, Rive, Limora, Bklit) to view component patterns, CDN links, and usage rules.",
             "parameters": {
@@ -763,7 +735,7 @@ class OmniRouteBrain:
         "You are Simon 'Ghost' Riley (Task Force 141), Chief of Staff and Technical Operations Director for Commander Pranav's high-ticket web agency ($1,000+ engagements).\n\n"
         "LIVE OPERATIONAL CAPABILITIES & ARCHITECTURE (DO NOT GUESS OR EXPLORE ALTERNATIVES):\n"
         "1. Local Neural Speech Engine: Kokoro-82M INT8 British military voice ('bm_george') running locally with zero latency (24kHz PCM).\n"
-        "2. Email Operations Engine: Authenticated Gmail client for 'pranav31207@gmail.com' via IMAP SSL & SMTP SSL. Use email_check_inbox to monitor incoming messages and email_send_pitch to dispatch pitches (strictly gated by Tactical Authorization Modal).\n"
+        "2. Email Operations Engine: Read-only inbox monitoring via IMAP SSL (email_check_inbox). HARD RULE: Ghost NEVER sends emails over SMTP. Ghost prepares grounded outreach drafts in the CRM review queue; only Commander Pranav verifies and manually dispatches them.\n"
         "3. Anti-Hallucination CRM & Obsidian Sync: Local SQLite database at data/crm.db bi-directionally synchronized with '/home/pranc/Obsidian Vault/Ghost/Clients/<slug>.md'. Use crm_get_client, crm_update_client, and crm_list_pipeline. ZERO-HALLUCINATION RULE: Never quote speculative pricing, invent client details, or guess deals without checking the CRM.\n"
         "4. Parallel Demo Builder Swarm & Cold Pitch Policy: High-speed OpenCode worker CLI running 'opencode/glm-5.3-flash-free' via build_luxury_demo. Generates bespoke single-page HTML/Tailwind demos across the 4 Luxury Archetypes (1: Michelin Editorial, 2: Coastal Minimalist, 3: Heritage Luxury, 4: High-Energy Bistro) with automated Brave CDP responsive smoke tests at 390px mobile and 1920px desktop. MANDATORY THEME RULE: All luxury demos MUST be LIGHT MODE by default (clean editorial palette #fcfbf9 / #faf7f2 / #faf8f5 / #f9f9fb) and MUST include a full DARK MODE with a functional theme switcher toggle button in the navigation header (classList.toggle('dark') + localStorage). HARD RULE: Ghost is STRICTLY FORBIDDEN from building full production websites or burning director tokens on unclosed prospects (status != 'closed_won'). All pre-contract cold pitch demos MUST ONLY be lightweight single-page static HTML demos via OpenCode. Production multi-page site delivery is reserved EXCLUSIVELY for closed $1,000+ accounts powered by Webstudio visual CMS.\n"
         "5. Autonomous Watchdog & Event Bus: Background patrol sweeps running once every 24 hours (86400s), auditing idle leads, logging sweeps to Obsidian Daily Log.md, validating Vercel token status, and receiving instant signal pings via /api/watchdog/signal.\n"
@@ -1020,7 +992,7 @@ class OmniRouteBrain:
                 allowed = await request_tactical_authorization(target or args or "General action authorization requested")
                 res = {"status": "authorized" if allowed else "denied", "allowed": allowed, "action": target}
             elif act == "read_context":
-                ctx_path = os.path.join("/home/pranc/projects/ghost/context", target.lstrip("/"))
+                ctx_path = os.path.join(REPO_DIR, "context", target.lstrip("/"))
                 if os.path.exists(ctx_path) and os.path.isfile(ctx_path):
                     with open(ctx_path, "r", encoding="utf-8") as f:
                         content = f.read()
@@ -1221,7 +1193,7 @@ class OmniRouteBrain:
             )
             return {"status": "success", "result": res}
 
-        # 11. Agency Email Engine (IMAP SSL / SMTP SSL)
+        # 11. Agency Email Engine (IMAP SSL Read-Only)
         elif tool_name == "email_check_inbox":
             from ghost.comms.email_service import EmailService
             es = EmailService.get_instance()
@@ -1229,36 +1201,6 @@ class OmniRouteBrain:
             lim = int(arguments.get("limit", 5))
             emails = await asyncio.to_thread(es.check_inbox, unread_only=u_only, limit=lim)
             return {"status": "success", "count": len(emails), "emails": emails}
-
-        elif tool_name == "email_send_pitch":
-            from ghost.comms.email_service import EmailService
-            from ghost.mcp.bridge import request_tactical_authorization
-            to_addr = arguments.get("to_email", "")
-            subj = arguments.get("subject", "")
-            body_txt = arguments.get("body", "")
-            c_slug = arguments.get("client_slug")
-
-            # Enforce Tactical Authorization Modal before outbound transmission
-            allowed = await request_tactical_authorization(
-                f"Dispatch outbound agency pitch email to {to_addr}:\nSubject: '{subj}'"
-            )
-            if not allowed:
-                return {"status": "denied", "message": "Email dispatch aborted per operator orders, sir."}
-
-            es = EmailService.get_instance()
-            res = await asyncio.to_thread(es.send_email, to_email=to_addr, subject=subj, body=body_txt)
-            if res.get("status") == "success" and c_slug:
-                try:
-                    crm = CRMDatabase.get_instance()
-                    crm.log_interaction(
-                        client_slug=c_slug,
-                        channel="email",
-                        direction="outbound",
-                        content=f"Sent Pitch Subject: {subj} | {body_txt[:120]}"
-                    )
-                except Exception:
-                    pass
-            return {"status": "success", "result": res}
 
         # 12. Premium Design & Motion Resources
         elif tool_name == "get_premium_resources":
@@ -1364,7 +1306,7 @@ class OmniRouteBrain:
         elif tool_name == "git_action":
             from ghost.mcp.bridge import GitBridge
             raw_cmd = arguments.get("command", "status").strip()
-            repo_path = arguments.get("repo_dir", "/home/pranc/projects/ghost")
+            repo_path = arguments.get("repo_dir", REPO_DIR)
             pass_key = arguments.get("passphrase") or "5437"
             parts = [p.strip() for p in raw_cmd.split() if p.strip()]
             if parts and parts[0] == "git":

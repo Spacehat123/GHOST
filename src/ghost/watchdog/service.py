@@ -14,7 +14,7 @@ from ghost.crm.db import CRMDatabase
 
 logger = logging.getLogger("ghost.watchdog")
 
-DAILY_LOG_PATH = "/home/pranc/Obsidian Vault/Ghost/Daily Log.md"
+DAILY_LOG_PATH = os.environ.get("OBSIDIAN_DAILY_LOG_PATH", os.path.expanduser("~/Obsidian Vault/Ghost/Daily Log.md"))
 
 class AutonomousWatchdog:
     _instance: Optional["AutonomousWatchdog"] = None

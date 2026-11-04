@@ -29,10 +29,29 @@ logger = logging.getLogger("ghost.server.agency_api")
 
 agency_router = APIRouter(prefix="/api", tags=["agency"])
 
-SESSION_CONFIG_PATH = "/home/pranc/projects/ghost/configs/session_state.json"
-OUTREACH_CONFIG_PATH = "/home/pranc/projects/ghost/configs/outreach.json"
-DEAL_CONFIG_PATH = "/home/pranc/projects/ghost/configs/deal.json"
-TEMPLATES_BASE_DIR = "/home/pranc/projects/ghost/templates"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+SESSION_CONFIG_PATH = os.environ.get("GHOST_SESSION_CONFIG", os.path.join(REPO_DIR, "configs/session_state.json"))
+OUTREACH_CONFIG_PATH = os.environ.get("GHOST_OUTREACH_CONFIG", os.path.join(REPO_DIR, "configs/outreach.json"))
+DEAL_CONFIG_PATH = os.environ.get("GHOST_DEAL_CONFIG", os.path.join(REPO_DIR, "configs/deal.json"))
+TEMPLATES_BASE_DIR = os.environ.get("GHOST_TEMPLATES_DIR", os.path.join(REPO_DIR, "templates"))
+
+GHOST_PORT = os.environ.get("GHOST_PORT", "8765")
+ALLOWED_HOSTS = {
+    f"127.0.0.1:{GHOST_PORT}",
+    f"localhost:{GHOST_PORT}",
+    f"[::1]:{GHOST_PORT}",
+    "testserver",
+    "testserver:80",
+    f"testserver:{GHOST_PORT}",
+}
+
+ALLOWED_ORIGINS = {
+    f"http://127.0.0.1:{GHOST_PORT}",
+    f"http://localhost:{GHOST_PORT}",
+    f"http://[::1]:{GHOST_PORT}",
+    "http://testserver",
+    "https://testserver",
+}
 
 ALLOWED_CONTRACT_TOKENS = {
     "WATERMARK_HEADER", "DATE", "START_DATE", "CLIENT_BUSINESS_NAME",
@@ -50,6 +69,7 @@ ALLOWED_OUTREACH_TOKENS = {
 }
 
 _active_session_token: Optional[str] = None
+_download_tickets: Dict[str, Tuple[str, float]] = {}  # ticket -> (document_id, expires_at)
 
 
 def get_or_create_session_token() -> str:
@@ -92,18 +112,56 @@ def get_or_create_session_token() -> str:
 
 
 def verify_localhost(request: Request):
-    """Enforces localhost-only binding (refuses non-localhost requests)."""
+    """Enforces localhost binding, Host validation, and Origin/Referer check against DNS rebinding."""
+    # 1. IP Check
     client_host = request.client.host if request.client else ""
-    if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
-        logger.warning(f"Refused remote agency access attempt from host: {client_host}")
+    if client_host and client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+        logger.warning(f"Refused remote access attempt from client: {client_host}")
         raise HTTPException(
             status_code=403,
             detail="Forbidden: Agency Command Deck is bound to localhost (127.0.0.1) only."
         )
 
+    # 2. Host Header Check (anti-DNS rebinding)
+    host_header = request.headers.get("host", "").strip().lower()
+    if not host_header or host_header not in ALLOWED_HOSTS:
+        logger.warning(f"Refused request with invalid Host header: {host_header}")
+        raise HTTPException(
+            status_code=403,
+            detail=f"Forbidden: Invalid or untrusted Host header: {host_header}"
+        )
+
+    # 3. Origin Check (reject untrusted cross-origin requests)
+    origin = request.headers.get("origin")
+    if origin:
+        norm_origin = origin.lower().rstrip("/")
+        if norm_origin not in ALLOWED_ORIGINS:
+            logger.warning(f"Refused cross-origin request from Origin: {origin}")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Forbidden: Untrusted Origin: {origin}"
+            )
+
+    # 4. Referer Check (if present, netloc must match allowed host)
+    referer = request.headers.get("referer")
+    if referer:
+        try:
+            import urllib.parse
+            parsed = urllib.parse.urlsplit(referer)
+            if parsed.netloc and parsed.netloc.lower() not in ALLOWED_HOSTS:
+                logger.warning(f"Refused request with untrusted Referer: {referer}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Forbidden: Untrusted Referer netloc: {parsed.netloc}"
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=403, detail="Forbidden: Malformed Referer.")
+
 
 def verify_auth_token(request: Request):
-    """Enforces session token authorization on every API call."""
+    """Enforces session token authorization on API calls."""
     verify_localhost(request)
 
     expected = get_or_create_session_token()
@@ -114,13 +172,10 @@ def verify_auth_token(request: Request):
         if auth_header.startswith("Bearer "):
             token = auth_header[7:].strip()
 
-    if not token:
-        token = request.query_params.get("token")
-
     if not token or not hmac.compare_digest(token.strip(), expected):
         raise HTTPException(
             status_code=401,
-            detail="Unauthorized: Missing or invalid X-Session-Token."
+            detail="Unauthorized: Missing or invalid X-Session-Token header."
         )
 
 
@@ -138,21 +193,7 @@ def broadcast_agency_event(event_type: str, payload: Dict[str, Any]):
 
 
 # =============================================================================
-# 1. Session Auth Bootstrap & Health
-# =============================================================================
-
-@agency_router.get("/auth/session")
-async def get_session_info(request: Request):
-    """Provides local session bootstrap token for localhost UI."""
-    verify_localhost(request)
-    return {
-        "session_token": get_or_create_session_token(),
-        "localhost_only": True
-    }
-
-
-# =============================================================================
-# 2. Operator & System Settings
+# 1. Operator & System Settings
 # =============================================================================
 
 @agency_router.get("/operator", dependencies=[Depends(verify_auth_token)])
@@ -652,12 +693,76 @@ async def mark_deposit_received_endpoint(lead_id_or_slug: str):
     return res
 
 
-@agency_router.get("/documents/{document_id}/download", dependencies=[Depends(verify_auth_token)])
-async def download_document(document_id: str, format: str = Query("md")):
-    """Securely download generated contract, invoice, or welcome document."""
+@agency_router.post("/documents/{document_id}/ticket", dependencies=[Depends(verify_auth_token)])
+async def create_download_ticket(document_id: str):
+    """
+    Generate a short-lived (60s) single-use download ticket for a document.
+    Prevents session token exposure in download URLs and server access logs.
+    """
     crm = CRMDatabase.get_instance()
-    docs = []
-    # Search documents
+    with crm._get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM documents WHERE id = ?", (document_id.strip(),))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Document not found.")
+
+    ticket = secrets.token_urlsafe(24)
+    _download_tickets[ticket] = (document_id.strip(), time.time() + 60.0)
+    return {"ticket": ticket, "expires_in": 60}
+
+
+def verify_download_access(request: Request, document_id: str, ticket: Optional[str] = None):
+    """Authenticates document download via single-use ticket or X-Session-Token header."""
+    verify_localhost(request)
+
+    # 1. Single-use download ticket
+    if ticket:
+        now = time.time()
+        # Clean expired tickets
+        expired = [t for t, (_, exp) in _download_tickets.items() if exp < now]
+        for t in expired:
+            _download_tickets.pop(t, None)
+
+        entry = _download_tickets.pop(ticket, None)
+        if entry:
+            ticket_doc_id, expires_at = entry
+            if ticket_doc_id == document_id.strip() and now <= expires_at:
+                return True
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: Download ticket is invalid, expired, or already used."
+        )
+
+    # 2. X-Session-Token or Authorization header
+    token = request.headers.get("X-Session-Token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+
+    expected = get_or_create_session_token()
+    if token and hmac.compare_digest(token.strip(), expected):
+        return True
+
+    # Note: Query parameter '?token=' is explicitly rejected to prevent URL token leakage
+    raise HTTPException(
+        status_code=401,
+        detail="Unauthorized: Valid X-Session-Token header or one-time download ticket required."
+    )
+
+
+@agency_router.get("/documents/{document_id}/download")
+async def download_document(
+    document_id: str,
+    request: Request,
+    format: str = Query("md"),
+    ticket: Optional[str] = Query(None)
+):
+    """Securely download generated contract, invoice, or welcome document."""
+    verify_download_access(request, document_id, ticket=ticket)
+
+    crm = CRMDatabase.get_instance()
     with crm._get_connection() as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM documents WHERE id = ?", (document_id.strip(),))

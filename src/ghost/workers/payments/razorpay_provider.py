@@ -13,10 +13,12 @@ import hashlib
 import logging
 
 from ghost.workers.payments import PaymentEvent
+from ghost.crm.db import CRMDatabase
 
 logger = logging.getLogger("ghost.payments.razorpay")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/payments.json"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../../.."))
+CONFIG_PATH = os.path.join(REPO_DIR, "configs", "payments.json")
 
 
 def load_razorpay_config() -> Dict[str, Any]:
@@ -39,8 +41,9 @@ class RazorpayProvider:
 
     name: str = "razorpay"
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, crm: Optional[CRMDatabase] = None):
         self.config = config or load_razorpay_config()
+        self.crm = crm or CRMDatabase.get_instance()
         self._processed_events: Set[str] = set()
 
     def _get_webhook_secret(self) -> Optional[str]:
@@ -137,11 +140,17 @@ class RazorpayProvider:
             # Fallback hash if payload has no top-level id
             event_id = f"evt_{hashlib.sha256(body).hexdigest()[:12]}"
 
-        if event_id in self._processed_events:
-            logger.info(f"Duplicate Razorpay event detected: {event_id}")
+        # Check persistent database and memory cache
+        if self._processed_events and event_id in self._processed_events:
+            logger.info(f"Duplicate Razorpay event detected (memory): {event_id}")
+            is_duplicate = True
+        elif self.crm and self.crm.has_processed_event(event_id):
+            logger.info(f"Duplicate Razorpay event detected (database): {event_id}")
             is_duplicate = True
         else:
             self._processed_events.add(event_id)
+            if self.crm:
+                self.crm.record_processed_event(event_id, provider="razorpay")
             is_duplicate = False
 
         event_type = data.get("event", "payment.captured")

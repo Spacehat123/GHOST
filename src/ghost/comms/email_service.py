@@ -5,7 +5,6 @@ All outbound emails are gated by the Tactical Authorization Modal.
 import os
 import json
 import imaplib
-import smtplib
 import email
 from email.header import decode_header
 from email.mime.text import MIMEText
@@ -16,7 +15,8 @@ from typing import Dict, Any, List, Optional, Tuple
 
 logger = logging.getLogger("ghost.comms.email")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/email.json"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CONFIG_PATH = os.path.join(REPO_DIR, "configs", "email.json")
 
 class EmailService:
     _instance: Optional["EmailService"] = None
@@ -144,42 +144,10 @@ class EmailService:
         html_body: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Send an email via authenticated SMTP SSL.
-        Note: The caller is responsible for confirming Tactical Authorization prior to calling this.
+        Automated email dispatch is strictly forbidden per Ghost Human-In-The-Loop policy.
+        Ghost prepares drafts in the CRM review queue; only the operator verifies and sends.
         """
-        cfg = self._config or self._load_config()
-        user = cfg.get("email")
-        pwd = cfg.get("app_password", "").replace(" ", "")
-        server = cfg.get("smtp_server", "smtp.gmail.com")
-        port = int(cfg.get("smtp_port", 465))
-
-        if not user or not pwd:
-            return {"status": "error", "message": "Email credentials missing"}
-
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["From"] = f"Ghost Operations <{user}>"
-            msg["To"] = to_email
-            msg["Subject"] = subject
-
-            # Plain text part
-            msg.attach(MIMEText(body, "plain"))
-
-            # Optional HTML part
-            if html_body:
-                msg.attach(MIMEText(html_body, "html"))
-
-            with smtplib.SMTP_SSL(server, port, timeout=12) as smtp:
-                smtp.login(user, pwd)
-                smtp.sendmail(user, [to_email], msg.as_string())
-
-            logger.info(f"Email sent successfully to {to_email}: '{subject}'")
-            return {
-                "status": "success",
-                "to": to_email,
-                "subject": subject,
-                "timestamp": time.time()
-            }
-        except Exception as e:
-            logger.error(f"Failed sending email to {to_email}: {e}")
-            return {"status": "error", "message": str(e)}
+        raise RuntimeError(
+            "Automated email dispatch via SMTP is strictly prohibited per Ghost Human-In-The-Loop policy. "
+            "Ghost prepares drafts in the CRM review queue; only the operator verifies and manually sends them."
+        )

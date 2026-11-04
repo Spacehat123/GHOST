@@ -9,7 +9,8 @@ import logging
 
 logger = logging.getLogger("ghost.payments.manual_bank")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/payments.json"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../../.."))
+CONFIG_PATH = os.environ.get("GHOST_PAYMENTS_CONFIG", os.path.join(REPO_DIR, "configs/payments.json"))
 
 
 def load_payments_config() -> Dict[str, Any]:

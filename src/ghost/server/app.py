@@ -5,7 +5,7 @@ import os
 import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response, JSONResponse
+from fastapi.responses import FileResponse, Response, JSONResponse, HTMLResponse
 from ghost.core.agent import GhostAgent
 from ghost.core.brain import OmniRouteBrain
 from ghost.voice.duplex import DuplexCoordinator, VoiceState
@@ -15,7 +15,10 @@ from ghost.mcp.bridge import register_auth_callback
 from ghost.server.agency_api import (
     agency_router,
     _event_subscribers,
-    get_or_create_session_token
+    get_or_create_session_token,
+    verify_localhost,
+    ALLOWED_HOSTS,
+    ALLOWED_ORIGINS
 )
 import edge_tts
 
@@ -31,7 +34,8 @@ duplex = DuplexCoordinator(on_interrupt=agent.interrupt)
 # Pending authorization events
 _pending_auth_futures = {}
 
-GUI_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../gui"))
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+GUI_DIR = os.path.abspath(os.environ.get("GHOST_GUI_DIR") or os.path.join(REPO_DIR, "gui"))
 app.mount("/static", StaticFiles(directory=os.path.join(GUI_DIR, "static")), name="static")
 
 # Simon 'Ghost' Riley edge-tts neural voice settings
@@ -40,8 +44,18 @@ GHOST_PITCH = "-18Hz"
 GHOST_RATE = "-10%"
 
 @app.get("/")
-async def get_index():
-    return FileResponse(os.path.join(GUI_DIR, "index.html"))
+async def get_index(request: Request):
+    verify_localhost(request)
+    index_path = os.path.join(GUI_DIR, "index.html")
+    with open(index_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    token = get_or_create_session_token()
+    meta_tag = f'<meta name="ghost-session-token" content="{token}">'
+    if "<head>" in html:
+        html = html.replace("<head>", f"<head>\n  {meta_tag}", 1)
+    else:
+        html = f"{meta_tag}\n{html}"
+    return HTMLResponse(content=html, media_type="text/html")
 
 @app.on_event("startup")
 async def startup_event():
@@ -186,6 +200,21 @@ async def get_tts(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    client_host = websocket.client.host if websocket.client else ""
+    if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+        await websocket.close(code=1008)
+        return
+
+    host_header = websocket.headers.get("host", "").strip().lower()
+    if not host_header or host_header not in ALLOWED_HOSTS:
+        await websocket.close(code=1008)
+        return
+
+    origin = websocket.headers.get("origin")
+    if origin and origin.lower().rstrip("/") not in ALLOWED_ORIGINS:
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
     logger.info("GUI connected to Ghost WebSocket.")
 
@@ -306,14 +335,27 @@ async def ws_agency_events(websocket: WebSocket):
     """WebSocket endpoint for live agency event streaming."""
     import hmac
     import time
-    token = websocket.query_params.get("token")
+
     client_host = websocket.client.host if websocket.client else ""
     if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
         await websocket.close(code=1008)
         return
 
+    host_header = websocket.headers.get("host", "").strip().lower()
+    if not host_header or host_header not in ALLOWED_HOSTS:
+        await websocket.close(code=1008)
+        return
+
+    origin = websocket.headers.get("origin")
+    if origin and origin.lower().rstrip("/") not in ALLOWED_ORIGINS:
+        await websocket.close(code=1008)
+        return
+
+    token = websocket.query_params.get("token")
     expected = get_or_create_session_token()
     if not token or not hmac.compare_digest(token.strip(), expected):
+        await websocket.close(code=1008)
+        return
         await websocket.close(code=1008)
         return
 

@@ -20,8 +20,9 @@ from ghost.workers.suppression import SuppressionManager
 
 logger = logging.getLogger("ghost.outreach_drafter")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/outreach.json"
-TEMPLATES_DIR = "/home/pranc/projects/ghost/templates/outreach"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CONFIG_PATH = os.environ.get("GHOST_OUTREACH_CONFIG", os.path.join(REPO_DIR, "configs/outreach.json"))
+TEMPLATES_DIR = os.environ.get("GHOST_OUTREACH_TEMPLATES", os.path.join(REPO_DIR, "templates/outreach"))
 
 DEFAULT_OPT_OUT_LINE = "If you'd rather not hear from me, just reply 'no thanks' and I won't contact you again."
 HONEST_FRAMING_LINE = "I made this concept for you as an example. It isn't live and isn't affiliated with you."

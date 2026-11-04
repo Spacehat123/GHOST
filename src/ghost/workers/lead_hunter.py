@@ -16,8 +16,9 @@ from ghost.crm.db import CRMDatabase
 
 logger = logging.getLogger("ghost.lead_hunter")
 
-CONFIG_PATH = "/home/pranc/projects/ghost/configs/campaign.json"
-AREAS_DIR = "/home/pranc/projects/ghost/configs/areas"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+CONFIG_PATH = os.environ.get("GHOST_CAMPAIGN_CONFIG", os.path.join(REPO_DIR, "configs/campaign.json"))
+AREAS_DIR = os.environ.get("GHOST_AREAS_DIR", os.path.join(REPO_DIR, "configs/areas"))
 
 MAPS_SELECTORS = {
     "feed": 'div[role="feed"], div.m6QErb[aria-label*="Results"], div[aria-label*="Results for"]',

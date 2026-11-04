@@ -10,8 +10,9 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("ghost.follow")
 
-DIRECTIVES_PATH = "/home/pranc/projects/ghost/configs/directives.json"
-USER_PROFILE_PATH = "/home/pranc/projects/ghost/data/user_profile.json"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+DIRECTIVES_PATH = os.environ.get("GHOST_DIRECTIVES_CONFIG", os.path.join(REPO_DIR, "configs/directives.json"))
+USER_PROFILE_PATH = os.environ.get("GHOST_USER_PROFILE", os.path.join(REPO_DIR, "data/user_profile.json"))
 
 class DirectiveManager:
     """

@@ -47,17 +47,16 @@
 
   async function initSession() {
     try {
-      const resp = await fetch('/api/auth/session');
-      if (resp.ok) {
-        const data = await resp.json();
-        sessionToken = data.session_token;
-        console.log('Command Deck authenticated with session token.');
+      const meta = document.querySelector('meta[name="ghost-session-token"]');
+      if (meta && meta.content) {
+        sessionToken = meta.content.trim();
+        console.log('Command Deck authenticated with session token from meta tag.');
         initWebSocket();
         loadOperator();
         loadCampaigns();
         loadLeads();
       } else {
-        console.error('Failed to obtain session token from server.');
+        console.error('Session meta tag (ghost-session-token) missing from document.');
       }
     } catch (e) {
       console.error('Session init error:', e);
@@ -468,8 +467,8 @@
             <div class="lead-card-cat">Status: ${escapeHtml(doc.status)} | Kind: ${escapeHtml(doc.kind)}</div>
           </div>
           <div style="display:flex; gap:6px;">
-            <a href="/api/documents/${escapeHtml(doc.id)}/download?token=${encodeURIComponent(sessionToken)}" target="_blank" class="deck-btn">Download .MD</a>
-            <a href="/api/documents/${escapeHtml(doc.id)}/download?format=docx&token=${encodeURIComponent(sessionToken)}" target="_blank" class="deck-btn">Download .DOCX</a>
+            <button onclick="downloadDocument('${escapeHtml(doc.id)}', 'md')" class="deck-btn">Download .MD</button>
+            <button onclick="downloadDocument('${escapeHtml(doc.id)}', 'docx')" class="deck-btn">Download .DOCX</button>
           </div>
         </div>
       `;
@@ -477,6 +476,26 @@
     html += '</div>';
     listEl.innerHTML = html;
   }
+
+  window.downloadDocument = async function (docId, format) {
+    try {
+      const res = await deckFetch(`/api/documents/${encodeURIComponent(docId)}/ticket`, { method: 'POST' });
+      if (!res.ok) {
+        alert('Failed to generate secure download ticket.');
+        return;
+      }
+      const data = await res.json();
+      const ticket = data.ticket;
+      const url = `/api/documents/${encodeURIComponent(docId)}/download?ticket=${encodeURIComponent(ticket)}&format=${encodeURIComponent(format)}`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.click();
+    } catch (e) {
+      console.error('Download error:', e);
+      alert('Error initiating document download.');
+    }
+  };
 
   // Templates
   async function loadTemplates() {

@@ -13,7 +13,8 @@ import websockets
 
 logger = logging.getLogger(__name__)
 
-REA_PATH = "/home/pranc/projects/rea"
+REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+REA_PATH = os.environ.get("REA_PATH", os.path.expanduser("~/projects/rea"))
 REA_BIN = os.path.join(REA_PATH, "scripts/rea.mjs")
 
 # Global Tactical Authorization Handler (Human-In-The-Loop)
@@ -1486,7 +1487,7 @@ class AgentDesktopBridge:
     Enables reliable semantic inspection and manipulation of Linux desktop applications
     (Obsidian, Figma, Discord, Kitty, system dialogs) without vision token bloat.
     """
-    BIN_PATH = "/home/pranc/.local/bin/agent-desktop"
+    BIN_PATH = os.environ.get("AGENT_DESKTOP_BIN", os.path.expanduser("~/.local/bin/agent-desktop"))
 
     @classmethod
     async def snapshot(
@@ -1600,13 +1601,15 @@ class GitBridge:
     async def run_git(
         cls,
         args: List[str],
-        repo_dir: str = "/home/pranc/projects/ghost",
+        repo_dir: Optional[str] = None,
         passphrase: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Executes git commands with automatic headless SSH passkey handling.
         Captures exact stdout, stderr, and return code.
         """
+        if not repo_dir:
+            repo_dir = REPO_DIR
         env = os.environ.copy()
         temp_askpass = None
 

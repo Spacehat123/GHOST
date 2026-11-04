@@ -116,6 +116,12 @@ class TestPayments(unittest.TestCase):
         self.assertEqual(ev2.event_id, "evt_pay_unique_99")
         self.assertEqual(ev2.status, "duplicate")
 
+        # Third parse after simulated server restart (fresh provider instance) -> still duplicate (persistent CRM storage)
+        provider_fresh = RazorpayProvider(config={"webhook_secret": "test"})
+        ev3 = provider_fresh.parse_event(body)
+        self.assertEqual(ev3.event_id, "evt_pay_unique_99")
+        self.assertEqual(ev3.status, "duplicate")
+
     def test_razorpay_payment_link_draft_creation(self):
         """Razorpay creates draft payment links with correct subunit scaling and never auto-sends."""
         provider = RazorpayProvider(config={})
@@ -138,11 +144,13 @@ class TestPayments(unittest.TestCase):
 
     def test_anti_sending_static_analysis(self):
         """Security scanner: verifies zero smtplib, socket, or auto-send mechanics in Part 5 modules."""
+        repo_dir = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), ".."))
         files_to_scan = [
-            "/home/pranc/projects/ghost/src/ghost/workers/deal_closer.py",
-            "/home/pranc/projects/ghost/src/ghost/workers/payments/__init__.py",
-            "/home/pranc/projects/ghost/src/ghost/workers/payments/manual_bank.py",
-            "/home/pranc/projects/ghost/src/ghost/workers/payments/razorpay_provider.py"
+            os.path.join(repo_dir, "src/ghost/workers/deal_closer.py"),
+            os.path.join(repo_dir, "src/ghost/workers/payments/__init__.py"),
+            os.path.join(repo_dir, "src/ghost/workers/payments/manual_bank.py"),
+            os.path.join(repo_dir, "src/ghost/workers/payments/razorpay_provider.py"),
+            os.path.join(repo_dir, "src/ghost/comms/email_service.py")
         ]
 
         banned_modules = {"smtplib", "socket"}
