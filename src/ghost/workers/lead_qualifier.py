@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Optional, Tuple, Set
 
 from ghost.crm.db import CRMDatabase
 from ghost.workers.demo_state_machine import classify_business
+from ghost.workers.venue_qualification import is_aggregator_or_social
 
 logger = logging.getLogger("ghost.lead_qualifier")
 
@@ -159,8 +160,22 @@ class LeadQualifier:
         gaps: List[str] = []
         now = time.time()
 
-        # Case A: No Website
+        # Check if website verification evidence is attached
+        web_verif = lead.get("website_verification") or {}
+        if web_verif.get("verdict") == "OFFICIAL_WEBSITE_CONFIRMED" and web_verif.get("official_website_url"):
+            website = web_verif["official_website_url"]
+
+        # Case A: No Website (or website is an aggregator / directory / social profile)
+        is_no_site = False
         if not website or not str(website).strip().startswith("http"):
+            is_no_site = True
+        elif is_aggregator_or_social(str(website).strip()):
+            is_no_site = True
+            if "instagram" in str(website).lower() and not lead.get("instagram"):
+                lead["instagram"] = str(website).strip()
+            lead["has_social"] = True
+
+        if is_no_site:
             pitch_type = "no_site"
             score = 20.0
             gaps.append("no_website")

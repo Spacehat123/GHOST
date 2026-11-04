@@ -718,6 +718,83 @@ GHOST_TOOLS = [
                 "required": ["operation"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "qualify_venue_lead",
+            "description": "Rigorously verifies whether a high-ticket diner or restaurant genuinely lacks an official standalone website and meets the high-ticket price threshold (>= ₹2,500/guest or degustation format). Guarantees zero false positives. Saves reconnaissance dossier to ~/Desktop/Good_Finds/{Establishment}/intel.md if qualified.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Business or restaurant name to qualify (e.g. 'Grasshopper')"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Location or city (e.g. 'Bengaluru')"
+                    },
+                    "maps_website": {
+                        "type": "string",
+                        "description": "Google Maps authority website URL, if any"
+                    },
+                    "founders": {
+                        "type": "string",
+                        "description": "Founders or culinary leads (e.g. 'Sonali Sattar & Himanshu Dimri')"
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "Physical address of the venue"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Phone number or reservation contact"
+                    },
+                    "instagram": {
+                        "type": "string",
+                        "description": "Instagram profile link or handle"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Culinary category (e.g. 'Fine Dining / Farm-to-Table European Degustation')"
+                    },
+                    "setting": {
+                        "type": "string",
+                        "description": "Atmosphere and dining setting description"
+                    },
+                    "access_model": {
+                        "type": "string",
+                        "description": "Reservation and access policy (e.g. 'Strictly by prior reservation only')"
+                    }
+                },
+                "required": ["name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "scout_expensive_venues_without_website",
+            "description": "Discovers and rigorously qualifies expensive diners and restaurants that genuinely lack an official standalone website. Filters out third-party aggregators and directories (Zomato, Swiggy, Tripadvisor, Instagram) and enforces high-ticket pricing. Saves dossiers of qualified venues to ~/Desktop/Good_Finds/{Establishment}/intel.md.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Cuisine or restaurant category (e.g. 'fine dining degustation')"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Target city or location (e.g. 'Bengaluru')"
+                    },
+                    "target_count": {
+                        "type": "integer",
+                        "description": "Number of qualified leads desired (default 3)"
+                    }
+                }
+            }
+        }
     }
 ]
 
@@ -733,6 +810,7 @@ class OmniRouteBrain:
         "1. Local Neural Speech Engine: Kokoro-82M INT8 British military voice ('bm_george') running locally with zero latency (24kHz PCM).\n"
         "2. Email Operations Engine: Read-only inbox monitoring via IMAP SSL (email_check_inbox). HARD RULE: Ghost NEVER sends emails over SMTP. Ghost prepares grounded outreach drafts in the CRM review queue; only Commander Pranav verifies and manually dispatches them.\n"
         "3. Anti-Hallucination CRM & Obsidian Sync: Local SQLite database at data/crm.db bi-directionally synchronized with '/home/pranc/Obsidian Vault/Ghost/Clients/<slug>.md'. Use crm_get_client, crm_update_client, and crm_list_pipeline. ZERO-HALLUCINATION RULE: Never quote speculative pricing, invent client details, or guess deals without checking the CRM.\n"
+        "4. High-Ticket Venue Qualification Engine (ZERO FALSE POSITIVES): Discovers and verifies expensive restaurants (>= ₹2,500/guest or degustation format) lacking official websites. Distinguishes aggregators (Zomato, Swiggy, Tripadvisor, Instagram) from official domains, verifies pricing proof, guarantees zero false positives, and writes verified dossiers to ~/Desktop/Good_Finds/{Establishment}/intel.md.\n"
         "4. Parallel Demo Builder Swarm & Cold Pitch Policy: High-speed OpenCode worker CLI running 'opencode/glm-5.3-flash-free' via build_luxury_demo. Generates bespoke single-page HTML/Tailwind demos across the 4 Luxury Archetypes (1: Michelin Editorial, 2: Coastal Minimalist, 3: Heritage Luxury, 4: High-Energy Bistro) with automated Brave CDP responsive smoke tests at 390px mobile and 1920px desktop. MANDATORY THEME RULE: All luxury demos MUST be LIGHT MODE by default (clean editorial palette #fcfbf9 / #faf7f2 / #faf8f5 / #f9f9fb) and MUST include a full DARK MODE with a functional theme switcher toggle button in the navigation header (classList.toggle('dark') + localStorage). HARD RULE: Ghost is STRICTLY FORBIDDEN from building full production websites or burning director tokens on unclosed prospects (status != 'closed_won'). All pre-contract cold pitch demos MUST ONLY be lightweight single-page static HTML demos via OpenCode. Production multi-page site delivery is reserved EXCLUSIVELY for closed $1,000+ accounts powered by Webstudio visual CMS.\n"
         "5. Autonomous Watchdog & Event Bus: Background patrol sweeps running once every 24 hours (86400s), auditing idle leads, logging sweeps to Obsidian Daily Log.md, validating Vercel token status, and receiving instant signal pings via /api/watchdog/signal.\n"
         "6. Desktop, Browser & REA Control: Universal Hyprland desktop management (desktop_control), Brave CDP browser automation on port 9222 (browser_action), media/Spotify control (media_control), and REA binary reverse engineering (rea_action). All destructive system modifications or outbound client communications MUST prompt the operator via the Tactical Authorization Modal (#auth-modal).\n"
@@ -1476,5 +1554,40 @@ class OmniRouteBrain:
                 return DirectiveManager.remove_directive(cnt)
             else:
                 return {"error": "Invalid operation"}
+
+        # 19. Venue Qualification & Anti-False-Positive Scout Engine
+        elif tool_name == "qualify_venue_lead":
+            from ghost.workers.venue_qualification import VenueQualificationPipeline
+            bname = arguments.get("name", "")
+            loc = arguments.get("location", "Bengaluru")
+            m_web = arguments.get("maps_website")
+            extra = {
+                "founders": arguments.get("founders"),
+                "address": arguments.get("address"),
+                "phone": arguments.get("phone"),
+                "instagram": arguments.get("instagram"),
+                "category": arguments.get("category"),
+                "setting": arguments.get("setting"),
+                "access_model": arguments.get("access_model"),
+            }
+            return await VenueQualificationPipeline.scout_and_qualify(
+                business_name=bname,
+                location=loc,
+                maps_website=m_web,
+                extra_venue_data=extra
+            )
+
+        elif tool_name == "scout_expensive_venues_without_website":
+            from ghost.workers.venue_qualification import VenueQualificationPipeline
+            cat = arguments.get("category", "fine dining degustation")
+            loc = arguments.get("location", "Bengaluru")
+            count = int(arguments.get("target_count", 3))
+            candidates = arguments.get("candidates")
+            return await VenueQualificationPipeline.scout_expensive_venues_without_website(
+                category=cat,
+                location=loc,
+                target_count=count,
+                candidates=candidates
+            )
 
         return {"error": f"Tool {tool_name} not recognized"}
