@@ -48,7 +48,9 @@ def halt_state() -> Optional[dict]:
 
 
 def trip(reason: str = REASON_OPERATOR, by: str = "operator") -> dict:
-    """Trip the halt. Idempotent; records who/why/when."""
+    """Trip the halt. Idempotent; records who/why/when. BUMPS THE REVOCATION
+    EPOCH: every grant minted before this instant is dead (T3) — a halt is a
+    revocation, not a flag."""
     os.makedirs(os.path.dirname(HALT_FILE), exist_ok=True)
     meta = {
         "halt_id": str(uuid.uuid4()),
@@ -63,6 +65,11 @@ def trip(reason: str = REASON_OPERATOR, by: str = "operator") -> dict:
     with open(HALT_FILE, "w", encoding="utf-8") as f:
         f.write(meta["halt_id"])
     try:
+        from ghost.core.revocation import bump_epoch
+        meta["revocation_epoch"] = bump_epoch(by="halt")
+    except Exception:
+        pass
+    try:
         from ghost.core.audit import audit
         audit("halt.tripped", **meta)
     except Exception:
@@ -71,13 +78,20 @@ def trip(reason: str = REASON_OPERATOR, by: str = "operator") -> dict:
 
 
 def resume(by: str = "operator") -> Optional[dict]:
-    """Clear the halt. Records the resume in the audit ledger."""
+    """Clear the halt. Records the resume in the audit ledger and BUMPS the
+    revocation epoch again — the post-resume world is a fresh authority
+    regime; anything minted in the halted window is dead too."""
     prev = halt_state()
     for path in (HALT_FILE, HALT_META):
         try:
             os.remove(path)
         except FileNotFoundError:
             pass
+    try:
+        from ghost.core.revocation import bump_epoch
+        bump_epoch(by="resume")
+    except Exception:
+        pass
     if prev:
         try:
             from ghost.core.audit import audit

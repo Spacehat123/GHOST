@@ -33,12 +33,15 @@ def _key() -> Optional[str]:
 def issue(capability: str, subject: str, bounds: Dict[str, Any],
           ttl_s: float = _DEFAULT_TTL_S) -> Optional[str]:
     """Mint a grant token. Returns None if no signing key is configured —
-    meaning the deployment cannot authorize outbound at all (fail closed)."""
+    meaning the deployment cannot authorize outbound at all (fail closed).
+    The token carries the CURRENT revocation epoch: any later halt trip (or
+    supervisor bump) makes it unverifiable (T3)."""
     key = _key()
     if not key:
         audit("grant.issue_refused", subject=subject, capability=capability,
               reason="no GHOST_GRANT_SECRET configured")
         return None
+    from ghost.core.revocation import current_epoch
     now = time.time()
     body = {
         "capability": capability,
@@ -46,13 +49,14 @@ def issue(capability: str, subject: str, bounds: Dict[str, Any],
         "bounds": bounds,
         "iat": now,
         "exp": now + ttl_s,
+        "epoch": current_epoch(),
         "nonce": hashlib.sha256(f"{now}-{subject}-{capability}".encode()).hexdigest()[:12],
     }
     body_b64 = _b64(json.dumps(body, sort_keys=True))
     sig = hmac.new(key.encode(), body_b64.encode(), hashlib.sha256).hexdigest()
     token = f"gt.{body_b64}.{sig}"
     audit("grant.issued", subject=subject, capability=capability,
-          exp=body["exp"], nonce=body["nonce"])
+          exp=body["exp"], nonce=body["nonce"], epoch=body["epoch"])
     return token
 
 
@@ -83,6 +87,19 @@ def verify(token: str, capability: str, subject: Optional[str] = None,
         return None
     if subject is not None and body.get("subject") != subject:
         audit("grant.verify_failed", reason="subject_mismatch")
+        return None
+    # T3: a halt is a REVOCATION. Two file reads, no cache — identical from
+    # any process. A token from before the trip (epoch mismatch) is dead, and
+    # so is everything while the sentinel exists.
+    from ghost.core.halt import is_halted
+    from ghost.core.revocation import current_epoch
+    if is_halted():
+        audit("grant.verify_failed", reason="halt_active", capability=capability)
+        return None
+    if int(body.get("epoch", 0)) != current_epoch():
+        audit("grant.verify_failed", reason="revoked_epoch",
+              capability=capability, token_epoch=body.get("epoch", 0),
+              current=current_epoch())
         return None
     if time.time() > body.get("exp", 0):
         audit("grant.verify_failed", reason="expired", capability=capability)

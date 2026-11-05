@@ -314,6 +314,17 @@ class VercelDeployer:
             home_bunx = os.path.expanduser("~/.bun/bin/bunx")
             bunx_bin = home_bunx if os.path.exists(home_bunx) else "bunx"
 
+        # T3: LAST halt re-check — immediately before dispatch, not at entry.
+        # The grant is consumed; this check is what stops the effect itself.
+        from ghost.core.halt import is_halted
+        if is_halted():
+            _outbox.transition(ob_key, "failed")
+            audit("deploy.halt_pre_dispatch", subject=slug, outbox_key=ob_key)
+            return {"status": "halted",
+                    "message": f"Deploy of '{slug}' stopped: halt tripped between "
+                               "authorization and dispatch.",
+                    "url": None}
+
         cmd = f'cd "{demo_dir}" && {bunx_bin} --yes vercel deploy --prod --yes --token "{token}" --name "{p_name}"'
         logger.info(f"Executing Vercel deployment for '{slug}' (Project: {p_name})...")
 

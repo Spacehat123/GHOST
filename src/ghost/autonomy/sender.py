@@ -5,14 +5,17 @@ dispatch (human-in-the-loop for personal mail, unchanged). This module is the
 DEDICATED sending-domain channel §6.1 requires, and it is wrapped in four
 independent locks, each of which fails closed:
 
-  1. GRANT TOKEN (§11): a single-use HMAC token from the OutboundGateway
-     (which already ran halt→ladder→warmup→cap→suppression→personalization).
-     No token / wrong capability / expired / replayed -> refuse.
-  2. INDEPENDENT re-checks at the wrapper (defense in depth): halt switch and
-     suppression are re-verified HERE — the wrapper does not trust callers.
-  3. SMTP CREDENTIALS from the secrets vault for the OUTREACH domain only
-     (never the operator's personal mailbox). Unconfigured -> honest
-     `not_configured`; the message becomes a CRM draft for manual sending.
+  1. HALT dominates everything — a frozen agent doesn't even parse authority
+     (and grants.verify independently refuses halted/revoked tokens too, T3).
+  2. GRANT TOKEN (§11): a single-use HMAC token from the OutboundGateway
+     (which already ran halt→ladder→warmup→cap→suppression→personalization),
+     epoch-bound: any halt trip after minting kills it. Its daily cap is
+     re-enforced HERE at the effect.
+  3. INDEPENDENT re-checks at the wrapper (defense in depth): suppression is
+     re-verified HERE — the wrapper does not trust callers. SMTP CREDENTIALS
+     come from the secrets vault for the OUTREACH domain only (never the
+     operator's personal mailbox). Unconfigured -> honest `not_configured`;
+     the message becomes a CRM draft for manual sending.
   4. Unsubscribe mechanics on every message (List-Unsubscribe header +
      one-click suppression link), and identity headers from the operator/
      tenant config — no masked identity (§6.5).
@@ -70,7 +73,14 @@ class ColdOutreachSender:
         grant_token: OutboundGateway.issue_grant(req) — MANDATORY."""
         lead_slug, to_email = req.lead_slug, req.to_email
 
-        # Lock 1: grant token (single-use, HMAC, capability-bound).
+        # Lock 1: HALT dominates everything — a frozen agent doesn't even
+        # parse authority, let alone consume a grant (T3: grants.verify
+        # independently refuses halted/revoked tokens as well).
+        if is_halted():
+            audit("outbound.send_refused", subject=lead_slug, reason="halt")
+            raise SendRefused("halt", "throat-cut handle is active")
+
+        # Lock 2: grant token (single-use, HMAC, capability-bound, epoch-bound).
         bounds = grants.verify(grant_token or "", capability="outbound_email",
                                subject=lead_slug)
         if bounds is None:
@@ -79,7 +89,7 @@ class ColdOutreachSender:
             raise SendRefused("no_valid_grant",
                               "outreach requires a fresh grant from OutboundGateway.issue_grant()")
 
-        # Lock 1b: the grant's OWN cap is enforced HERE, at the effect — the
+        # Lock 2b: the grant's OWN cap is enforced HERE, at the effect — the
         # gateway's issue-time cap is not trusted to be the last word.
         daily_cap = bounds.get("daily_cap")
         if daily_cap is not None:
@@ -98,10 +108,7 @@ class ColdOutreachSender:
             except Exception:
                 pass  # cap check is best-effort above the hard locks; never unlocks mail
 
-        # Lock 2: independent re-checks at the wrapper — trust nothing upstream.
-        if is_halted():
-            audit("outbound.send_refused", subject=lead_slug, reason="halt")
-            raise SendRefused("halt", "throat-cut handle is active")
+        # Lock 3: independent re-checks at the wrapper — trust nothing upstream.
         if self.suppression.is_suppressed(to_email, lead_slug=lead_slug):
             audit("outbound.send_refused", subject=lead_slug, reason="suppressed")
             raise SendRefused("suppressed", to_email)
@@ -145,6 +152,15 @@ class ColdOutreachSender:
         # server that saw this exact message can dedupe it too. (':' is not a
         # legal msg-id character — sanitize for the header only.)
         msg["Message-ID"] = f"<{ob_key.replace(':', '-')}@outreach.ghost>"
+
+        # T3: LAST halt re-check — immediately before the provider call, not
+        # at queue-claim time. The grant is already consumed (authority
+        # spent); the halt check is what stops the effect itself.
+        if is_halted():
+            _outbox.transition(ob_key, "failed")
+            audit("outbound.send_refused", subject=lead_slug,
+                  reason="halt_pre_dispatch", outbox_key=ob_key)
+            raise SendRefused("halt", "halt tripped between authorization and dispatch")
 
         try:
             with smtplib.SMTP(host, port, timeout=15) as server:
