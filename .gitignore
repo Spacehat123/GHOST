@@ -80,3 +80,6 @@ configs/vercel.json
 configs/figma.json
 temp/
 data/drafts.jsonl
+data/*.db-shm
+data/*.db-wal
+data/ghost.db*
