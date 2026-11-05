@@ -33,10 +33,34 @@ def ingest_reply(
     ping: Optional[Callable[[str, Dict[str, Any]], Any]] = None,
 ) -> Dict[str, Any]:
     """Process one inbound reply. Returns the verdict + actions taken.
-    `ping(operator_category, payload)` is the §10 notification out."""
+    `ping(operator_category, payload)` is the §10 notification out.
+
+    T7: the reply passes the QUARANTINE first — typed stage-1 fields, then a
+    bounded interpretation. Flagged injections route to the operator (c)
+    with ZERO effects; the classifier only ever sees the sanitized body."""
+    from ghost.control.quarantine import quarantine
+    q = quarantine({"from": lead_slug, "subject": "re: outreach",
+                    "text": reply_text, "timestamp": time.time()})
+    actions: list = []
+
+    if q["interpretation"]["flagged"]:
+        audit("reply.quarantined", subject=lead_slug,
+              notes=q["interpretation"]["notes"][:3],
+              raw_hash=q["stage1"]["raw_hash"],
+              ping="(c) unverifiable: reply quarantined — possible injection")
+        if ping:
+            ping("(c) unverifiable", {"lead": lead_slug, "quarantine": q["interpretation"]})
+        try:
+            crm.log_interaction(client_slug=lead_slug, channel="email",
+                                direction="inbound",
+                                content=f"[QUARANTINED] {reply_text[:300]}")
+        except Exception:
+            pass
+        return {"quarantined": True, "category": "QUARANTINED", "actions": ["operator_pinged"],
+                "interpretation": q["interpretation"]}
+
     verdict = classify_reply(reply_text, exchange_count=exchange_count,
                              discount_requested_pct=discount_requested_pct)
-    actions: list = []
 
     try:
         crm.log_interaction(client_slug=lead_slug, channel="email",

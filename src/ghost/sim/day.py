@@ -122,10 +122,17 @@ def run_simulated_day(seed: int = 20261106, n_leads: int = 50, cycles: int = 5,
             await queue.run_worker(handlers, poll_interval=0.001, idle_exit_after=0.01)
             clock.advance(3600)
 
-    # the day's inbox: fixture replies classified deterministically
+    # the day's inbox: fixture replies pass the QUARANTINE (T7) — typed
+    # fields + bounded interpretation — then the deterministic classifier
+    from ghost.control.quarantine import quarantine
     from ghost.core.reply_classifier import classify_reply
-    reply_categories = sorted(classify_reply(r["text"]).category
-                              for r in fixture_replies(seed))
+    reply_categories = []
+    for r in fixture_replies(seed):
+        q = quarantine({"from": r["from"], "text": r["text"]})
+        if q["interpretation"]["flagged"]:
+            reply_categories.append("QUARANTINED")
+            continue
+        reply_categories.append(q["interpretation"]["classifier_category"])
 
     asyncio.run(day())
 
