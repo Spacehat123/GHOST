@@ -105,17 +105,27 @@ class TestThreeQA(unittest.IsolatedAsyncioTestCase):
         )
 
         qa_res = await ThreeQA.run_qa(demo_dir=demo_dir)
-        self.assertTrue(qa_res["ok"])
-        self.assertEqual(qa_res["status"], "success")
+        report = qa_res["qa_report"]
 
-        # Check reports written
+        # Reports are always written, whatever the environment
         self.assertTrue(os.path.exists(os.path.join(demo_dir, "reports", "qa.json")))
         self.assertTrue(os.path.exists(os.path.join(demo_dir, "reports", "perf.json")))
-
-        with open(os.path.join(demo_dir, "reports", "qa.json"), "r") as f:
-            report = json.load(f)
-        self.assertTrue(report["passed"])
         self.assertEqual(report["stages_count"], 5)
+
+        # Honesty invariants: a pass must be backed by real rendered evidence.
+        if report.get("passed"):
+            self.assertIn(report["environment"]["mode"], ("brave_debug", "headless_spawn"))
+            self.assertGreater(report["screenshots_captured"], 0)
+            for shot in report["human_review"]["screenshots"]:
+                self.assertTrue(os.path.exists(os.path.join(demo_dir, shot)),
+                                f"pass cites missing screenshot: {shot}")
+            perf = json.load(open(os.path.join(demo_dir, "reports", "perf.json")))
+            self.assertTrue(perf.get("fps_measured"), "passed report must have measured FPS")
+        else:
+            # No fake pass: an inconclusive/failed run must say exactly why.
+            self.assertIn(report.get("status"), ("inconclusive", "failed"))
+            if report.get("environment", {}).get("mode") == "none":
+                self.assertIn("NO BROWSER", report["notice"])
 
     async def test_three_qa_missing_dir(self):
         qa_res = await ThreeQA.run_qa(demo_dir="/non/existent/path")

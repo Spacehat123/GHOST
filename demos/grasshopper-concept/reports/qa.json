@@ -1,0 +1,331 @@
+{
+  "tool": "qa_3d_site",
+  "demo_dir": "demos/grasshopper-concept",
+  "checks": {
+    "index_html_exists": true,
+    "stages_json_exists": true,
+    "model_glb_exists": true,
+    "sources_json_exists": true
+  },
+  "stages_count": 5,
+  "environment": {
+    "mode": "brave_debug",
+    "browser": "Chrome/154.0.8037.58",
+    "url_rendered": "http://127.0.0.1:41859/index.html"
+  },
+  "screenshots_captured": 10,
+  "visual_checks": {
+    "per_viewport": {
+      "desktop": {
+        "viewport": {
+          "name": "desktop",
+          "width": 1440,
+          "height": 900,
+          "mobile": false
+        },
+        "stages": [
+          {
+            "stage": 1,
+            "screenshot": "reports/screenshots/desktop/stage-1.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 124,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 2,
+            "screenshot": "reports/screenshots/desktop/stage-2.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 118,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 3,
+            "screenshot": "reports/screenshots/desktop/stage-3.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 132,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 4,
+            "screenshot": "reports/screenshots/desktop/stage-4.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 107,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 5,
+            "screenshot": "reports/screenshots/desktop/stage-5.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 121,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          }
+        ]
+      },
+      "mobile": {
+        "viewport": {
+          "name": "mobile",
+          "width": 390,
+          "height": 844,
+          "mobile": true
+        },
+        "stages": [
+          {
+            "stage": 1,
+            "screenshot": "reports/screenshots/mobile/stage-1.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 124,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 2,
+            "screenshot": "reports/screenshots/mobile/stage-2.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 118,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 3,
+            "screenshot": "reports/screenshots/mobile/stage-3.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 132,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 4,
+            "screenshot": "reports/screenshots/mobile/stage-4.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 107,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          },
+          {
+            "stage": 5,
+            "screenshot": "reports/screenshots/mobile/stage-5.png",
+            "webgl_ok": true,
+            "headline_match": true,
+            "text_contrast": {
+              "headline": {
+                "measured": true,
+                "spread": 226,
+                "threshold": 40,
+                "pass": true
+              },
+              "description": {
+                "measured": true,
+                "spread": 121,
+                "threshold": 40,
+                "pass": true
+              },
+              "cta": {
+                "measured": true,
+                "spread": 192,
+                "threshold": 40,
+                "pass": true
+              }
+            },
+            "pass": true
+          }
+        ]
+      }
+    }
+  },
+  "failures": [],
+  "passed": true,
+  "status": "success",
+  "notice": "Rendered in a real browser (Chrome/154.0.8037.58), captured 10 screenshots, measured FPS, and ran pixel-level text-legibility checks. Verdicts cite the listed screenshots.",
+  "human_review": {
+    "required": true,
+    "note": "Automated pixel checks catch legibility and rendering failures. A human or vision-model pass over the listed screenshots is still required before client-facing deploy.",
+    "screenshots": [
+      "reports/screenshots/desktop/stage-1.png",
+      "reports/screenshots/desktop/stage-2.png",
+      "reports/screenshots/desktop/stage-3.png",
+      "reports/screenshots/desktop/stage-4.png",
+      "reports/screenshots/desktop/stage-5.png",
+      "reports/screenshots/mobile/stage-1.png",
+      "reports/screenshots/mobile/stage-2.png",
+      "reports/screenshots/mobile/stage-3.png",
+      "reports/screenshots/mobile/stage-4.png",
+      "reports/screenshots/mobile/stage-5.png"
+    ]
+  }
+}

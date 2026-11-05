@@ -1,0 +1,13 @@
+{
+  "knobs": {
+    "ping_deal_value_inr": 20000,
+    "max_discount_pct": 10,
+    "idle_hours_before_hunt": 24,
+    "hunt_quota_floor_pct": 90,
+    "hunt_quota_reserve_pct": 60,
+    "max_new_contacts_per_day": 50,
+    "max_build_cost_per_hunt_inr": 2000,
+    "pipeline_target_inr": 100000,
+    "heartbeat_max_age_s": 120
+  }
+}

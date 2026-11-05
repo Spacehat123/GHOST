@@ -79,8 +79,8 @@ function initWebGL() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a0c);
 
-    camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
     const s0 = stages[0] || DEFAULT_STAGES[0];
+    camera = new THREE.PerspectiveCamera(s0.fov || 35, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(s0.camera.x, s0.camera.y, s0.camera.z);
     camera.lookAt(s0.target.x, s0.target.y, s0.target.z);
 
@@ -153,6 +153,11 @@ function updateStage(index) {
   if (index < 0 || index >= stages.length) return;
   currentStage = index;
   const s = stages[index];
+
+  if (s.fov && s.fov !== camera.fov) {
+    camera.fov = s.fov;
+    camera.updateProjectionMatrix();
+  }
 
   // Animate camera target position
   const startPos = { ...camera.position };

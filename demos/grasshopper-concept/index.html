@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grasshopper — European Farmstead Degustation, Bengaluru</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            canvas: 'var(--canvas)',
+            surface: 'var(--surface)',
+            raised: 'var(--raised)',
+            ink: 'var(--ink)',
+            'ink-muted': 'var(--ink-muted)',
+            accent: 'var(--accent)',
+            'accent-soft': 'var(--accent-soft)',
+            borderline: 'var(--borderline)'
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --canvas: #fcfbf9;
+      --surface: #ffffff;
+      --raised: #f5f2eb;
+      --ink: #1a1918;
+      --ink-muted: #6e6b66;
+      --accent: #2e4a36;
+      --accent-soft: rgba(46, 74, 54, 0.08);
+      --borderline: rgba(26, 25, 24, 0.08);
+      --shadow-resting: 0 1px 3px rgba(0, 0, 0, 0.04);
+      --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
+    }
+    html.dark {
+      --canvas: #0d0f0e;
+      --surface: #141715;
+      --raised: #1c211d;
+      --ink: #f2f4f2;
+      --ink-muted: #959e96;
+      --accent: #78a381;
+      --accent-soft: rgba(120, 163, 129, 0.12);
+      --borderline: rgba(242, 244, 242, 0.10);
+      --shadow-resting: 0 1px 4px rgba(0, 0, 0, 0.4);
+      --shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.6);
+    }
+    body {
+      background-color: var(--canvas);
+      color: var(--ink);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+    }
+    #webgl-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .view-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--borderline);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .view-dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+    .editorial-card {
+      background-color: var(--surface);
+      border: 1px solid var(--borderline);
+      box-shadow: var(--shadow-resting);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .editorial-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "./vendor/GLTFLoader.js"
+      }
+    }
+  </script>
+</head>
+<body class="relative min-h-screen selection:bg-accent selection:text-white">
+
+  <!-- 3D WebGL Background Canvas -->
+  <div id="webgl-container"></div>
+  <div id="fallback-poster" class="hidden"></div>
+
+  <!-- SECTION 1: Contextual Minimalist Solid Navigation -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-canvas/80 border-b border-borderline">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="font-serif text-2xl tracking-widest uppercase font-semibold text-ink">Grasshopper</span>
+        <span class="text-xs uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-accent-soft text-accent font-medium">Farmstead</span>
+      </div>
+      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-ink-muted">
+        <a href="#philosophy" class="hover:text-ink transition">Philosophy</a>
+        <a href="#degustation" class="hover:text-ink transition">The Degustation</a>
+        <a href="#ambiance" class="hover:text-ink transition">Sanctuary</a>
+        <a href="#concierge" class="hover:text-ink transition">Reserve</a>
+      </nav>
+      <div class="flex items-center space-x-3">
+        <button id="sound-btn" class="px-3 py-1.5 text-xs uppercase tracking-wider rounded-full border border-borderline hover:border-accent text-ink-muted transition">
+          Sound: Off
+        </button>
+        <button id="theme-toggle" class="px-3 py-1.5 text-xs uppercase tracking-wider rounded-full border border-borderline hover:border-accent text-ink-muted transition">
+          ☾ Dark
+        </button>
+        <a href="https://wa.me/918026586300?text=Hello%20Grasshopper%2C%20I%20would%20like%20to%20request%20a%20private%20degustation%20reservation." target="_blank" class="px-4 py-2 text-xs uppercase tracking-widest rounded-full bg-accent text-white font-medium hover:opacity-90 shadow-sm transition">
+          Concierge
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10">
+    <!-- SECTION 2: Hero Section with 3D Perspective Controls -->
+    <section class="min-h-[85vh] flex flex-col justify-between px-6 max-w-7xl mx-auto pt-16 pb-12">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/20 w-max">
+        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+        <span class="text-xs tracking-wider uppercase font-medium text-accent">Strictly Prior Reservation · Kalena Agrahara</span>
+      </div>
+
+      <div class="max-w-3xl my-auto py-12">
+        <div class="text-xs uppercase tracking-[0.25em] text-accent mb-3 font-semibold" id="stage-number">01 / PERSPECTIVE</div>
+        <h1 class="font-serif text-4xl sm:text-6xl md:text-7xl leading-tight font-normal text-ink tracking-tight mb-6" id="stage-headline">
+          Enchanted Farmstead Sanctuary
+        </h1>
+        <p class="text-base sm:text-lg text-ink-muted max-w-xl leading-relaxed mb-8" id="stage-description">
+          An intimate culinary sanctuary hidden in Kalena Agrahara. Quiet gravel pathways, canopy trees, and bespoke European degustation crafted without rush.
+        </p>
+
+        <div class="flex flex-wrap gap-4 items-center" id="stage-ctas">
+          <a href="#concierge" class="px-7 py-3.5 rounded-full bg-accent text-white text-xs uppercase tracking-widest font-semibold hover:opacity-90 shadow-md transition">
+            Request Private Table
+          </a>
+          <a href="#degustation" class="px-7 py-3.5 rounded-full border border-borderline bg-surface text-ink text-xs uppercase tracking-widest font-semibold hover:border-accent transition">
+            Explore Menu
+          </a>
+        </div>
+      </div>
+
+      <!-- 3D Camera Stage Switcher Controls -->
+      <div class="border-t border-borderline pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs uppercase tracking-wider text-ink-muted">View Angle:</span>
+          <div class="flex space-x-2" id="views-indicator">
+            <span class="view-dot active" data-index="0" title="Botanical Sanctuary"></span>
+            <span class="view-dot" data-index="1" title="Degustation Artistry"></span>
+            <span class="view-dot" data-index="2" title="Star Canopy"></span>
+            <span class="view-dot" data-index="3" title="Prior Reservation"></span>
+            <span class="view-dot" data-index="4" title="Hospitality Concierge"></span>
+          </div>
+        </div>
+        <div class="flex space-x-2">
+          <button id="prev-stage-btn" class="px-3 py-1 text-xs border border-borderline rounded hover:border-accent text-ink-muted transition">← Prev</button>
+          <button id="next-stage-btn" class="px-3 py-1 text-xs border border-borderline rounded hover:border-accent text-ink-muted transition">Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: Operational Gap & Value Proposition Banner -->
+    <section class="py-12 bg-raised/50 border-y border-borderline">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+        <div>
+          <h4 class="font-serif text-lg font-semibold text-ink mb-1">Zero Walk-Ins Accepted</h4>
+          <p class="text-sm text-ink-muted">Intimate seating strictly reserved in advance to guarantee an unhurried, private dining ritual.</p>
+        </div>
+        <div>
+          <h4 class="font-serif text-lg font-semibold text-ink mb-1">Sub-Second Direct Concierge</h4>
+          <p class="text-sm text-ink-muted">Skip call delays and Instagram DMs. Direct WhatsApp booking with live dietary coordination.</p>
+        </div>
+        <div>
+          <h4 class="font-serif text-lg font-semibold text-ink mb-1">Pure Organic Provenance</h4>
+          <p class="text-sm text-ink-muted">Ingredients sourced fresh daily from local sustainable farms and European heritage purveyors.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: Story & Craft Philosophy -->
+    <section id="philosophy" class="py-24 max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-3 block">Origins & Ethos</span>
+          <h2 class="font-serif text-3xl sm:text-4xl text-ink font-normal tracking-tight mb-6 leading-snug">
+            Crafted by Sonali Sattar & Himanshu Dimri
+          </h2>
+          <p class="text-ink-muted text-base leading-relaxed mb-6">
+            Grasshopper was born out of a desire to create a dining experience completely removed from city clamor. Situated on an open farmstead along Bannerghatta Road, dining here is not merely a meal—it is a serene communion with nature and culinary discipline.
+          </p>
+          <p class="text-ink-muted text-base leading-relaxed mb-8">
+            Every table is placed under lush greenery, spaced widely apart to ensure total confidentiality and tranquility. There are no menus placed in haste; each course unfolds harmoniously according to the evening's bespoke harvest.
+          </p>
+          <div class="p-6 rounded-lg bg-surface border border-borderline">
+            <span class="text-xs uppercase tracking-wider text-accent font-semibold block mb-1">Access Protocol</span>
+            <p class="text-sm text-ink-muted">Strictly prior reservation. Degustation courses are prepared custom to each guest's culinary profile.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-4">
+            <div class="editorial-card p-6 rounded-lg text-center">
+              <span class="font-serif text-3xl text-accent font-semibold block mb-1">7</span>
+              <span class="text-xs uppercase tracking-wider text-ink-muted">Course Degustation</span>
+            </div>
+            <div class="editorial-card p-6 rounded-lg text-center">
+              <span class="font-serif text-3xl text-accent font-semibold block mb-1">100%</span>
+              <span class="text-xs uppercase tracking-wider text-ink-muted">Private Seating</span>
+            </div>
+          </div>
+          <div class="space-y-4 pt-8">
+            <div class="editorial-card p-6 rounded-lg text-center">
+              <span class="font-serif text-3xl text-accent font-semibold block mb-1">₹3.5k+</span>
+              <span class="text-xs uppercase tracking-wider text-ink-muted">Ticket Per Guest</span>
+            </div>
+            <div class="editorial-card p-6 rounded-lg text-center">
+              <span class="font-serif text-3xl text-accent font-semibold block mb-1">20+</span>
+              <span class="text-xs uppercase tracking-wider text-ink-muted">Years Heritage</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: Bento Grid Offerings (European Degustation) -->
+    <section id="degustation" class="py-20 bg-raised/40 border-t border-borderline">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-2xl mb-16">
+          <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-2 block">Curated Tasting</span>
+          <h2 class="font-serif text-3xl sm:text-4xl text-ink font-normal tracking-tight mb-4">
+            The Degustation Journey
+          </h2>
+          <p class="text-sm text-ink-muted">
+            Pricing verified: Estimated ₹3,500 – ₹5,000+ per guest. Seasonal multi-course degustation curated to individual dietary preferences upon reservation.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Bento Card 1: Signature Degustation -->
+          <div class="editorial-card p-8 rounded-xl md:col-span-2 relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <span class="text-xs uppercase tracking-widest text-accent font-semibold">Signature Format</span>
+                <span class="font-serif text-base text-ink font-semibold">₹3,500 – ₹5,000 / guest</span>
+              </div>
+              <h3 class="font-serif text-2xl text-ink font-normal mb-3">Seven-Course European Degustation</h3>
+              <p class="text-ink-muted text-sm leading-relaxed mb-6">
+                An evolving culinary progression starting with delicate garden amuse-bouche, handcrafted artisanal pasta or seafood ceviche, slow-roasted tender cuts, and culminating in signature dark chocolate ganache infused with organic farm herbs.
+              </p>
+            </div>
+            <div class="pt-6 border-t border-borderline flex items-center justify-between">
+              <span class="text-xs text-ink-muted">Duration: Approx. 2.5 to 3 unhurried hours</span>
+              <a href="https://wa.me/918026586300?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20the%20Seven-Course%20Degustation." target="_blank" class="text-xs uppercase tracking-widest font-semibold text-accent hover:underline">Inquire Menu →</a>
+            </div>
+          </div>
+
+          <!-- Bento Card 2: Intimate Private Celebrations -->
+          <div class="editorial-card p-8 rounded-xl flex flex-col justify-between">
+            <div>
+              <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-4 block">Secluded Alcove</span>
+              <h3 class="font-serif text-xl text-ink font-normal mb-3">Private Celebrations</h3>
+              <p class="text-ink-muted text-sm leading-relaxed mb-4">
+                Exclusive corner canopy set for anniversaries, birthdays, and discreet personal milestones with custom floral staging.
+              </p>
+            </div>
+            <span class="text-xs text-ink-muted block mt-4">[Inquire for bespoke party quotation]</span>
+          </div>
+
+          <!-- Bento Card 3: Farm-to-Glass Beverage Pairing -->
+          <div class="editorial-card p-8 rounded-xl flex flex-col justify-between">
+            <div>
+              <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-4 block">Botanical Elixirs</span>
+              <h3 class="font-serif text-xl text-ink font-normal mb-3">Farm Cordials & Pairings</h3>
+              <p class="text-ink-muted text-sm leading-relaxed">
+                Hand-pressed orchard infusions, lemongrass extracts, and curated cellar pairings that complement each delicate flavor layer.
+              </p>
+            </div>
+            <span class="text-xs text-ink-muted block mt-4">[Available à la carte during dinner]</span>
+          </div>
+
+          <!-- Bento Card 4: Dietary Customization -->
+          <div class="editorial-card p-8 rounded-xl md:col-span-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-4 block">Bespoke Preparation</span>
+              <h3 class="font-serif text-xl text-ink font-normal mb-3">Tailored Dietary Profiling</h3>
+              <p class="text-ink-muted text-sm leading-relaxed mb-4">
+                Because everything is cooked from fresh scratch for your booking, the culinary team accommodates pescatarian, vegetarian, and allergy specifications with advance notice.
+              </p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs text-accent font-medium">
+              <span>✓ Confirmed during concierge consultation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: Sanctuary & Atmosphere Gallery -->
+    <section id="ambiance" class="py-24 max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-2 block">Atmosphere</span>
+          <h2 class="font-serif text-3xl sm:text-4xl text-ink font-normal tracking-tight">
+            The Botanical Farmstead
+          </h2>
+        </div>
+        <p class="text-sm text-ink-muted max-w-md mt-4 md:mt-0">
+          Designed by Sonali & Himanshu as an open-air sanctuary where candlelight and rustling bamboo replace the din of urban dining.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="editorial-card p-6 rounded-lg space-y-3">
+          <div class="h-44 rounded bg-raised flex items-center justify-center text-accent/70 font-serif text-sm border border-borderline">
+            ✦ Farm Canopy & Ironwork
+          </div>
+          <h4 class="font-serif text-base text-ink font-medium">Lush Garden Pergola</h4>
+          <p class="text-xs text-ink-muted">Iron tables nestled deep under tropical trees with natural ambient breezes.</p>
+        </div>
+        <div class="editorial-card p-6 rounded-lg space-y-3">
+          <div class="h-44 rounded bg-raised flex items-center justify-center text-accent/70 font-serif text-sm border border-borderline">
+            ✦ Candlelit Twilight
+          </div>
+          <h4 class="font-serif text-base text-ink font-medium">Evening Illumination</h4>
+          <p class="text-xs text-ink-muted">Soft candle lanterns lighting gravel pathways as twilight settles over Kalena Agrahara.</p>
+        </div>
+        <div class="editorial-card p-6 rounded-lg space-y-3">
+          <div class="h-44 rounded bg-raised flex items-center justify-center text-accent/70 font-serif text-sm border border-borderline">
+            ✦ The Open Farmstead
+          </div>
+          <h4 class="font-serif text-base text-ink font-medium">Acoustic Stillness</h4>
+          <p class="text-xs text-ink-muted">Spacious table separation ensuring private conversation without interruption.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: Verified Social Proof -->
+    <section class="py-20 bg-raised/30 border-y border-borderline">
+      <div class="max-w-5xl mx-auto px-6 text-center">
+        <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-3 block">Guest Testimonial</span>
+        <blockquote class="font-serif text-2xl sm:text-3xl text-ink font-normal leading-relaxed italic mb-6">
+          “An enchanted farm setting with exquisite multi-course culinary artistry. Zero rush, pure intimacy.”
+        </blockquote>
+        <div class="flex items-center justify-center space-x-1 text-accent mb-2">
+          ★★★★★
+        </div>
+        <div class="text-xs uppercase tracking-wider text-ink-muted font-medium">
+          Verified Patron Review · Bengaluru Dining Guide
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: Performance & Conversion Delta Card -->
+    <section class="py-20 max-w-7xl mx-auto px-6">
+      <div class="editorial-card p-8 sm:p-12 rounded-2xl border border-borderline bg-gradient-to-br from-surface to-raised">
+        <div class="max-w-3xl">
+          <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-2 block">Direct Booking Architecture</span>
+          <h2 class="font-serif text-2xl sm:text-3xl text-ink font-normal mb-4">
+            Solving the Reservation Friction
+          </h2>
+          <p class="text-sm text-ink-muted leading-relaxed mb-6">
+            Fine dining guests seeking reservations at Grasshopper frequently face unanswered phone rings or lost Instagram DM inquiries. This interactive web experience funnels high-ticket patrons instantly to your WhatsApp desk with date, party size, and dietary requirements pre-formatted.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+          <div class="p-6 rounded-xl bg-surface border border-red-500/20">
+            <span class="text-xs uppercase tracking-wider text-red-500 font-semibold block mb-1">Previous Friction</span>
+            <p class="text-sm text-ink-muted">Manual phone scheduling, missed calls during service, zero digital presence to showcase the degustation.</p>
+          </div>
+          <div class="p-6 rounded-xl bg-surface border border-accent/30">
+            <span class="text-xs uppercase tracking-wider text-accent font-semibold block mb-1">New Sub-Second Pipeline</span>
+            <p class="text-sm text-ink-muted">Direct WhatsApp reservation card with real-time pre-filled party size, date, and bespoke dietary inputs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: Curated Journey / How It Works -->
+    <section class="py-20 max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-xl mx-auto mb-16">
+        <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-2 block">Three Simple Steps</span>
+        <h2 class="font-serif text-3xl text-ink font-normal">How Your Evening Unfolds</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="editorial-card p-8 rounded-xl text-center">
+          <span class="w-10 h-10 rounded-full bg-accent-soft text-accent font-serif font-semibold text-lg flex items-center justify-center mx-auto mb-4">1</span>
+          <h3 class="font-serif text-lg text-ink font-medium mb-2">Request Concierge</h3>
+          <p class="text-xs text-ink-muted leading-relaxed">Select your preferred date, party size, and dietary preferences via 1-tap WhatsApp booking.</p>
+        </div>
+        <div class="editorial-card p-8 rounded-xl text-center">
+          <span class="w-10 h-10 rounded-full bg-accent-soft text-accent font-serif font-semibold text-lg flex items-center justify-center mx-auto mb-4">2</span>
+          <h3 class="font-serif text-lg text-ink font-medium mb-2">Menu Calibration</h3>
+          <p class="text-xs text-ink-muted leading-relaxed">The culinary team reviews your party's palate profile and prepares custom fresh courses hours ahead.</p>
+        </div>
+        <div class="editorial-card p-8 rounded-xl text-center">
+          <span class="w-10 h-10 rounded-full bg-accent-soft text-accent font-serif font-semibold text-lg flex items-center justify-center mx-auto mb-4">3</span>
+          <h3 class="font-serif text-lg text-ink font-medium mb-2">Unhurried Dining</h3>
+          <p class="text-xs text-ink-muted leading-relaxed">Arrive at Kalena Agrahara to a secluded candlelight table set exclusively for you for the whole evening.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 10: Interactive VIP WhatsApp Booking Card -->
+    <section id="concierge" class="py-20 bg-raised/40 border-t border-borderline">
+      <div class="max-w-4xl mx-auto px-6">
+        <div class="editorial-card p-8 sm:p-12 rounded-2xl border border-borderline bg-surface">
+          <div class="text-center max-w-xl mx-auto mb-10">
+            <span class="text-xs uppercase tracking-widest text-accent font-semibold mb-2 block">Direct Concierge</span>
+            <h2 class="font-serif text-3xl text-ink font-normal mb-3">Reserve Your Degustation</h2>
+            <p class="text-sm text-ink-muted">Strictly prior reservation. Select your party size and connect directly with our hospitality desk.</p>
+          </div>
+
+          <form id="reservation-form" class="space-y-6 max-w-xl mx-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-ink-muted font-medium mb-2">Party Size</label>
+                <select id="party-size" class="w-full px-4 py-3 rounded-lg bg-canvas border border-borderline text-ink text-sm focus:border-accent focus:outline-none">
+                  <option value="2 Guests (Intimate Table)">2 Guests (Intimate Table)</option>
+                  <option value="4 Guests">4 Guests</option>
+                  <option value="6 Guests">6 Guests</option>
+                  <option value="Private Dining (8+ Guests)">Private Dining (8+ Guests)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-ink-muted font-medium mb-2">Preferred Date</label>
+                <input type="date" id="reserve-date" class="w-full px-4 py-3 rounded-lg bg-canvas border border-borderline text-ink text-sm focus:border-accent focus:outline-none" required>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs uppercase tracking-wider text-ink-muted font-medium mb-2">Dietary Notes / Special Occasion</label>
+              <input type="text" id="dietary-notes" placeholder="e.g. Anniversary dinner, pescatarian, no dairy" class="w-full px-4 py-3 rounded-lg bg-canvas border border-borderline text-ink text-sm focus:border-accent focus:outline-none">
+            </div>
+
+            <button type="submit" class="w-full py-4 rounded-xl bg-accent text-white font-serif tracking-widest uppercase text-xs font-semibold hover:opacity-90 shadow-md transition flex items-center justify-center space-x-2">
+              <span>Connect with Grasshopper Concierge</span>
+              <span>→</span>
+            </button>
+            <p class="text-center text-xs text-ink-muted">Instant direct WhatsApp conversation. No automated bots or third-party surcharges.</p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 11: Location, Hours, Contact & Conversion Footer -->
+    <footer class="py-16 bg-surface border-t border-borderline">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div class="md:col-span-2 space-y-4">
+          <div class="flex items-center space-x-3">
+            <span class="font-serif text-2xl tracking-widest uppercase font-semibold text-ink">Grasshopper</span>
+          </div>
+          <p class="text-sm text-ink-muted max-w-md leading-relaxed">
+            45 Kalena Agrahara, Bannerghatta Road, Bengaluru, Karnataka 560076, India.<br>
+            Strictly by prior reservation.
+          </p>
+          <div class="text-xs text-ink-muted pt-2">
+            Direct Reservations: <a href="tel:+918026586300" class="text-ink font-medium hover:underline">+91 80 2658 6300</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs uppercase tracking-widest font-semibold text-ink mb-4">Dining Hours</h4>
+          <ul class="text-sm text-ink-muted space-y-2">
+            <li>Tuesday – Sunday: Dinner by Booking</li>
+            <li>Lunch: Weekend Degustation Only</li>
+            <li>Mondays: Closed for farm maintenance</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs uppercase tracking-widest font-semibold text-ink mb-4">Presentation</h4>
+          <p class="text-xs text-ink-muted leading-relaxed mb-4">
+            Concept design presented by Ghost. Bespoke digital infrastructure engineered for high-ticket hospitality.
+          </p>
+          <div class="text-xs text-accent font-medium">
+            &copy; 2026 Grasshopper Concept
+          </div>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // Handle interactive WhatsApp booking card
+    document.getElementById('reservation-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const party = document.getElementById('party-size').value;
+      const date = document.getElementById('reserve-date').value || 'Upcoming date';
+      const notes = document.getElementById('dietary-notes').value || 'Standard Degustation';
+      const message = encodeURIComponent(`Hello Grasshopper Hospitality,\n\nI would like to request a degustation reservation:\n- Party: ${party}\n- Date: ${date}\n- Dietary/Notes: ${notes}\n\nPlease confirm availability.`);
+      window.open(`https://wa.me/918026586300?text=${message}`, '_blank');
+    });
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "business_name": "Grasshopper",
+  "category": "Fine Dining / European Farm-to-Table Degustation",
+  "founders": "Sonali Sattar & Himanshu Dimri",
+  "location": "45 Kalena Agrahara, Bannerghatta Road, Bengaluru, Karnataka 560076, India",
+  "access_model": "Strictly by prior reservation only (Intimate outdoor farmstead setting)",
+  "ticket_size": "₹3,500 - ₹5,000+ per guest",
+  "contact": {
+    "phone": "+91 80 2658 6300",
+    "whatsapp": "+91 80 2658 6300"
+  },
+  "verified_reviews": [
+    {
+      "author": "Fine Dining Patron",
+      "text": "An enchanted farm setting with exquisite multi-course culinary artistry. Zero rush, pure intimacy.",
+      "rating": 5
+    }
+  ],
+  "sources": [
+    "/home/pranc/Desktop/Good_Finds/Grasshopper/intel.md"
+  ]
+}
