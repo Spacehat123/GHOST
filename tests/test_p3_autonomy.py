@@ -226,7 +226,9 @@ class TestReplyLoop(unittest.TestCase):
 class TestDigest(unittest.TestCase):
 
     def test_digest_reflects_ledger(self):
-        led = AuditLedger.get_instance()
+        # Dedicated ledger file: the shared singleton accumulates events from
+        # other test modules in the same process — counts must be hermetic.
+        led = AuditLedger(os.path.join(TMP, f"digest-{uuid.uuid4().hex}.db"))
         led.record("outbound.sent", subject="l1")
         led.record("outbound.sent", subject="l2")
         led.record("reply.complaint", subject="l3", ping="(b) client distress")

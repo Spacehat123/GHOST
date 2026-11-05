@@ -20,7 +20,7 @@ REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(
 SECRETS_PATH = os.environ.get("GHOST_SECRETS_PATH") or os.path.join(REPO_DIR, "configs", "secrets.json")
 
 _SECRET_CACHE: Optional[dict] = None
-_SECRET_CACHE_MTIME = 0.0
+_SECRET_CACHE_KEY: Optional[str] = None  # path+mtime — env changes are honored
 
 _SECRET_PATTERNS = [
     re.compile(r"(sk-[A-Za-z0-9]{16,})"),                      # openai-style keys
@@ -30,24 +30,32 @@ _SECRET_PATTERNS = [
 ]
 
 
+def _vault_path() -> str:
+    """Re-resolve per call (like the audit ledger) so long-lived processes and
+    test harnesses that scope paths get consistent behavior."""
+    return os.environ.get("GHOST_SECRETS_PATH") or SECRETS_PATH
+
+
 def _vault() -> dict:
-    global _SECRET_CACHE, _SECRET_CACHE_MTIME
-    if not os.path.exists(SECRETS_PATH):
+    global _SECRET_CACHE, _SECRET_CACHE_KEY
+    path = _vault_path()
+    if not os.path.exists(path):
         return {}
-    mtime = os.path.getmtime(SECRETS_PATH)
-    if _SECRET_CACHE is None or mtime != _SECRET_CACHE_MTIME:
+    stamp = f"{path}:{os.path.getmtime(path)}"
+    if _SECRET_CACHE is None or stamp != _SECRET_CACHE_KEY:
         try:
-            with open(SECRETS_PATH, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 _SECRET_CACHE = json.load(f)
-            _SECRET_CACHE_MTIME = mtime
-            # Enforce restrictive perms if we can (best-effort on creation).
+            _SECRET_CACHE_KEY = stamp
+            # Enforce restrictive perms (best-effort).
             try:
-                os.chmod(SECRETS_PATH, 0o600)
+                os.chmod(path, 0o600)
             except OSError:
                 pass
         except Exception as e:
             logger.warning("secrets vault unreadable: %s", e)
             _SECRET_CACHE = {}
+            _SECRET_CACHE_KEY = stamp
     return _SECRET_CACHE or {}
 
 

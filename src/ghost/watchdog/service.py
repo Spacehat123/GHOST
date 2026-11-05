@@ -11,6 +11,7 @@ import time
 import json
 import sqlite3
 import hashlib
+import uuid
 import logging
 from typing import Dict, Any, List, Optional, Callable
 from ghost.crm.db import CRMDatabase
@@ -94,7 +95,7 @@ class AutonomousWatchdog:
         payload_hash = hashlib.sha256(payload_str.encode()).hexdigest()[:16]
         signature = hashlib.sha256(f"{source}:{event_type}:{payload_hash}".encode()).hexdigest()
 
-        event_id = f"evt_{int(now * 1000)}"
+        event_id = f"evt_{int(now * 1000)}_{uuid.uuid4().hex[:6]}"  # collision-proof: two signals in the same ms must not share a PK
         occurrence_count = 1
 
         # Check existing signature for lossless deduplication
