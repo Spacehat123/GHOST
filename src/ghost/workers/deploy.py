@@ -115,16 +115,87 @@ class VercelDeployer:
         with open(VERCEL_CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
 
+    @staticmethod
+    def _qa_gate(slug: str, demo_dir: str, allow_unverified: bool = False) -> Optional[Dict[str, Any]]:
+        """Returns None if QA evidence clears the build for deploy, else a
+        refusal dict. Evidence contract: passed=true AND screenshots_captured>0
+        AND every cited screenshot file exists on disk."""
+        qa_path = os.path.join(demo_dir, "reports", "qa.json")
+        try:
+            from ghost.core.audit import audit
+        except Exception:
+            audit = None
+
+        def refuse(reason: str) -> Dict[str, Any]:
+            if audit:
+                audit("deploy.blocked_by_qa", subject=slug, reason=reason)
+            return {
+                "status": "blocked_by_qa",
+                "message": (f"Deploy refused for '{slug}': {reason}. Run ghost.workers.three_qa "
+                            "first; deploys require passed visual QA with screenshots."),
+                "url": None,
+            }
+
+        if not os.path.exists(qa_path):
+            if allow_unverified:
+                if audit:
+                    audit("deploy.unverified_override", subject=slug, reason="no_qa_report")
+                return None
+            return refuse("no QA report found")
+
+        try:
+            with open(qa_path, "r", encoding="utf-8") as f:
+                qa = json.load(f)
+        except Exception as e:
+            return refuse(f"QA report unreadable ({e})")
+
+        if not qa.get("passed"):
+            return refuse(f"QA passed=false — failures: {qa.get('failures')}")
+        captured = int(qa.get("screenshots_captured", 0) or 0)
+        if captured <= 0:
+            return refuse("QA passed but captured zero screenshots — evidence contract violated")
+
+        # Every cited screenshot must exist. A pass citing missing files is a fake pass.
+        shots = (qa.get("human_review") or {}).get("screenshots", [])
+        missing = [s for s in shots if not os.path.exists(os.path.join(demo_dir, s))]
+        if missing:
+            return refuse(f"QA cites {len(missing)} screenshot(s) missing on disk")
+
+        if allow_unverified:
+            if audit:
+                audit("deploy.unverified_override", subject=slug, reason="operator_override_passed_qa_exists")
+        elif audit:
+            audit("deploy.qa_gate_cleared", subject=slug, screenshots=captured)
+        return None
+
     @classmethod
-    async def deploy_demo(cls, slug: str, project_name: Optional[str] = None) -> Dict[str, Any]:
+    async def deploy_demo(cls, slug: str, project_name: Optional[str] = None,
+                          allow_unverified: bool = False) -> Dict[str, Any]:
         """
         Deploys a demo directory (`demos/<slug>`) to Vercel production using bunx vercel.
         Uses neutral project naming ({slug}-concept) without internal branding.
-        Requires Tactical Authorization before cloud dispatch.
+        Requires passed screenshot QA (reports/qa.json) before dispatch, and
+        Tactical Authorization before cloud dispatch.
+        allow_unverified=True is the operator's explicit override — it is
+        logged to the audit ledger either way.
         """
         demo_dir = os.path.join(DEMOS_DIR, slug)
         if not os.path.exists(demo_dir):
             return {"status": "error", "message": f"Demo directory not found at '{demo_dir}'"}
+
+        # ---- QA gate (P2, Roadmap §2 Stage 2): deploys are EVIDENCE-gated. ---
+        # No passed QA report with captured screenshots -> refuse. Deploying an
+        # unverified build is exactly how "something feels off" reached clients.
+        qa_block = cls._qa_gate(slug, demo_dir, allow_unverified=allow_unverified)
+        if qa_block:
+            return qa_block
+
+        # ---- Halt gate (P0): the throat-cut handle freezes deploys too. ------
+        from ghost.core.halt import assert_not_halted
+        try:
+            assert_not_halted(f"deploy_demo:{slug}")
+        except Exception as e:
+            return {"status": "halted", "message": str(e), "url": None}
 
         token = cls.get_token()
         if not token:

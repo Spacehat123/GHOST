@@ -146,13 +146,22 @@ class JobQueue:
             )
 
     def _finish(self, job_row_id: int, state: str, error: Optional[str] = None,
-                backoff: float = 0.0) -> None:
+                backoff: float = 0.0, count_attempt: bool = True) -> None:
         with closing(self._conn()) as conn, conn:
-            conn.execute(
-                """UPDATE jobs SET state = ?, last_error = ?, lease_owner = NULL, lease_until = NULL,
-                   next_run_at = ?, updated_at = ? WHERE id = ?""",
-                (state, error, time.time() + backoff, time.time(), job_row_id)
-            )
+            if count_attempt:
+                conn.execute(
+                    """UPDATE jobs SET state = ?, last_error = ?, lease_owner = NULL, lease_until = NULL,
+                       next_run_at = ?, updated_at = ? WHERE id = ?""",
+                    (state, error, time.time() + backoff, time.time(), job_row_id)
+                )
+            else:
+                # Halt-pause: the claim's attempt increment is rolled back so a
+                # paused job resumes with its full retry budget intact.
+                conn.execute(
+                    """UPDATE jobs SET state = ?, last_error = ?, lease_owner = NULL, lease_until = NULL,
+                       next_run_at = ?, updated_at = ?, attempts = MAX(0, attempts - 1) WHERE id = ?""",
+                    (state, error, time.time() + backoff, time.time(), job_row_id)
+                )
 
     # ------------------------------------------------------------- worker
 
@@ -218,6 +227,15 @@ class JobQueue:
                 audit("job.cancelled", subject=job["job_id"], kind=job["kind"])
                 raise
             except Exception as e:
+                from ghost.core.halt import HaltActive
+                if isinstance(e, HaltActive):
+                    # The throat-cut handle: stop the worker AT this safe point.
+                    # The job is paused with its retry budget intact — a resumed
+                    # run picks up exactly here. Never burn attempts on halts.
+                    self._finish(job["id"], "pending", f"halt-paused: {e}", backoff=0.5,
+                                 count_attempt=False)
+                    audit("job.halt_paused", subject=job["job_id"], kind=job["kind"])
+                    return completed
                 attempts = job["attempts"]
                 if attempts >= job["max_attempts"]:
                     self._finish(job["id"], "dead", str(e))
@@ -237,7 +255,9 @@ class JobQueue:
     def stats(self) -> Dict[str, int]:
         with closing(self._conn()) as conn, conn:
             rows = conn.execute("SELECT state, COUNT(*) as n FROM jobs GROUP BY state").fetchall()
-        return {r["state"]: r["n"] for r in rows}
+        counts = {r["state"]: r["n"] for r in rows}
+        # Always report the full picture — missing keys read as zero failures.
+        return {state: counts.get(state, 0) for state in JOB_STATES}
 
     def dead_letters(self, limit: int = 50) -> List[Dict[str, Any]]:
         with closing(self._conn()) as conn, conn:

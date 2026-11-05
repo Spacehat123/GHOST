@@ -40,8 +40,12 @@ class AuditLedger:
 
     @classmethod
     def get_instance(cls) -> "AuditLedger":
-        if cls._instance is None:
-            cls._instance = AuditLedger()
+        # Re-resolve the path from env on every call so long-lived processes
+        # (and test harnesses that scope paths) pick up redirections instead
+        # of a stale import-time snapshot.
+        db_path = os.environ.get("GHOST_AUDIT_DB_PATH") or AUDIT_DB_PATH
+        if cls._instance is None or cls._instance.db_path != db_path:
+            cls._instance = AuditLedger(db_path)
         return cls._instance
 
     def _conn(self) -> sqlite3.Connection:
