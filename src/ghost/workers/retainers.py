@@ -381,3 +381,91 @@ def monthly_report(store: RetainerStore, monitor_history: Callable[[str], Dict[s
         fh.write(md)
     audit("retainer.report_written", subject=slug, path=path)
     return {"path": path, "markdown": md, "fixes": len(fixes)}
+
+
+# --------------------------------------------------- Razorpay subscriptions (§2.7)
+
+def process_subscription_webhook(provider, headers: Dict[str, str], body: bytes,
+                                 store: RetainerStore,
+                                 enqueue: Optional[Callable] = None) -> Dict[str, Any]:
+    """Subscription lifecycle on the SAME honesty rails as payments:
+    signature -> parse/dedupe -> then dispatch by event type.
+      subscription.charged  -> billing active, streak reset
+      subscription.halted / cancelled -> dunning ladder (record_charge_failed)
+    Unverified bodies are refused, never processed."""
+    if not provider.verify_webhook(headers, body):
+        audit("subscription.webhook_rejected", reason="signature_invalid")
+        return {"status": "rejected", "reason": "signature_invalid"}
+    event = provider.parse_event(body)
+    if getattr(event, "status", "") == "duplicate":
+        return {"status": "duplicate", "event_id": event.event_id}
+
+    et = getattr(event, "event_type", "") or ""
+    slug = getattr(event, "lead_id", None) or "unknown"
+    if et in ("subscription.charged", "payment.captured"):
+        store.record_charge_succeeded(slug, event_id=event.event_id)
+        audit("subscription.charged", subject=slug, event_id=event.event_id)
+        return {"status": "ok", "action": "billed", "slug": slug}
+    if et in ("subscription.halted", "subscription.cancelled"):
+        site = store.record_charge_failed(slug, event_id=event.event_id)
+        audit("subscription.lapsed", subject=slug, event_id=event.event_id,
+              billing_state=site.get("billing_state"))
+        return {"status": "ok", "action": "dunning", "slug": slug,
+                "billing_state": site.get("billing_state")}
+    audit("subscription.event_ignored", subject=event.event_id, event_type=et)
+    return {"status": "ignored", "event_type": et}
+
+
+def route_transfer(provider, amount_inr: Any, tenant_split_pct: Any,
+                   fund_account_id: str) -> Dict[str, Any]:
+    """Razorpay Route payout: agency's share to their account, platform keeps
+    the rest (§9). REQUIRES configured Route keys + a linked fund account —
+    without them this REFUSES (money never moves on guesswork). The split
+    math itself comes from tenants.revenue_split (Decimal-exact)."""
+    from ghost.core.secrets import get
+    from ghost.tenants.agency import revenue_split
+    if not get("RAZORPAY_ROUTE_KEY") or not fund_account_id:
+        audit("route.transfer_refused", reason="not_configured",
+              ping="(c) unverifiable: payout routing needs Razorpay Route keys")
+        return {"status": "not_configured",
+                "setup": "set RAZORPAY_ROUTE_KEY + RAZORPAY_ACCOUNT_NUMBER; "
+                         "link the tenant's fund account (Route) first"}
+    split = revenue_split(amount_inr, tenant_split_pct)
+    agency_share = split["agency_share_inr"]
+    key_id = get("RAZORPAY_ROUTE_KEY")
+    key_secret = get("RAZORPAY_ROUTE_SECRET")
+    try:
+        import base64
+        import urllib.request
+        payload = json.dumps({
+            "transfers": [{
+                "account": fund_account_id,
+                "amount": int(agency_share * 100),  # paise
+                "currency": "INR",
+            }]
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.razorpay.com/v1/payments/transfers",
+            data=payload, method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Basic " + base64.b64encode(
+                    f"{key_id}:{key_secret}".encode()).decode(),
+            })
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode())
+        audit("route.transfer_created", fund_account=fund_account_id,
+              agency_share=str(agency_share), transfer_id=str(data.get("id"))[:40],
+              ping="(a) money: Route transfer executed")
+        return {"status": "ok", "transfer_id": data.get("id"),
+                "agency_share_inr": str(agency_share),
+                "platform_share_inr": str(split["platform_share_inr"])}
+    except Exception as e:
+        audit("route.transfer_failed", error=redact(str(e))[:250],
+              ping="(a) money: Route transfer FAILED — manual review")
+        return {"status": "error", "error": redact(str(e))[:250]}
+
+
+def redact(s: str) -> str:
+    from ghost.core.secrets import redact as _r
+    return _r(s)
