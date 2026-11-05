@@ -3,13 +3,20 @@
 The constitution applied to conversation: classification is pure Python and
 testable. An LLM may *later* refine borderline cases, but never override:
 - ANGRY/CONFUSED -> always freeze + ping (§0.4), the LLM cannot talk its way past it
-- `can_ghost_answer` requires confidence >= ANSWER_CONFIDENCE_FLOOR
 - call-needed detection is rule-based (§2 Stage 4): explicit ask, price pushback
   beyond tolerance, or exchange-count overflow
 
-Returns a ReplyVerdict with: category, confidence, can_ghost_answer,
-needs_call, freeze_sequence, ping_operator, reasons (evidence — every verdict
-cites which rule fired, same honesty contract as three_qa).
+T5 honesty fix: this classifier NO LONGER emits typed-in confidence numbers.
+`ReplyVerdict.confidence` is None at runtime; it is populated ONLY by measured
+evaluations over a labeled corpus (see tests/test_t5_verifier.py), and the
+solo-reply gate (`ghost_may_reply_alone`) requires a MEASURED confidence —
+which rule classification never provides. Auto-reply therefore stays closed
+unless a real measurement (e.g. the FAQ KB's computed token-overlap) backs it.
+
+Returns a ReplyVerdict with: category, confidence (None until measured),
+can_ghost_answer, needs_call, freeze_sequence, ping_operator, reasons
+(evidence — every verdict cites which rule fired, same honesty contract as
+three_qa).
 """
 import re
 from dataclasses import dataclass, field
@@ -26,7 +33,7 @@ BOUNCE = "BOUNCE"
 
 ALL_CATEGORIES = (INTERESTED, QUESTION, OBJECTION, NOT_NOW, ANGRY, AUTO_REPLY, BOUNCE)
 
-ANSWER_CONFIDENCE_FLOOR = 0.95
+ANSWER_CONFIDENCE_FLOOR = 0.95   # applied to MEASURED confidence only
 DEFAULT_PRICE_PUSHBACK_TOLERANCE_PCT = 15.0   # §2 Stage 4
 EXCHANGES_BEFORE_CALL = 3                     # §2 Stage 4
 
@@ -34,7 +41,7 @@ EXCHANGES_BEFORE_CALL = 3                     # §2 Stage 4
 @dataclass
 class ReplyVerdict:
     category: str
-    confidence: float
+    confidence: Optional[float] = None   # MEASURED only — never typed in (T5)
     reasons: List[str] = field(default_factory=list)
     can_ghost_answer: bool = False
     needs_call: bool = False
@@ -111,31 +118,31 @@ def classify_reply(
     text = (text or "").strip()
     lower = text.lower()
 
-    def verdict(category: str, confidence: float, **flags) -> ReplyVerdict:
-        v = ReplyVerdict(category=category, confidence=confidence, reasons=list(reasons), **flags)
+    def verdict(category: str, **flags) -> ReplyVerdict:
+        v = ReplyVerdict(category=category, reasons=list(reasons), **flags)
         return v
 
     if not text:
         reasons.append("empty reply")
-        return verdict(BOUNCE, 0.99, freeze_sequence=False, ping_operator=True, ping_category="unverifiable")
+        return verdict(BOUNCE, freeze_sequence=False, ping_operator=True, ping_category="unverifiable")
 
     # ---- hard families first: they always win and always escalate ----------
     angry = _matches(lower, _ANGRY)
     if angry:
         reasons.append(f"distress markers: {angry[:3]}")
-        return verdict(ANGRY, 0.99, can_ghost_answer=False, freeze_sequence=True,
+        return verdict(ANGRY, can_ghost_answer=False, freeze_sequence=True,
                        ping_operator=True, ping_category="distress")
 
     bounce = _matches(lower, _BOUNCE)
     if bounce:
         reasons.append(f"bounce markers: {bounce[:2]}")
-        return verdict(BOUNCE, 0.98, freeze_sequence=True, ping_operator=False)
+        return verdict(BOUNCE, freeze_sequence=True, ping_operator=False)
 
     auto = _matches(lower, _AUTO_REPLY)
     # Unsubscribe alone is a suppression command even inside auto-replies.
     if auto and "unsubscribe" not in lower and "remove me" not in lower and "do not" not in lower:
         reasons.append(f"automated message: {auto[:2]}")
-        return verdict(AUTO_REPLY, 0.95, freeze_sequence=True, ping_operator=False)
+        return verdict(AUTO_REPLY, freeze_sequence=True, ping_operator=False)
 
     # ---- call-needed triggers (§2 Stage 4), evaluated before soft families --
     call_ask = _matches(lower, _CALL_ASK)
@@ -155,11 +162,11 @@ def classify_reply(
     question = _matches(lower, _QUESTION)
     if "unsubscribe" in lower or "remove me" in lower or "never contact" in lower:
         # Already caught by ANGRY; unreachable, kept for explicitness.
-        return verdict(ANGRY, 0.99, freeze_sequence=True, ping_operator=True, ping_category="distress")
+        return verdict(ANGRY, freeze_sequence=True, ping_operator=True, ping_category="distress")
 
     if interested and not objection:
         reasons.append(f"interest markers: {interested[:3]}")
-        v = verdict(INTERESTED, 0.85 if not question else 0.8,
+        v = verdict(INTERESTED,
                     needs_call=needs_call,
                     ping_operator=needs_call, ping_category="unverifiable" if needs_call else None)
         if question:
@@ -169,27 +176,36 @@ def classify_reply(
 
     if objection:
         reasons.append(f"price/competition objection: {objection[:3]}")
-        return verdict(OBJECTION, 0.8, needs_call=needs_call,
+        return verdict(OBJECTION, needs_call=needs_call,
                        ping_operator=big_pushback, ping_category="money" if big_pushback else None)
+
+    not_now = _matches(lower, _NOT_NOW)
+    if not_now:
+        reasons.append(f"timing markers: {not_now[:2]}")
+        return verdict(NOT_NOW, needs_call=needs_call, ping_operator=False)
 
     if question:
         reasons.append(f"question markers: {question[:2]}")
-        return verdict(QUESTION, 0.75, needs_call=needs_call,
+        return verdict(QUESTION, needs_call=needs_call,
                        can_ghost_answer=True,
                        ping_operator=needs_call,
                        ping_category="unverifiable" if needs_call else None)
 
     # ---- nothing matched: fail closed, it's unverifiable --------------------
     reasons.append("no rule matched — cannot verify intent")
-    return verdict(QUESTION, 0.3, can_ghost_answer=False, needs_call=needs_call,
+    return verdict(QUESTION, can_ghost_answer=False, needs_call=needs_call,
                    ping_operator=True, ping_category="unverifiable")
 
 
 def ghost_may_reply_alone(v: ReplyVerdict) -> bool:
-    """The single gate every auto-responder must call (fail closed)."""
+    """The single gate every auto-responder must call (fail closed).
+    Requires MEASURED confidence — rule classification provides none, so the
+    gate stays closed until a real evaluation (e.g. the FAQ KB's computed
+    overlap) stamps a number."""
     return (
         not v.freeze_sequence
         and not v.ping_operator
         and v.can_ghost_answer
+        and v.confidence is not None
         and v.confidence >= ANSWER_CONFIDENCE_FLOOR
     )

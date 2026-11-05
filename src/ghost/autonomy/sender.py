@@ -113,6 +113,15 @@ class ColdOutreachSender:
             audit("outbound.send_refused", subject=lead_slug, reason="suppressed")
             raise SendRefused("suppressed", to_email)
 
+        # Lock 3b (T5): the promise checker — never promise off-terms anything.
+        # Runs BEFORE the outbox record: a blocked promise never becomes an intent.
+        from ghost.verify.promise_checker import check_send_allowed
+        allowed, scan = check_send_allowed(req.subject, req.body)
+        if not allowed:
+            audit("outbound.promise_blocked", subject=lead_slug,
+                  violations=scan["violations"][:5])
+            raise SendRefused("promise_violation", "; ".join(scan["violations"])[:300])
+
         # Lock 3: credentials for the OUTREACH domain only.
         if not smtp_configured():
             return self._draft_instead(req, reason="smtp_not_configured")

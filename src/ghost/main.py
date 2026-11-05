@@ -10,7 +10,7 @@ import sys
 
 OPERATOR_COMMANDS = ("halt", "resume", "status", "digest", "run",
                      "chaos", "voice-demo", "metrics", "migrate", "parity",
-                     "replay", "supervise", "deadman")
+                     "replay", "supervise", "deadman", "reconcile")
 
 
 def main():

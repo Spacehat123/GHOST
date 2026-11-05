@@ -213,6 +213,19 @@ def cmd_deadman(args) -> int:
     return rc
 
 
+def cmd_reconcile(args) -> int:
+    """T5: Ghost's records vs reality — payments, sends, deploys."""
+    from ghost.verify import reconciliation as reco
+    payment_fetcher = reco.razorpay_payment_fetcher()   # None when unconfigured
+    report = reco.run_all(payment_fetcher=payment_fetcher)
+    print(json.dumps(report, indent=2, default=str, sort_keys=True))
+    if report.get("mismatch_sections"):
+        print(f"\n❌ reconciliation mismatches: {', '.join(report['mismatch_sections'])}")
+        return 1
+    print("\n✅ reconciliation clean (or honestly not configured)")
+    return 0
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -233,6 +246,7 @@ COMMANDS = {
     "replay": (cmd_replay, "T1c: reconstruct a day from events (--day YYYY-MM-DD)"),
     "supervise": (cmd_supervise, "T4: run the kill-switch supervisor (file writes only)"),
     "deadman": (cmd_deadman, "T4: cron check — is the supervisor itself alive? (--threshold minutes)"),
+    "reconcile": (cmd_reconcile, "T5: records vs reality — payments, sends, deploys"),
 }
 
 

@@ -127,6 +127,13 @@ class AutonomyRuntime:
                           drift_days=result.get("events", {}).get("drift_days", [])[:5])
             except Exception as e:
                 audit("parity.daily_failed", error=str(e)[:200])
+            # T5: daily reconciliation — records vs reality (fetchers resolve
+            # to honest not_configured when the operator's keys are absent)
+            try:
+                from ghost.verify import reconciliation as reco
+                reco.run_all(payment_fetcher=reco.razorpay_payment_fetcher())
+            except Exception as e:
+                audit("reconcile.failed", error=str(e)[:200])
             content = build_digest()
             path = write_digest_file(content, repo_dir=REPO_DIR)
             audit("digest.written", path=path)
