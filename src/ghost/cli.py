@@ -238,6 +238,35 @@ def cmd_sim(args) -> int:
     return 0
 
 
+def cmd_darkrun(args) -> int:
+    """T10: the 30-day dark run harness — preflight / start / status / stop."""
+    from ghost.control import darkrun
+    if args.action == "preflight":
+        rep = darkrun.preflight()
+        print(json.dumps(rep, indent=2, sort_keys=True, default=str))
+        if rep["ready"]:
+            print("\n✅ preflight green — say the word and `ghost darkrun --action start`")
+            return 0
+        print("\n❌ NOT READY — operator actions required:")
+        for a in rep["operator_actions"]:
+            print(f"  - {a}")
+        return 1
+    if args.action == "start":
+        out = darkrun.start(force=args.force)
+        print(json.dumps(out, indent=2, sort_keys=True, default=str))
+        return 0 if out.get("started") else 1
+    if args.action == "status":
+        out = darkrun.status()
+        print(json.dumps(out, indent=2, sort_keys=True, default=str))
+        return 0
+    if args.action == "stop":
+        out = darkrun.stop()
+        print(json.dumps(out, indent=2, sort_keys=True, default=str))
+        return 0
+    print(f"unknown action {args.action}")
+    return 2
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -260,6 +289,7 @@ COMMANDS = {
     "deadman": (cmd_deadman, "T4: cron check — is the supervisor itself alive? (--threshold minutes)"),
     "reconcile": (cmd_reconcile, "T5: records vs reality — payments, sends, deploys"),
     "sim": (cmd_sim, "T6: simulated day with fixture leads (deterministic)"),
+    "darkrun": (cmd_darkrun, "T10: 30-day dark run — preflight/start/status/stop"),
 }
 
 
@@ -290,6 +320,11 @@ def main(argv=None) -> int:
             p.add_argument("--seed", type=int, default=20261106)
             p.add_argument("--leads", type=int, default=50)
             p.add_argument("--cycles", type=int, default=5)
+        if name == "darkrun":
+            p.add_argument("--action", required=True,
+                           choices=["preflight", "start", "status", "stop"])
+            p.add_argument("--force", action="store_true",
+                           help="start despite failed preflight (recorded as forced)")
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

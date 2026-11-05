@@ -37,8 +37,17 @@ class CRMDatabase:
 
     @classmethod
     def get_instance(cls) -> "CRMDatabase":
-        if cls._instance is None:
-            cls._instance = CRMDatabase()
+        # Re-resolve the path from env on every call (audit/secrets pattern) —
+        # a static import-time bind leaked suite tests into the LIVE crm.db
+        # (T10 preflight caught 32 orphaned test drafts). An EXTERNALLY
+        # injected instance (tests patch _instance directly) is respected as-is.
+        inst = cls._instance
+        if inst is not None and not getattr(inst, "_ghost_managed", False):
+            return inst
+        db_path = os.environ.get("GHOST_CRM_DB_PATH") or CRM_DB_PATH
+        if inst is None or inst.db_path != db_path:
+            cls._instance = CRMDatabase(db_path)
+            cls._instance._ghost_managed = True
         return cls._instance
 
     @contextmanager

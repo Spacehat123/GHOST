@@ -9,6 +9,12 @@ import uuid
 TMP = tempfile.mkdtemp(prefix="ghost-t0-test-")
 os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
 os.environ["GHOST_HEARTBEAT_PATH"] = os.path.join(TMP, f"hb-{uuid.uuid4().hex}.json")
+# the close-chain default drafts through CRMDatabase.get_instance() — pin the
+# CRM path at module level or suite tests write the LIVE crm.db (T10 finding)
+os.environ["GHOST_CRM_DB_PATH"] = os.path.join(TMP, f"crm-{uuid.uuid4().hex}.db")
+os.environ["GHOST_OBSIDIAN_DIR"] = os.path.join(TMP, "obs")
+os.environ["GHOST_CRM_DB_PATH"] = os.path.join(TMP, f"crm-{uuid.uuid4().hex}.db")
+os.environ["GHOST_OBSIDIAN_DIR"] = os.path.join(TMP, "obs")
 
 from ghost.core import heartbeat
 from ghost.core.audit import AuditLedger
