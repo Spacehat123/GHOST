@@ -117,6 +117,16 @@ class AutonomyRuntime:
 
     def _make_digest_hook(self):
         def hook() -> None:
+            # Daily dual-read parity (T1c): in unified mode, verify no legacy
+            # history went missing before the digest reports the day.
+            try:
+                from ghost.store import facade, parity
+                if facade.unified():
+                    result = parity.run()
+                    audit("parity.daily", ok=result.get("ok"),
+                          drift_days=result.get("events", {}).get("drift_days", [])[:5])
+            except Exception as e:
+                audit("parity.daily_failed", error=str(e)[:200])
             content = build_digest()
             path = write_digest_file(content, repo_dir=REPO_DIR)
             audit("digest.written", path=path)

@@ -160,6 +160,43 @@ def cmd_migrate(args) -> int:
     return 0
 
 
+def cmd_parity(args) -> int:
+    """T1c dual-read check: nothing in the legacy stores may be missing from
+    the unified store. Drift = a code path still writing legacy post-cutover."""
+    from ghost.store import parity
+    report = parity.run()
+    print(json.dumps(report, indent=2, default=str, sort_keys=True))
+    if not report.get("ok"):
+        print("\n❌ parity drift — history is missing from the unified store")
+        return 1
+    print("\n✅ parity clean — no legacy event or job is missing from ghost.db")
+    return 0
+
+
+def cmd_replay(args) -> int:
+    """T1c: reconstruct a day's state from the event log alone (deterministic)."""
+    from ghost.core.audit import AuditLedger
+    from ghost.store.chain import verify_hash_chain
+    from ghost.store.replay import derive_day
+    import time as _t
+    led = AuditLedger.get_instance()
+    day = args.day or _t.strftime("%Y-%m-%d")
+    state = derive_day(day, led)
+    if led.unified:
+        try:
+            with led._conn() as conn:
+                ok, detail = verify_hash_chain(conn, led.table)
+        except Exception as e:
+            ok, detail = False, f"chain check failed: {e}"
+    else:
+        # The legacy store has no hash chain columns — n/a, not a failure.
+        ok, detail = None, "legacy store — no hash chain (cutover to unified to enable)"
+    state["chain_ok"] = ok
+    state["chain_detail"] = detail
+    print(json.dumps(state, indent=2, sort_keys=True, default=str))
+    return 0 if ok is not False else 1
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -176,6 +213,8 @@ COMMANDS = {
     "voice-demo": (cmd_voice_demo, "record the §14.3 reference voice tape"),
     "metrics": (cmd_metrics, "print the §12 scoreboard from the audit ledger"),
     "migrate": (cmd_migrate, "T1b: copy all stores into data/ghost.db (sources untouched)"),
+    "parity": (cmd_parity, "T1c: legacy vs unified stores — no history may be missing"),
+    "replay": (cmd_replay, "T1c: reconstruct a day from events (--day YYYY-MM-DD)"),
 }
 
 
@@ -194,6 +233,8 @@ def main(argv=None) -> int:
         if name == "migrate":
             p.add_argument("--report-json", default=None,
                            help="write the migration report dict to this path")
+        if name == "replay":
+            p.add_argument("--day", default=None, help="YYYY-MM-DD (default today)")
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

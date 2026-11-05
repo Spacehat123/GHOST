@@ -468,41 +468,15 @@ class Migrator:
 
 
 # ------------------------------------------------------------- events chain
+# Single implementation lives in ghost.store.chain (shared with the live
+# audit ledger since T1c); re-exported here for the migration API.
 
-def build_hash_chain(conn: sqlite3.Connection) -> int:
-    """Rebuild prev_hash/row_hash over events_log in id order. Idempotent:
-    recomputes every row from its content. Returns rows chained."""
-    rows = conn.execute(
-        "SELECT id, ts, day, event_type, subject, payload FROM events_log ORDER BY id"
-    ).fetchall()
-    prev = ""
-    for rid, ts, day, etype, subject, payload in rows:
-        material = json.dumps({"id": rid, "ts": ts, "day": day, "event_type": etype,
-                               "subject": subject, "payload": payload,
-                               "prev": prev}, sort_keys=True, default=str)
-        row_hash = hashlib.sha256(material.encode("utf-8")).hexdigest()
-        conn.execute("UPDATE events_log SET prev_hash=?, row_hash=? WHERE id=?",
-                     (prev, row_hash, rid))
-        prev = row_hash
-    conn.commit()
-    return len(rows)
-
-
-def verify_hash_chain(conn: sqlite3.Connection) -> Tuple[bool, str]:
-    rows = conn.execute(
-        "SELECT id, ts, day, event_type, subject, payload, prev_hash, row_hash "
-        "FROM events_log ORDER BY id").fetchall()
-    prev = ""
-    for rid, ts, day, etype, subject, payload, stored_prev, stored_hash in rows:
-        if (stored_prev or "") != prev:
-            return False, f"row {rid}: prev_hash mismatch"
-        material = json.dumps({"id": rid, "ts": ts, "day": day, "event_type": etype,
-                               "subject": subject, "payload": payload,
-                               "prev": prev}, sort_keys=True, default=str)
-        if hashlib.sha256(material.encode("utf-8")).hexdigest() != (stored_hash or ""):
-            return False, f"row {rid}: row_hash mismatch"
-        prev = stored_hash or ""
-    return True, f"{len(rows)} rows chained"
+from ghost.store.chain import (  # noqa: E402,F401
+    build_hash_chain,
+    last_row_hash,
+    row_hash_for,
+    verify_hash_chain,
+)
 
 
 # --------------------------------------------------------------------- entry

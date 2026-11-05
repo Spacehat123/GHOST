@@ -28,22 +28,40 @@ CREATE INDEX IF NOT EXISTS idx_audit_day ON audit_events(day);
 CREATE INDEX IF NOT EXISTS idx_audit_type ON audit_events(event_type);
 """
 
+# Unified-mode spine: the events_log DDL lives in ghost.store.schema; only the
+# table name differs here. Hash chain (unified mode) maintained on every append.
+
 
 class AuditLedger:
     _instance: Optional["AuditLedger"] = None
 
-    def __init__(self, db_path: str = AUDIT_DB_PATH):
-        self.db_path = db_path
+    def __init__(self, db_path: Optional[str] = None):
+        # Resolution order: explicit arg > env redirect > cutover facade
+        # (GHOST_STORE_MODE=unified -> ghost.db events_log).
+        self.db_path = db_path or os.environ.get("GHOST_AUDIT_DB_PATH")
+        if not self.db_path:
+            from ghost.store import facade
+            self.db_path = facade.audit_path()
+        self.unified = "events_log" in self.db_path or (
+            self.db_path.endswith("ghost.db"))
+        self.table = "events_log" if self.unified else "audit_events"
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         with closing(self._conn()) as conn, conn:
-            conn.executescript(_SCHEMA)
+            if self.unified:
+                from ghost.store.schema import create_target
+                create_target(conn)
+            else:
+                conn.executescript(_SCHEMA)
 
     @classmethod
     def get_instance(cls) -> "AuditLedger":
         # Re-resolve the path from env on every call so long-lived processes
         # (and test harnesses that scope paths) pick up redirections instead
         # of a stale import-time snapshot.
-        db_path = os.environ.get("GHOST_AUDIT_DB_PATH") or AUDIT_DB_PATH
+        db_path = os.environ.get("GHOST_AUDIT_DB_PATH")
+        if not db_path:
+            from ghost.store import facade
+            db_path = facade.audit_path()
         if cls._instance is None or cls._instance.db_path != db_path:
             cls._instance = AuditLedger(db_path)
         return cls._instance
@@ -54,23 +72,37 @@ class AuditLedger:
         return conn
 
     def record(self, event_type: str, subject: Optional[str] = None, **payload: Any) -> int:
-        """Append one event. Cheap, synchronous, never raises into callers' faces."""
+        """Append one event. Cheap, synchronous, never raises into callers' faces.
+        Unified mode keeps the events_log hash chain live on every append."""
         now = time.time()
         day = time.strftime("%Y-%m-%d", time.localtime(now))
         try:
             with closing(self._conn()) as conn, conn:
                 cur = conn.execute(
-                    "INSERT INTO audit_events (ts, day, event_type, subject, payload) VALUES (?, ?, ?, ?, ?)",
+                    f"INSERT INTO {self.table} (ts, day, event_type, subject, payload) "
+                    "VALUES (?, ?, ?, ?, ?)",
                     (now, day, event_type, subject, json.dumps(payload, default=str))
                 )
-                return cur.lastrowid
+                rid = cur.lastrowid
+                if self.unified:
+                    from ghost.store.chain import last_row_hash, row_hash_for
+                    # the row just inserted still has a NULL hash, so the last
+                    # non-null hash IS the previous link
+                    prev = last_row_hash(conn, "events_log")
+                    rh = row_hash_for(rid, now, day, event_type, subject,
+                                      json.dumps(payload, default=str), prev)
+                    conn.execute(
+                        "UPDATE events_log SET prev_hash=?, row_hash=?, origin='main' "
+                        "WHERE id=?", (prev, rh, rid))
+                return rid
         except sqlite3.Error:
             # The ledger must never take the pipeline down with it.
             return -1
 
     def query(self, day: Optional[str] = None, event_type: Optional[str] = None,
               subject: Optional[str] = None, limit: int = 1000) -> List[Dict[str, Any]]:
-        sql = "SELECT id, ts, day, event_type, subject, payload FROM audit_events WHERE 1=1"
+        sql = (f"SELECT id, ts, day, event_type, subject, payload "
+               f"FROM {self.table} WHERE 1=1")
         args: list = []
         if day:
             sql += " AND day = ?"
@@ -102,7 +134,8 @@ class AuditLedger:
         with closing(self._conn()) as conn, conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
-                "SELECT event_type, COUNT(*) as n FROM audit_events WHERE day = ? GROUP BY event_type ORDER BY n DESC",
+                f"SELECT event_type, COUNT(*) as n FROM {self.table} "
+                "WHERE day = ? GROUP BY event_type ORDER BY n DESC",
                 (day,)
             ).fetchall()
         return {"day": day, "events": {r["event_type"]: r["n"] for r in rows}}

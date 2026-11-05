@@ -57,8 +57,13 @@ class DeadLetter(Exception):
 
 
 class JobQueue:
-    def __init__(self, db_path: str = QUEUE_DB_PATH, lease_seconds: float = 300.0):
-        self.db_path = db_path
+    def __init__(self, db_path: Optional[str] = None, lease_seconds: float = 300.0):
+        # Resolution order: explicit arg > env redirect > cutover facade
+        # (GHOST_STORE_MODE=unified -> ghost.db, same `jobs` DDL).
+        self.db_path = (db_path or os.environ.get("GHOST_QUEUE_DB_PATH"))
+        if not self.db_path:
+            from ghost.store import facade
+            self.db_path = facade.queue_path()
         self.lease_seconds = lease_seconds
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         with closing(self._conn()) as conn, conn:
