@@ -28,11 +28,15 @@ class TelemetryProvider:
     tests inject fakes. Defaults are maximally conservative (fail closed)."""
 
     def __init__(self, crm=None, queue=None, knobs: Optional[Dict[str, Any]] = None,
-                 business_hours_override: Optional[bool] = None):
+                 business_hours_override: Optional[bool] = None,
+                 heartbeat_age_override: Optional[float] = None):
         self.crm = crm
         self.queue = queue
         self.knobs = knobs or {}
         self.business_hours_override = business_hours_override
+        # sim seam: a fixed heartbeat age makes snapshots wall-clock-free
+        # (real runtime passes nothing and reads the live marker)
+        self.heartbeat_age_override = heartbeat_age_override
 
     def snapshot(self) -> StateSnapshot:
         halted_state = None
@@ -77,7 +81,8 @@ class TelemetryProvider:
             halt_reason=(halted_state or {}).get("reason"),
             open_complaints=open_complaints,
             domain_health="green",   # KNOWN PLACEHOLDER — wired to site_monitor in T5
-            heartbeat_age_s=heartbeat.age_s(),   # real watchdog age; missing marker = inf (fail closed)
+            heartbeat_age_s=(self.heartbeat_age_override if self.heartbeat_age_override is not None
+                             else heartbeat.age_s()),   # real watchdog age; missing marker = inf (fail closed)
             incidents_over_slo=0,    # KNOWN PLACEHOLDER — wired to RetainerStore in T5
             client_replies_waiting=replies_waiting,
             hot_leads_waiting=hot_leads,

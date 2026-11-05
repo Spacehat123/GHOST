@@ -5,8 +5,13 @@ same decisions, byte-identical replays. Anything that calls time.time()
 directly breaks that — the sim injects this clock everywhere the day-runner
 reaches (T6b assembles the day; this is the seam it will use).
 """
+import calendar
 import time
 from typing import Optional
+
+# 2026-11-06 05:00 UTC = 10:30 IST — a business-morning anchor INSIDE the
+# scheduler's 10:00-19:00 IST window (computed, not a magic constant)
+_ANCHOR_EPOCH = float(calendar.timegm((2026, 11, 6, 5, 0, 0)))
 
 
 class FakeClock:
@@ -14,8 +19,7 @@ class FakeClock:
     Real time is NEVER read."""
 
     def __init__(self, start_epoch: Optional[float] = None):
-        # 2026-11-06 09:00 IST = 03:30 UTC — a business-morning anchor
-        self._now = start_epoch if start_epoch is not None else 1793995800.0
+        self._now = start_epoch if start_epoch is not None else _ANCHOR_EPOCH
 
     def time(self) -> float:
         return self._now

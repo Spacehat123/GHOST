@@ -1668,6 +1668,22 @@ class OmniRouteBrain:
         tool_name = canonical_tool_name(tool_name)   # aliases passed validation but used to fail dispatch
         logger.info(f"Executing tool call: {tool_name} with args: {arguments}")
 
+        # T6b strangler switch: in proposals mode, converted capabilities go
+        # proposal -> control -> grant -> effects -> verify; legacy falls
+        # through unchanged. Rollback = unset GHOST_BRAIN_MODE.
+        try:
+            from ghost.brain.dispatcher import strangler_proposal, dispatch
+            _proposal = strangler_proposal(tool_name, arguments)
+        except Exception as e:   # the strangler must never take the loop down
+            logger.warning("strangler dispatch error for %s: %s", tool_name, e)
+            _proposal = None
+        if _proposal is not None:
+            try:
+                return await dispatch(_proposal)
+            except Exception as e:
+                logger.warning("strangler dispatch error for %s: %s", tool_name, e)
+                return {"status": "error", "stage": "dispatch", "reason": str(e)[:300]}
+
         # Determine semantic action name
         if tool_name == "capture_screen":
             action = "capture"

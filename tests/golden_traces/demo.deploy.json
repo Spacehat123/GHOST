@@ -1,0 +1,12 @@
+{
+  "args": {
+    "slug": "<slug>"
+  },
+  "legacy_observable": {
+    "status_sequence_no_evidence": [
+      "grant_required",
+      "snapshot_required"
+    ]
+  },
+  "tool": "deploy_demo_vercel"
+}

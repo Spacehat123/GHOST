@@ -1,0 +1,11 @@
+{
+  "args": {
+    "business_name": "T Co",
+    "slug": "trace-lead",
+    "status": "closed_won"
+  },
+  "legacy_observable": {
+    "lead_status_after": "closed_won"
+  },
+  "tool": "crm_update_client"
+}

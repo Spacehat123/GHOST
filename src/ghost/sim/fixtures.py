@@ -28,10 +28,14 @@ STREETS = ["Church Street", "Indiranagar 100ft Rd", "Koramangala 5th Block",
 
 
 def fixture_leads(n: int = 50, seed: int = 20261106) -> List[Dict[str, Any]]:
-    """n deterministic leads. Same seed → identical list, forever."""
+    """n deterministic leads. Same seed → identical list, forever. The seed
+    also selects WHICH businesses (roster shuffle) — different seeds are
+    genuinely different towns."""
     rng = random.Random(seed)
+    roster = list(NAMES)
+    rng.shuffle(roster)
     leads: List[Dict[str, Any]] = []
-    for i, name in enumerate(NAMES[:n]):
+    for i, name in enumerate(roster[:n]):
         slug = name.lower().replace("&", "and").replace("'", "")
         slug = "-".join(slug.split())
         has_site = rng.random() < 0.25          # ~25% already have websites
@@ -59,8 +63,8 @@ def fixture_leads(n: int = 50, seed: int = 20261106) -> List[Dict[str, Any]]:
 
 
 def fixture_replies(seed: int = 20261106) -> List[Dict[str, Any]]:
-    """A handful of deterministic inbound replies spanning the classifier's
-    categories (the sim day's inbox)."""
+    """Deterministic inbound replies spanning ALL the classifier's categories
+    (the sim day's inbox — includes a distress case, which must freeze)."""
     return [
         {"from": "Spice Symphony", "text": "This looks great, send me the details."},
         {"from": "The Copper Kettle", "text": "How much does it cost?"},
@@ -68,4 +72,5 @@ def fixture_replies(seed: int = 20261106) -> List[Dict[str, Any]]:
         {"from": "Zenith Lounge", "text": "550 5.1.1 user unknown"},
         {"from": "Heritage Table", "text": "That is too expensive for us."},
         {"from": "Ember & Oak", "text": "Not right now, maybe next quarter."},
+        {"from": "The Palm Court", "text": "Never contact me again, you spammers."},
     ]

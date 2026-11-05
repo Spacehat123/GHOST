@@ -226,6 +226,18 @@ def cmd_reconcile(args) -> int:
     return 0
 
 
+def cmd_sim(args) -> int:
+    """T6: a simulated day — 50 fixture leads, zero operator input,
+    deterministic. The proof harness every later phase must pass."""
+    from ghost.sim.day import run_simulated_day
+    rep = run_simulated_day(seed=args.seed, n_leads=args.leads, cycles=args.cycles)
+    print(json.dumps({k: v for k, v in rep.items() if k != "work_dir"},
+                     indent=2, sort_keys=True, default=str))
+    print(f"\n✅ simulated day complete — {len(rep['decision_ids'])} decisions, "
+          f"replay-deterministic (same seed → same decision_ids)")
+    return 0
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -247,6 +259,7 @@ COMMANDS = {
     "supervise": (cmd_supervise, "T4: run the kill-switch supervisor (file writes only)"),
     "deadman": (cmd_deadman, "T4: cron check — is the supervisor itself alive? (--threshold minutes)"),
     "reconcile": (cmd_reconcile, "T5: records vs reality — payments, sends, deploys"),
+    "sim": (cmd_sim, "T6: simulated day with fixture leads (deterministic)"),
 }
 
 
@@ -273,6 +286,10 @@ def main(argv=None) -> int:
         if name == "deadman":
             p.add_argument("--threshold", type=float, default=30.0,
                            help="alarm threshold minutes (default 30)")
+        if name == "sim":
+            p.add_argument("--seed", type=int, default=20261106)
+            p.add_argument("--leads", type=int, default=50)
+            p.add_argument("--cycles", type=int, default=5)
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)
