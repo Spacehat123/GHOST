@@ -1,6 +1,12 @@
 # ROADMAP_TOTAL_AUTONOMY.md — Ghost runs the business
 
-**Date:** 2026-11-06 · **Status:** PLAN (nothing below is claimed built)
+**Date:** 2026-11-06 · **Status:** T0–T9 BUILT + TESTED (578 tests); T10 harness built —
+the 30-day RUN awaits the operator's inputs (preflight names them: `ghost darkrun --action preflight`)
+**Build log:** T0 `1b5eba9` truth pass · T1a `25a931e` census · T1b `a841dac` migrator ·
+T1c `42b14b8` cutover · T2 `bd2a27d` effect grants · T3 `22fcf79` revocation ·
+T4 `054c202` supervisor · T5 `4b0d1a4` verifier · T6a `0574fd6` taxonomy ·
+T6b `e23deae` strangler+sim · T6c `dd9b5d6` cutover · T7 `f15c93e` quarantine ·
+T8 `c9ff426` sidecars · T9 `3cb1868` packages+UI · T10 `659fa13` dark-run harness
 **Rev 2 (2026-11-06):** T1/T6/T7 reworked after operator review — migration gets its own
 sub-spec + rollback drill; brain refactor becomes a strangler migration with golden
 traces (and an honest statement of what sim can't prove); quarantine answers "who
