@@ -422,8 +422,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (event.type === 'transcript_final') {
       setSubtitle('GHOST', '');
+    } else if (event.type === 'narrator.speak') {
+      // §14.2: the orb narrates too — visible state without words.
+      if (typeof event.payload === 'object' && event.payload && event.payload.utterance) {
+        setSubtitle('GHOST', event.payload.utterance);
+      }
+      orb.setState('SPEAKING');
+      clearTimeout(narratorWorkingTimer);
+      narratorWorkingTimer = setTimeout(() => orb.setState('IDLE'), 6000);
+    } else if (event.type === 'task.acknowledged' || event.type === 'job.enqueued') {
+      // Background/long task running: subtle WORKING pulse (§14.2.5).
+      orb.setState('WORKING');
+      clearTimeout(narratorWorkingTimer);
+    } else if (event.type === 'task.done' || event.type === 'task.interrupted'
+               || event.type === 'runtime.stopped') {
+      orb.setState('IDLE');
+      clearTimeout(narratorWorkingTimer);
     }
   }
+
+  let narratorWorkingTimer = null;
 
   // Microphone and AudioContext for Live FFT Analysis
   async function initAudio() {

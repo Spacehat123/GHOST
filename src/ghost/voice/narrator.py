@@ -102,6 +102,9 @@ class Narrator:
             return None
 
         self.speak(utterance)
+        _broadcast_speech("narrator.speak",
+                          {"utterance": utterance, "event": event_type,
+                           "task": task_id, "task_class": task_class})
         entry = {"ts": ts or self._now(), "task": task_id,
                  "event": event_type, "utterance": utterance}
         self.spoken.append(entry)
@@ -154,3 +157,24 @@ def proof_of_honesty(narrator: Narrator, ledger: AuditLedger) -> bool:
         if not any(ts <= line["ts"] + 0.001 for ts in candidates):
             return False
     return True
+
+
+# ------------------------------------------------------------- GUI broadcast
+# The orb narrates too (§14.2.5): the GUI gets every spoken line through this
+# hook so the orb can show a "working" pulse while Ghost is busy. Set by the
+# server startup; defaults to no-op for headless use.
+
+_speech_broadcast: Optional[Callable[[str, Dict[str, Any]], Any]] = None
+
+
+def set_speech_broadcast(fn: Optional[Callable[[str, Dict[str, Any]], Any]]) -> None:
+    global _speech_broadcast
+    _speech_broadcast = fn
+
+
+def _broadcast_speech(event_type: str, payload: Dict[str, Any]) -> None:
+    if _speech_broadcast:
+        try:
+            _speech_broadcast(event_type, payload)
+        except Exception:
+            pass

@@ -67,6 +67,10 @@ async def startup_event():
     # The body: heartbeat, scheduler, queue worker, digest (autonomy/runtime.py)
     from ghost.autonomy.runtime import get_or_start_runtime
     await get_or_start_runtime()
+    # The orb narrates too (§14.2.5): spoken lines stream to the GUI.
+    from ghost.voice.narrator import set_speech_broadcast
+    from ghost.server.agency_api import broadcast_agency_event
+    set_speech_broadcast(broadcast_agency_event)
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -325,6 +325,18 @@ class GhostOrb {
         speedMult: 2.0,
         bloomAlpha: 0.35
       },
+      WORKING: {
+        coreGlow: '#8a4b2a',
+        neonAccent: 'rgba(255, 170, 60, 0.8)',
+        ringSecondary: 'rgba(255, 170, 60, 0.4)',
+        ringTertiary: 'rgba(255, 0, 85, 0.15)',
+        crosshair: 'rgba(255, 200, 120, 0.5)',
+        textCore: 'rgba(255, 220, 160, 0.9)',
+        textGlow: 'rgba(255, 170, 60, 0.6)',
+        particleColor: '255, 170, 60',
+        speedMult: 0.6,
+        bloomAlpha: 0.12
+      },
       INTERRUPTED: {
         coreGlow: '#f59e0b',
         neonAccent: '#fbbf24',
