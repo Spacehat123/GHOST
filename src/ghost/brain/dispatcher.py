@@ -28,8 +28,10 @@ logger = logging.getLogger("ghost.brain.dispatcher")
 
 
 def brain_mode() -> str:
-    """legacy (default) | proposals — checked per call; rollback = unset."""
-    return os.environ.get("GHOST_BRAIN_MODE", "legacy").strip().lower()
+    """proposals (default, T6c cutover) | legacy — checked per call; rollback
+    = GHOST_BRAIN_MODE=legacy. Only adapter-wired capabilities actually route
+    through the planes; everything else stays on the (kept) legacy path."""
+    return os.environ.get("GHOST_BRAIN_MODE", "proposals").strip().lower()
 
 
 def _import(dotted: str):
@@ -94,19 +96,43 @@ def _verify_update_stage(vf, p: Proposal, result: Any) -> Dict[str, Any]:
 
 
 def _invoke_scout(ex, p: Proposal, grant):
-    return ex(city=p.args["city"]) if not isinstance(ex, type) else ex().run_all_sources(city=p.args["city"])
+    # ex IS VenueQualificationPipeline.scout_expensive_venues_without_website
+    # (classmethod — same executor the legacy branch called; parity by construction)
+    return ex(category=p.args["category"], location=p.args["location"],
+              target_count=int(p.args.get("target_count", 3)),
+              candidates=p.args.get("candidates"))
 
 
 def _verify_scout(vf, p: Proposal, result: Any) -> Dict[str, Any]:
-    rows = result if isinstance(result, list) else (result or {}).get("candidates", [])
-    return {"action": p.action, "city": p.args["city"],
-            "candidates": len(rows), "verified": True,
-            "verify_note": "candidates carry source evidence per lead_sources"}
+    out = vf(result) if callable(vf) else {"verified": False,
+                                           "reasons": ["no verifier"]}
+    return {"action": p.action, "location": p.args["location"], **out}
+
+
+def _invoke_upsert_client(ex, p: Proposal, grant):
+    # ex IS CRMDatabase.add_or_update_client (unbound) — needs the instance
+    from ghost.crm.db import CRMDatabase
+    a = p.args
+    return ex(CRMDatabase.get_instance(), slug=a["slug"],
+              business_name=a["business_name"], contact_name=a.get("contact_name"),
+              email=a.get("email"), phone=a.get("phone"),
+              preferred_channel=a.get("preferred_channel", "email"),
+              status=a.get("status", "unscouted"),
+              deal_value=float(a.get("deal_value", 0.0) or 0.0), notes=a.get("notes"))
+
+
+def _verify_upsert_client(vf, p: Proposal, result: Any) -> Dict[str, Any]:
+    from ghost.crm.db import CRMDatabase
+    client = vf(CRMDatabase.get_instance(), p.args["slug"])
+    ok = bool(client) and client.get("business_name") == p.args["business_name"]
+    return {"action": p.action, "slug": p.args["slug"], "verified": bool(ok),
+            "reasons": [] if ok else ["client not found or name mismatch"]}
 
 
 ADAPTERS: Dict[str, Dict[str, Any]] = {
     "demo.deploy": {"invoke": _invoke_deploy, "verify": _verify_deploy},
     "pipeline.update_stage": {"invoke": _invoke_update_stage, "verify": _verify_update_stage},
+    "pipeline.upsert_client": {"invoke": _invoke_upsert_client, "verify": _verify_upsert_client},
     "leads.scout": {"invoke": _invoke_scout, "verify": _verify_scout},
 }
 
@@ -114,6 +140,7 @@ ADAPTERS: Dict[str, Dict[str, Any]] = {
 LADDER_CAPABILITY = {
     "demo.deploy": "demo_build_deploy",
     "pipeline.update_stage": "contracts",
+    "pipeline.upsert_client": "contracts",
     "leads.scout": "lead_hunting",
 }
 
@@ -227,10 +254,15 @@ def dispatch_legacy_or_proposals(tool_name: str, arguments: Dict[str, Any]) -> O
 
 def strangler_proposal(tool_name: str, arguments: Dict[str, Any]) -> Optional[Proposal]:
     """Async-context seam: the mapped proposal for this tool, or None to fall
-    through to legacy."""
+    through to legacy. ONLY adapter-wired capabilities convert — a mapped-but-
+    unwired tool stays legacy until its adapter lands (the strangler never
+    leaves a capability in refusal-limbo)."""
     if brain_mode() != "proposals":
         return None
     try:
-        return to_proposal(tool_name, arguments)
+        proposal = to_proposal(tool_name, arguments)
     except ValueError:
         return None
+    if proposal.action not in ADAPTERS:
+        return None
+    return proposal

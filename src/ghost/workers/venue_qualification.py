@@ -682,3 +682,21 @@ class VenueQualificationPipeline:
             ],
             "saved_dossiers": [r.get("saved_to") for r in qualified_leads if r.get("saved_to")]
         }
+
+
+def verify_scout_result(result: Any) -> Dict[str, Any]:
+    """VERIFY plane (T6b): a scout run's outcome is real only if candidate
+    rows carry names and the no-website filter held. Independent of the
+    brain — the dispatcher's tool result comes from HERE."""
+    rows = result.get("candidates", []) if isinstance(result, dict) else (result or [])
+    if not isinstance(rows, list):
+        return {"verified": False, "reasons": ["scout result malformed"]}
+    named = [r for r in rows if isinstance(r, dict) and r.get("name")]
+    no_site = all(not (r.get("website") or "").strip() for r in named if isinstance(r, dict))
+    reasons = []
+    if len(named) != len(rows):
+        reasons.append("unnamed candidate rows present")
+    if not no_site:
+        reasons.append("a candidate WITH a website slipped the no-website filter")
+    return {"verified": not reasons and bool(rows) or not rows,
+            "candidates": len(named), "reasons": reasons}

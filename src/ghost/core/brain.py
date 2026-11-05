@@ -1973,12 +1973,6 @@ class OmniRouteBrain:
             return {"resources": list_all_resources()}
 
         # 13. Vercel Cloud Deployment & Token Health
-        elif tool_name == "deploy_demo_vercel":
-            from ghost.workers.deploy import VercelDeployer
-            slug = arguments.get("slug", "")
-            p_name = arguments.get("project_name")
-            return await VercelDeployer.deploy_demo(slug=slug, project_name=p_name)
-
         elif tool_name == "vercel_check_token":
             from ghost.workers.deploy import VercelDeployer
             return await VercelDeployer.check_token_status()
@@ -2104,19 +2098,6 @@ class OmniRouteBrain:
                 location=loc,
                 maps_website=m_web,
                 extra_venue_data=extra
-            )
-
-        elif tool_name == "scout_expensive_venues_without_website":
-            from ghost.workers.venue_qualification import VenueQualificationPipeline
-            cat = arguments.get("category", "fine dining degustation")
-            loc = arguments.get("location", "Bengaluru")
-            count = int(arguments.get("target_count", 3))
-            candidates = arguments.get("candidates")
-            return await VenueQualificationPipeline.scout_expensive_venues_without_website(
-                category=cat,
-                location=loc,
-                target_count=count,
-                candidates=candidates
             )
 
         # 20. Mission & Task Decomposition Engine

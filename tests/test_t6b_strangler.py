@@ -140,17 +140,20 @@ class TestModeSwitch(EnvPinned):
             crm.add_or_update_lead({"slug": "mode-lead", "name": "M", "status": "scouted"})
             res = asyncio.run(_execute("crm_update_client", {
                 "slug": "mode-lead", "business_name": "M Co", "status": "pitch_sent"}))
-            self.assertEqual(res.get("proposal"), "pipeline.update_stage")
+            self.assertEqual(res.get("proposal"), "pipeline.upsert_client")
             self.assertTrue(res.get("verified"))
         finally:
             os.environ.pop("GHOST_BRAIN_MODE", None)
 
     def test_legacy_mode_falls_through(self):
-        os.environ.pop("GHOST_BRAIN_MODE", None)
-        from ghost.brain.dispatcher import dispatch_legacy_or_proposals
-        self.assertIsNone(dispatch_legacy_or_proposals(
-            "crm_update_client", {"slug": "x", "business_name": "B"}),
-            "legacy mode must fall through to the direct-tool path")
+        os.environ["GHOST_BRAIN_MODE"] = "legacy"   # the explicit rollback flag
+        try:
+            from ghost.brain.dispatcher import dispatch_legacy_or_proposals
+            self.assertIsNone(dispatch_legacy_or_proposals(
+                "crm_update_client", {"slug": "x", "business_name": "B"}),
+                "legacy mode must fall through to the direct-tool path")
+        finally:
+            os.environ.pop("GHOST_BRAIN_MODE", None)
 
     def test_unmapped_tool_falls_through_in_proposals_mode(self):
         os.environ["GHOST_BRAIN_MODE"] = "proposals"

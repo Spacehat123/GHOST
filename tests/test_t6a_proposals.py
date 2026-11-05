@@ -85,6 +85,11 @@ class TestProposalSchema(unittest.TestCase):
         self.assertEqual(p.action, "demo.deploy")
         self.assertEqual(p.risk_class, EXTERNAL_EFFECT)
         p.validated()   # well-formed
+        # crm_update_client maps to the CLIENT UPSERT (its real legacy semantic)
+        c = to_proposal("crm_update_client", {"slug": "x", "business_name": "X Co",
+                                              "status": "negotiating"})
+        self.assertEqual(c.action, "pipeline.upsert_client")
+        c.validated()
         with self.assertRaises(ValueError):
             to_proposal("capture_screen", {})   # not mapped -> stays legacy
 
