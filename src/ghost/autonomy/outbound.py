@@ -171,6 +171,26 @@ class OutboundGateway:
                                       "warmup_day": self.campaign_day(),
                                       "facts": facts})
 
+    def issue_grant(self, req: SendRequest, ttl_s: float = 300.0) -> Optional[str]:
+        """Mint the §11 grant token for a request that PASSED all gates.
+        The mail wrapper will refuse to send without it. None = cannot
+        authorize (no signing secret) — a deployment-level fail closed."""
+        from ghost.core import grants
+        result = self.evaluate(req)
+        if not result.allowed:
+            return None
+        token = grants.issue(
+            capability="outbound_email",
+            subject=req.lead_slug,
+            bounds={
+                "to": req.to_email,
+                "facts": len(result.meta.get("facts", [])),
+                "is_followup": req.is_followup,
+            },
+            ttl_s=ttl_s,
+        )
+        return token
+
     def record_sent(self, req: SendRequest, message_id: Optional[str] = None) -> None:
         """Call ONLY after the delegated sender actually accepted the message."""
         self._roll_day()
