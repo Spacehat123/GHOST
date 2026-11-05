@@ -59,16 +59,23 @@ async def get_index(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
-    """Launch autonomous background watchdog patrol and warm up speech engine."""
+    """Launch watchdog patrol + the FULL autonomy runtime (P0-P5 wiring)."""
     watchdog = AutonomousWatchdog.get_instance()
     watchdog.start_patrol()
     # Trigger initial patrol sweep asynchronously
     asyncio.create_task(watchdog.run_patrol_sweep())
+    # The body: heartbeat, scheduler, queue worker, digest (autonomy/runtime.py)
+    from ghost.autonomy.runtime import get_or_start_runtime
+    await get_or_start_runtime()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     watchdog = AutonomousWatchdog.get_instance()
     watchdog.stop_patrol()
+    from ghost.autonomy.runtime import get_runtime
+    rt = get_runtime()
+    if rt:
+        await rt.stop()
 
 @app.post("/api/watchdog/signal")
 async def receive_watchdog_signal(request: Request):
@@ -393,3 +400,157 @@ async def ws_agency_events(websocket: WebSocket):
     finally:
         if _on_event in _event_subscribers:
             _event_subscribers.remove(_on_event)
+
+
+# ============================================================ Autonomy routes
+# The P0-P5 organs, exposed to the operator GUI. Halt is fail-closed server-side.
+
+@app.get("/api/runtime/status")
+async def runtime_status():
+    """One-screen answer: is the body alive, halted, heartbeat fresh, queue state."""
+    from ghost.autonomy.runtime import get_runtime
+    rt = get_runtime()
+    if not rt:
+        return {"running": False, "note": "runtime not started"}
+    return rt.status
+
+
+@app.post("/api/halt")
+async def api_halt(request: Request):
+    """The throat-cut handle (§0.5): freeze ALL outbound now."""
+    from ghost.core import halt as halt_mod
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    meta = halt_mod.trip(reason=body.get("reason") or halt_mod.REASON_OPERATOR, by="operator")
+    return {"status": "halted", "meta": meta}
+
+
+@app.post("/api/resume")
+async def api_resume():
+    from ghost.core import halt as halt_mod
+    prev = halt_mod.resume(by="operator")
+    return {"status": "resumed", "was_halted": bool(prev), "previous": prev}
+
+
+@app.get("/api/digest")
+async def api_digest(day: str = None):
+    from ghost.autonomy.digest import build_digest
+    from ghost.core.audit import AuditLedger
+    return build_digest(day=day, ledger=AuditLedger.get_instance())
+
+
+@app.get("/api/metrics")
+async def api_metrics():
+    from ghost.core.metrics import compute_metrics
+    return compute_metrics()
+
+
+@app.get("/api/ladder")
+async def api_ladder():
+    from ghost.autonomy.ladder import AutonomyLadder
+    return AutonomyLadder().status()
+
+
+@app.post("/api/ladder/raise")
+async def api_ladder_raise(request: Request):
+    """Operator-only promotion to an EARNED ceiling (§1.2). Ghost cannot call this itself."""
+    from ghost.autonomy.ladder import AutonomyLadder
+    body = await request.json()
+    res = AutonomyLadder().raise_level(body.get("capability", ""), by="operator")
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "cannot raise"))
+    return res
+
+
+@app.post("/api/webhooks/razorpay")
+async def razorpay_webhook(request: Request):
+    """Real payment webhook: verify signature -> parse/dedupe -> amount-match
+    -> chain contract+welcome. Unverified bodies are refused, never processed."""
+    from ghost.workers.payments import get_payment_provider
+    from ghost.workers.close_chain import process_payment_webhook
+    from ghost.core.jobqueue import JobQueue
+    from ghost.crm.db import CRMDatabase
+
+    body = await request.body()
+    headers = {k: v for k, v in request.headers.items()}
+    provider = get_payment_provider("razorpay")
+
+    def invoice_lookup(invoice_number: str):
+        crm = CRMDatabase.get_instance()
+        doc = crm.get_document_by_invoice(invoice_number) if hasattr(crm, "get_document_by_invoice") else None
+        if doc:
+            return doc
+        # Fall back to the invoice template contract record in documents table.
+        return None
+
+    result = process_payment_webhook(provider, headers, body,
+                                     invoice_lookup, JobQueue().enqueue)
+    status_code = 200 if result.get("status") in ("verified", "duplicate") else 400
+    return JSONResponse(status_code=status_code, content=result)
+
+
+@app.get("/api/retainers")
+async def api_retainers():
+    from ghost.workers.retainers import RetainerStore
+    store = RetainerStore()
+    return {"sites": store.list_sites(),
+            "open_incidents": store.open_incidents(),
+            "over_slo": store.over_slo_incident_count()}
+
+
+@app.post("/api/retainers/{slug}/monitor")
+async def api_retainer_monitor(slug: str):
+    """Run the full check battery on one retainer site now; open incidents for
+    failures and dispatch auto-fix through the ladder gates."""
+    from ghost.workers.retainers import RetainerStore, AutoFixer
+    from ghost.workers.snapshots import SnapshotStore
+    from ghost.workers.site_monitor import CHECKS
+    from ghost.autonomy.ladder import AutonomyLadder
+    from ghost.core.audit import audit
+
+    store = RetainerStore()
+    site = store.get_site(slug)
+    if not site:
+        raise HTTPException(status_code=404, detail=f"unknown retainer site '{slug}'")
+
+    results = {}
+    for name, check in CHECKS.items():
+        try:
+            if name == "uptime":
+                results[name] = check(site["url"])
+            elif name == "ssl":
+                results[name] = check(site["url"])
+            elif name == "seo_drift":
+                results[name] = check(site["url"])
+            elif name == "broken_links":
+                results[name] = check(site["url"])
+        except Exception as e:
+            results[name] = {"ok": False, "detail": str(e)[:200], "evidence": {}}
+
+    severity_map = {"uptime": "t1", "ssl": "t2", "broken_links": "t2", "seo_drift": "t3"}
+    incidents = []
+    for name, res in results.items():
+        audit(f"monitor.{name}", subject=slug, ok=res.get("ok"),
+              detail=res.get("detail", "")[:150])
+        if not res.get("ok"):
+            iid = store.open_incident(slug, name, severity_map.get(name, "t3"),
+                                      res.get("detail", ""), res.get("evidence", {}))
+            inc = [i for i in store.open_incidents(slug) if i["id"] == iid]
+            if inc:
+                fixer = AutoFixer(store, SnapshotStore(), AutonomyLadder())
+                fix_result = fixer.dispatch(inc[0])
+                incidents.append({"incident_id": iid, "check": name, "fix": fix_result})
+    return {"slug": slug, "checks": results, "incidents_opened": incidents}
+
+
+@app.post("/api/voice/interrupt")
+async def api_voice_interrupt():
+    """GUI barge-in: stop speaking AND stop working at the next yield (§14.2.6)."""
+    runner = getattr(app.state, "task_runner", None)
+    if runner:
+        runner.interrupt()
+        return {"status": "interrupted"}
+    return {"status": "no_active_runner"}

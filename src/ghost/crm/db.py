@@ -989,3 +989,86 @@ tags:
             logger.info(f"Synced CRM client '{slug}' to Obsidian: {md_path}")
         except Exception as e:
             logger.error(f"Failed syncing client '{slug}' to Obsidian: {e}")
+
+    # ------------------------------------------------------------ telemetry
+    # Read-only aggregates the autonomy scheduler needs (Roadmap §1.1 snapshot).
+    # Fail-closed philosophy lives in TelemetryProvider; these return zeros on
+    # empty data, never raise on missing rows.
+
+    def pipeline_counts(self) -> dict:
+        """Counts + values for the decision engine snapshot:
+        open_complaints, hot_leads (mid-pipeline leads), replies_waiting,
+        pipeline_value_inr, last_closed_deal_age_h."""
+        now = time.time()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+
+            def _count(sql: str, args: tuple = ()) -> int:
+                try:
+                    row = cur.execute(sql, args).fetchone()
+                    return int(row[0]) if row else 0
+                except sqlite3.Error:
+                    return 0
+
+            # Complaints: interactions flagged by the reply classifier in the
+            # last 7 days whose content begins with the ANGRY verdict tag.
+            week_ago = now - 7 * 86400
+            open_complaints = _count(
+                """SELECT COUNT(DISTINCT client_slug) FROM interactions
+                   WHERE direction='inbound' AND content LIKE '[ANGRY]%'
+                     AND timestamp >= ?""", (week_ago,))
+
+            hot_leads = _count(
+                """SELECT COUNT(*) FROM leads WHERE status IN (
+                     'built','deployed','drafts_ready','approved','sent',
+                     'replied','agreed','contract_drafted','contract_sent')""") + _count(
+                """SELECT COUNT(*) FROM clients WHERE status IN (
+                     'agreed','contract_drafted','contract_sent','deposit_received')""")
+
+            replies_waiting = _count(
+                """SELECT COUNT(DISTINCT client_slug) FROM interactions
+                   WHERE direction='inbound' AND timestamp >= ?
+                     AND content LIKE '[%' AND content NOT LIKE '[BOUNCE]%'
+                     AND content NOT LIKE '[AUTO_REPLY]%'""", (week_ago,))
+
+            pipeline_value = 0.0
+            try:
+                row = cur.execute(
+                    """SELECT COALESCE(SUM(deal_value), 0) FROM clients
+                       WHERE status IN ('agreed','contract_sent','deposit_received')""").fetchone()
+                pipeline_value = float(row[0] or 0.0)
+            except sqlite3.Error:
+                pipeline_value = 0.0
+
+            last_closed = None
+            try:
+                row = cur.execute(
+                    """SELECT MAX(updated_at) FROM clients
+                       WHERE status = 'won'""").fetchone()
+                if row and row[0]:
+                    last_closed = round((now - float(row[0])) / 3600.0, 2)
+            except sqlite3.Error:
+                last_closed = None
+
+        return {
+            "open_complaints": open_complaints,
+            "hot_leads": hot_leads,
+            "replies_waiting": replies_waiting,
+            "pipeline_value_inr": pipeline_value,
+            "last_closed_deal_age_h": last_closed,
+        }
+
+    def quota_remaining_pct(self) -> float:
+        """Token-budget remaining for the day, from token_tracker's stats file.
+        Unreadable -> 0.0 (fail closed: no quota knowledge = no hunting)."""
+        try:
+            stats_path = os.environ.get("GHOST_TOKEN_STATS_PATH") or os.path.join(
+                REPO_DIR, "configs", "token_stats.json")
+            with open(stats_path, "r", encoding="utf-8") as f:
+                stats = json.load(f)
+            remaining = stats.get("quota_remaining_pct")
+            if remaining is None:
+                return 0.0
+            return max(0.0, min(100.0, float(remaining)))
+        except Exception:
+            return 0.0
