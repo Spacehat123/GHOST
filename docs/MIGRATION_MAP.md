@@ -106,11 +106,12 @@ Signal files (atomic-rename cross-process protocol per §2): HALTED, HALT.json, 
 ## 7. Migration risks (must be answered by the 1b harness)
 R1 FTS5 rebuild ordering (copy → rebuild → verify counts). R2 composite PK copy order (missions before tasks). R3 id/slug rewrite for drafts (§6-1) must be idempotent on re-run. R4 token_stats flatten may hit unexpected key shapes → quarantine, never crash. R5 three modules write token_stats (token_tracker, agent, crm) — concurrent writes today; single-writer rule makes ghost.db the fix, but 1b must serialize during cutover. R6 hash-chain rebuild must be verified against pre-chain row content, then extend only.
 
-## 8. Open verifications for 1b (census could not settle)
-1. Generic-writer scan for knob JSONs (path-built writes would evade the filename grep): instrument with an import-hook audit for one day OR grep for `open(..., "w")` with variable paths in each owner module.
-2. Whether `email.json` runtime-writes from brain.py happen on a live path or only the settings modal flow (determines T2 retirement order).
-3. `episodes.task_id` sample match rate (§6-5).
-4. Draft orphan rate on live data (§6-1) — count before rewrite; the number goes in the migration report.
+## 8. Verification results (live migration run, 2026-11-06 — docs/migration_report_2026-11-06.json)
+1. ~~Generic-writer scan for knob JSONs~~ — **still open for 1c** (instrument one day of runtime, then classify).
+2. `email.json` runtime-writes — **still open** (T2 retirement order).
+3. `episodes.task_id` — **SETTLED: 0/694 match mission ids** (own `task_<epoch_ms>` id space) → free-form TEXT, no FK, as §6-5 anticipated.
+4. Draft orphan rate — **SETTLED: 8/8 live drafts orphaned, 0 slug-resolvable** → all 8 quarantined with reasons (`lead-t0` ×4, `test-lead` ×4 — T0-era test drafts). The §6-1 rewrite path is proven by the test suite (slug-resolvable case); live data needed only quarantine.
+5. **NEW (found by the harness): 114 FK violations `crm_interactions → crm_clients`** — 4 demo-era slugs (`obsidian-dining-lounge`, `obsidian-reserve`, `apex-detailing`, `grasshopper-concept`) carry interaction history (114 of 127 rows) but have **no client rows**. Copied INTACT (quarantining 90% of history over 4 missing parents would be data destruction); operator decision required at 1c cutover: create the missing client rows or archive the interactions. Surfaced as a ping (c). Live result: **1,082 rows copied, 8 quarantined, 0 parity failures, FTS 694/694, chain OK**.
 
 ## 9. Usage matrix (module → store, from code audit)
 audit.py→audit.db W; crm/db.py→crm.db R/W + token_stats W; memory.py→memory.db R/W + directives.json R; mission.py→missions.db R/W; watchdog/service.py→events.db R/W + email.json R; jobqueue.py→queue.db R/W; retainers.py→retainers.db R/W; site_monitor.py→(monitor.db dead) stateless; golden_library.py→golden_library.json R/W; ladder.py→ladder_state.json R/W; outbound.py→outbound_state.json R/W; token_tracker.py+agent.py→token_stats.json R/W; brain.py→conversation_history.json R/W + email.json R/W; follow.py→user_profile.json R; agency_api.py→session_state.json R + tenants.json R; faq.py→faq_knowledge.json R; sender.py→crm.db W (drafts) + secrets R; deploy.py→vercel.json R/W; bridge.py→git.json R + mcp_servers.json R.

@@ -140,6 +140,26 @@ def cmd_voice_demo(args) -> int:
     return 0 if ok else 1
 
 
+def cmd_migrate(args) -> int:
+    """T1b: copy every store into data/ghost.db (old stores untouched = rollback)."""
+    from ghost.store import migrator
+    report = migrator.migrate_all()
+    if getattr(args, "report_json", None):
+        with open(args.report_json, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, default=str)
+    failed = [t for t, r in report.get("tables", {}).items()
+              if r.get("state") in ("parity_failed", "error")]
+    quarantined = sum(r.get("quarantined", 0) for r in report.get("tables", {}).values())
+    print(json.dumps(report, indent=2, default=str))
+    if failed:
+        print(f"\n❌ PARITY FAILED for: {', '.join(failed)} — do not cutover")
+        return 1
+    print(f"\n✅ migration complete — {len(report.get('tables', {}))} tables, "
+          f"{quarantined} rows quarantined (see migration_quarantine), "
+          f"sources untouched")
+    return 0
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -155,6 +175,7 @@ COMMANDS = {
     "chaos": (cmd_chaos, "run the weekly kill-tests (§3.4)"),
     "voice-demo": (cmd_voice_demo, "record the §14.3 reference voice tape"),
     "metrics": (cmd_metrics, "print the §12 scoreboard from the audit ledger"),
+    "migrate": (cmd_migrate, "T1b: copy all stores into data/ghost.db (sources untouched)"),
 }
 
 
@@ -170,6 +191,9 @@ def main(argv=None) -> int:
         if name == "run":
             p.add_argument("--interval", type=float, default=300.0,
                            help="scheduler cycle seconds (default 300)")
+        if name == "migrate":
+            p.add_argument("--report-json", default=None,
+                           help="write the migration report dict to this path")
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

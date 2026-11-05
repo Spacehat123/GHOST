@@ -9,7 +9,7 @@ import argparse
 import sys
 
 OPERATOR_COMMANDS = ("halt", "resume", "status", "digest", "run",
-                     "chaos", "voice-demo", "metrics")
+                     "chaos", "voice-demo", "metrics", "migrate")
 
 
 def main():

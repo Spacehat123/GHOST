@@ -1,0 +1,196 @@
+{
+  "tables": {
+    "crm_clients": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 13,
+      "quarantined": 0,
+      "source_rows": 13,
+      "target_rows": 13,
+      "source_hash": "159123603065f1fe",
+      "target_hash": "159123603065f1fe"
+    },
+    "crm_campaigns": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_batches": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_leads": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 1,
+      "quarantined": 0,
+      "source_rows": 1,
+      "target_rows": 1,
+      "source_hash": "0ece0806168507a3",
+      "target_hash": "0ece0806168507a3"
+    },
+    "crm_interactions": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 127,
+      "quarantined": 0,
+      "source_rows": 127,
+      "target_rows": 127,
+      "source_hash": "6366b206c08b6401",
+      "target_hash": "6366b206c08b6401"
+    },
+    "crm_suppression": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_drafts": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 8,
+      "source_rows": 8,
+      "target_rows": 0,
+      "source_hash": "d3483928e528575c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_documents": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_lead_events": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
+    },
+    "crm_processed_webhooks": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 1,
+      "quarantined": 0,
+      "source_rows": 1,
+      "target_rows": 1,
+      "source_hash": "7cdfc48d9f8200c3",
+      "target_hash": "7cdfc48d9f8200c3"
+    },
+    "jobs": {
+      "state": "skipped",
+      "note": "source queue.db missing"
+    },
+    "retainer_sites": {
+      "state": "skipped",
+      "note": "source retainers.db missing"
+    },
+    "retainer_incidents": {
+      "state": "skipped",
+      "note": "source retainers.db missing"
+    },
+    "retainer_fixes": {
+      "state": "skipped",
+      "note": "source retainers.db missing"
+    },
+    "missions": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 3,
+      "quarantined": 0,
+      "source_rows": 3,
+      "target_rows": 3,
+      "source_hash": "302228fedfeb4918",
+      "target_hash": "302228fedfeb4918"
+    },
+    "mission_tasks": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 15,
+      "quarantined": 0,
+      "source_rows": 15,
+      "target_rows": 15,
+      "source_hash": "88bc3abc2b7a6689",
+      "target_hash": "88bc3abc2b7a6689"
+    },
+    "mission_tool_calls": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 190,
+      "quarantined": 0,
+      "source_rows": 190,
+      "target_rows": 190,
+      "source_hash": "f96d8a904e154249",
+      "target_hash": "cde7d9a6b4a55c0e"
+    },
+    "watchdog_events": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 37,
+      "quarantined": 0,
+      "source_rows": 37,
+      "target_rows": 37,
+      "source_hash": "dba053a1aa3df464",
+      "target_hash": "dba053a1aa3df464"
+    },
+    "events_log": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 1,
+      "quarantined": 0,
+      "source_rows": 1,
+      "target_rows": 1,
+      "source_hash": "06fc39f1c6b1d73c",
+      "target_hash": "799d506764cf433b"
+    },
+    "memory_episodes": {
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 694,
+      "quarantined": 0,
+      "source_rows": 694,
+      "target_rows": 694,
+      "source_hash": "d58bf660308ce6ca",
+      "target_hash": "d58bf660308ce6ca"
+    }
+  },
+  "json": {
+    "token_stats.json": "100 history rows -> token_spend",
+    "conversation_history.json": "100 rows -> conversation_messages",
+    "ladder_state.json": "missing (nothing to copy)",
+    "outbound_state.json": "missing (nothing to copy)",
+    "user_profile.json": "4 keys -> operator_profile",
+    "session_state.json": "5 keys -> agency_session",
+    "golden_library.json": "missing (nothing to copy)"
+  },
+  "notes": [
+    "FTS rebuilt: 694 indexed rows for 694 episodes (OK)",
+    "events_log hash chain: OK (1 rows chained)",
+    "foreign_key_check: 114 violations (crm_interactions->crm_clients: 114) \u2014 legacy orphan refs copied intact; operator decision required (create missing parents or archive) \u2014 ping (c) at cutover"
+  ],
+  "started_at": 1793906448.1845975,
+  "finished_at": 1793906448.2654703
+}
