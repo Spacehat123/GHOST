@@ -2,13 +2,13 @@
   "tables": {
     "crm_clients": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 5,
       "duplicates_ignored": 13,
       "quarantined": 0,
-      "source_rows": 13,
-      "target_rows": 13,
-      "source_hash": "159123603065f1fe",
-      "target_hash": "159123603065f1fe"
+      "source_rows": 18,
+      "target_rows": 18,
+      "source_hash": "39b0ad81ef538b69",
+      "target_hash": "ca289186f6b61787"
     },
     "crm_campaigns": {
       "state": "done",
@@ -32,23 +32,23 @@
     },
     "crm_leads": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 5,
       "duplicates_ignored": 1,
       "quarantined": 0,
-      "source_rows": 1,
-      "target_rows": 1,
-      "source_hash": "0ece0806168507a3",
-      "target_hash": "0ece0806168507a3"
+      "source_rows": 6,
+      "target_rows": 6,
+      "source_hash": "43ba449cc7790377",
+      "target_hash": "43ba449cc7790377"
     },
     "crm_interactions": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 112,
       "duplicates_ignored": 127,
       "quarantined": 0,
-      "source_rows": 127,
-      "target_rows": 127,
-      "source_hash": "6366b206c08b6401",
-      "target_hash": "6366b206c08b6401"
+      "source_rows": 239,
+      "target_rows": 239,
+      "source_hash": "80ca31c6c2dda322",
+      "target_hash": "80ca31c6c2dda322"
     },
     "crm_suppression": {
       "state": "done",
@@ -64,10 +64,10 @@
       "state": "done",
       "copied_this_run": 0,
       "duplicates_ignored": 0,
-      "quarantined": 8,
-      "source_rows": 8,
+      "quarantined": 64,
+      "source_rows": 64,
       "target_rows": 0,
-      "source_hash": "d3483928e528575c",
+      "source_hash": "ed115258b04c0bae",
       "target_hash": "4f53cda18c2baa0c"
     },
     "crm_documents": {
@@ -101,8 +101,14 @@
       "target_hash": "7cdfc48d9f8200c3"
     },
     "jobs": {
-      "state": "skipped",
-      "note": "source queue.db missing"
+      "state": "done",
+      "copied_this_run": 0,
+      "duplicates_ignored": 0,
+      "quarantined": 0,
+      "source_rows": 0,
+      "target_rows": 0,
+      "source_hash": "4f53cda18c2baa0c",
+      "target_hash": "4f53cda18c2baa0c"
     },
     "retainer_sites": {
       "state": "skipped",
@@ -143,38 +149,38 @@
       "quarantined": 0,
       "source_rows": 190,
       "target_rows": 190,
-      "source_hash": "f96d8a904e154249",
+      "source_hash": "00d64737883d9086",
       "target_hash": "cde7d9a6b4a55c0e"
     },
     "watchdog_events": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 28,
       "duplicates_ignored": 37,
       "quarantined": 0,
-      "source_rows": 37,
-      "target_rows": 37,
-      "source_hash": "dba053a1aa3df464",
-      "target_hash": "dba053a1aa3df464"
+      "source_rows": 65,
+      "target_rows": 65,
+      "source_hash": "b46b5cbaec6793f8",
+      "target_hash": "b46b5cbaec6793f8"
     },
     "events_log": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 76,
       "duplicates_ignored": 1,
       "quarantined": 0,
-      "source_rows": 1,
-      "target_rows": 1,
-      "source_hash": "06fc39f1c6b1d73c",
-      "target_hash": "799d506764cf433b"
+      "source_rows": 77,
+      "target_rows": 77,
+      "source_hash": "4a5463cb6334eeb0",
+      "target_hash": "fde91d51b2b93de8"
     },
     "memory_episodes": {
       "state": "done",
-      "copied_this_run": 0,
+      "copied_this_run": 504,
       "duplicates_ignored": 694,
       "quarantined": 0,
-      "source_rows": 694,
-      "target_rows": 694,
-      "source_hash": "d58bf660308ce6ca",
-      "target_hash": "d58bf660308ce6ca"
+      "source_rows": 1198,
+      "target_rows": 1198,
+      "source_hash": "8a1282643a09699d",
+      "target_hash": "8a1282643a09699d"
     }
   },
   "json": {
@@ -187,10 +193,10 @@
     "golden_library.json": "missing (nothing to copy)"
   },
   "notes": [
-    "FTS rebuilt: 694 indexed rows for 694 episodes (OK)",
-    "events_log hash chain: OK (1 rows chained)",
-    "foreign_key_check: 114 violations (crm_interactions->crm_clients: 114) \u2014 legacy orphan refs copied intact; operator decision required (create missing parents or archive) \u2014 ping (c) at cutover"
+    "FTS rebuilt: 1198 indexed rows for 1198 episodes (OK)",
+    "events_log hash chain: OK (77 rows chained)",
+    "foreign_key_check: 198 violations (crm_interactions->crm_clients: 198) \u2014 legacy orphan refs copied intact; operator decision required (create missing parents or archive) \u2014 ping (c) at cutover"
   ],
-  "started_at": 1793906448.1845975,
-  "finished_at": 1793906448.2654703
+  "started_at": 1793913412.4944751,
+  "finished_at": 1793913412.6099198
 }
