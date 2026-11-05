@@ -87,9 +87,14 @@ def redact(text: str) -> str:
     out = text or ""
     for pattern in _SECRET_PATTERNS:
         out = pattern.sub("[REDACTED]", out)
-    # Also scrub any vault values directly (exact match).
+    # Scrub any vault values directly (exact match).
     for key, val in _vault().items():
         if isinstance(val, str) and len(val) >= 8 and val in out:
+            out = out.replace(val, f"[REDACTED:{key}]")
+    # Scrub credential-shaped ENV values too — secrets often live in env only.
+    for key, val in os.environ.items():
+        if (any(p in key.upper() for p in ("KEY", "SECRET", "TOKEN", "PASSWORD", "CREDENTIAL"))
+                and isinstance(val, str) and len(val) >= 8 and val in out):
             out = out.replace(val, f"[REDACTED:{key}]")
     return out
 
