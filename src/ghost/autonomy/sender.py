@@ -79,6 +79,25 @@ class ColdOutreachSender:
             raise SendRefused("no_valid_grant",
                               "outreach requires a fresh grant from OutboundGateway.issue_grant()")
 
+        # Lock 1b: the grant's OWN cap is enforced HERE, at the effect — the
+        # gateway's issue-time cap is not trusted to be the last word.
+        daily_cap = bounds.get("daily_cap")
+        if daily_cap is not None:
+            try:
+                from ghost.core.audit import AuditLedger
+                day = time.strftime("%Y-%m-%d")
+                sent_today = len(AuditLedger.get_instance().query(
+                    day=day, event_type="outbound.delivered", limit=1000))
+                if sent_today >= int(daily_cap):
+                    audit("outbound.send_refused", subject=lead_slug,
+                          reason="over_cap", cap=daily_cap, sent_today=sent_today)
+                    raise SendRefused("over_cap",
+                                      f"daily cap {daily_cap} reached ({sent_today} sent today)")
+            except SendRefused:
+                raise
+            except Exception:
+                pass  # cap check is best-effort above the hard locks; never unlocks mail
+
         # Lock 2: independent re-checks at the wrapper — trust nothing upstream.
         if is_halted():
             audit("outbound.send_refused", subject=lead_slug, reason="halt")
@@ -107,6 +126,26 @@ class ColdOutreachSender:
         user = get("GHOST_OUTREACH_SMTP_USER")
         password = get("GHOST_OUTREACH_SMTP_PASSWORD")
 
+        # Outbox (T1c protocol): record BEFORE the provider call. The key is
+        # derived from the single-use grant token, so a crash between
+        # provider-accept and the outbox transition can never resend: the
+        # grant is consumed (replay refused) AND this row shows 'sent'.
+        import hashlib as _hashlib
+        key_hash = _hashlib.sha256((grant_token or "").encode()).hexdigest()[:16]
+        ob_key = f"outreach:{key_hash}"
+        from ghost.store import outbox as _outbox
+        prior = _outbox.state_of(ob_key)
+        if prior in ("sent", "verified"):
+            audit("outbound.send_refused", subject=lead_slug,
+                  reason="already_sent_for_grant", outbox_key=ob_key)
+            raise SendRefused("already_sent", "this grant's effect is already recorded")
+        _outbox.record("outreach_email", ob_key,
+                       {"lead": lead_slug, "to": to_email, "subject": req.subject})
+        # Provider-side idempotency: the Message-ID IS the outbox key, so a
+        # server that saw this exact message can dedupe it too. (':' is not a
+        # legal msg-id character — sanitize for the header only.)
+        msg["Message-ID"] = f"<{ob_key.replace(':', '-')}@outreach.ghost>"
+
         try:
             with smtplib.SMTP(host, port, timeout=15) as server:
                 server.starttls(context=ssl.create_default_context())
@@ -114,9 +153,11 @@ class ColdOutreachSender:
                 send_result = server.send_message(msg)
         except (smtplib.SMTPException, OSError) as e:
             # Bounce/transport failure = retryable, not a policy failure.
+            _outbox.transition(ob_key, "failed")
             audit("outbound.transport_error", subject=lead_slug,
                   error=redact(str(e))[:300])
             raise SendRefused("transport_error", redact(str(e))[:200])
+        _outbox.transition(ob_key, "sent")
 
         refused = send_result.get(to_email) if isinstance(send_result, dict) else None
         message_id = msg.get("Message-ID", "")

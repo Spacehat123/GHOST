@@ -29,6 +29,11 @@ SNAPSHOTS_DIR = os.environ.get("GHOST_SNAPSHOTS_DIR") or os.path.join(REPO_DIR, 
 DRILL_INTERVAL_S = 30 * 86400  # monthly
 
 
+def _snapshots_dir() -> str:
+    """Re-resolved per call (test isolation / env redirects)."""
+    return os.environ.get("GHOST_SNAPSHOTS_DIR") or os.path.join(REPO_DIR, "data", "snapshots")
+
+
 def _hash_file(path: str) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -38,9 +43,9 @@ def _hash_file(path: str) -> str:
 
 
 class SnapshotStore:
-    def __init__(self, base_dir: str = SNAPSHOTS_DIR):
-        self.base_dir = base_dir
-        os.makedirs(base_dir, exist_ok=True)
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = base_dir or _snapshots_dir()
+        os.makedirs(self.base_dir, exist_ok=True)
 
     def _slug_dir(self, slug: str) -> str:
         return os.path.join(self.base_dir, slug)

@@ -423,7 +423,10 @@ class BatchDemoWorker:
             if mock_deployer is not None:
                 dep_res = mock_deployer(slug, project_name)
             else:
-                dep_res = await VercelDeployer.deploy_demo(slug, project_name=project_name)
+                from ghost.autonomy.outbound import issue_effect_grant
+                dep_grant = issue_effect_grant("deploy", slug)
+                dep_res = await VercelDeployer.deploy_demo(slug, project_name=project_name,
+                                                           grant_token=dep_grant)
 
             if dep_res.get("status") == "success" and dep_res.get("url"):
                 live_url = dep_res["url"]

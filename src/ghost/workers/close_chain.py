@@ -97,6 +97,20 @@ def process_payment_webhook(
           invoice_number=event.invoice_number, lead=invoice.get("lead_slug"),
           amount=str(paid), currency=event.currency, provider=getattr(provider, "name", "unknown"))
 
+    # Outbox (T1c): the verified webhook is an effect with a provider
+    # idempotency key (the event id) — reconciliation (T5) diffs these rows
+    # against the provider's own log.
+    try:
+        from ghost.store import outbox as _outbox
+        _outbox.record("payment.webhook", event.event_id,
+                       {"provider": getattr(provider, "name", "unknown"),
+                        "invoice": event.invoice_number, "amount": str(paid),
+                        "currency": event.currency})
+        _outbox.transition(event.event_id, "sent")
+        _outbox.transition(event.event_id, "verified")
+    except Exception:
+        pass  # outbox must never break the money path; ledger already has the truth
+
     enqueue(
         "close_chain.send_contract",
         {"invoice_number": event.invoice_number, "lead_slug": invoice.get("lead_slug"),

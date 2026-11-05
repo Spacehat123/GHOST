@@ -33,6 +33,7 @@ TRANSITIONS = {
 
 def _conn(path: Optional[str] = None) -> sqlite3.Connection:
     conn = connect_target(path or ghost_db_path())
+    create_target(conn)   # idempotent — every entry point guarantees the table
     return conn
 
 
@@ -42,7 +43,6 @@ def record(kind: str, idempotency_key: str, payload: Optional[Dict[str, Any]] = 
     row (restarts are normal; the key is the dedupe). Returns the outbox id."""
     now = time.time()
     with closing(_conn(db_path)) as conn, conn:
-        create_target(conn)
         cur = conn.execute(
             "INSERT OR IGNORE INTO outbox (kind, grant_id, idempotency_key, payload, "
             "state, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?)",

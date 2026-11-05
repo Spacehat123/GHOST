@@ -9,6 +9,7 @@ import os
 import json
 import logging
 import shutil
+import time
 from typing import Dict, Any, Optional
 from ghost.mcp.bridge import ShellExecutor, request_tactical_authorization
 
@@ -18,6 +19,11 @@ CONFIGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../
 VERCEL_CONFIG_PATH = os.path.join(CONFIGS_DIR, "vercel.json")
 DEFAULT_DEMOS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../demos"))
 DEMOS_DIR = os.environ.get("GHOST_DEMOS_DIR") or DEFAULT_DEMOS_DIR
+
+
+def _demos_dir() -> str:
+    """Re-resolved per call (env redirects / test isolation)."""
+    return os.environ.get("GHOST_DEMOS_DIR") or DEFAULT_DEMOS_DIR
 
 
 class VercelDeployer:
@@ -115,6 +121,51 @@ class VercelDeployer:
         with open(VERCEL_CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
 
+    @classmethod
+    def _qa_hash(cls, demo_dir: str) -> str:
+        """Stable hash of the QA evidence a deploy is riding on — one deploy
+        per evidence; new screenshots mean a new hash and a new deploy."""
+        import hashlib
+        qa_path = os.path.join(demo_dir, "reports", "qa.json")
+        try:
+            with open(qa_path, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            return "no-qa"
+
+    @classmethod
+    def _snapshot_gate(cls, slug: str) -> Optional[Dict[str, Any]]:
+        """T2 precondition: never touch a live site without a fresh rollback
+        point. Missing or stale (>24h) snapshot -> refuse with the remedy."""
+        from ghost.core.audit import audit
+        snap, latest_error = None, "none"
+        try:
+            from ghost.workers.snapshots import SnapshotStore
+            snap = SnapshotStore().latest(slug)
+        except Exception as e:
+            latest_error = str(e)
+        if not snap:
+            audit("deploy.snapshot_required", subject=slug,
+                  reason="no_snapshot", detail=latest_error[:200])
+            return {
+                "status": "snapshot_required",
+                "message": (f"Deploy of '{slug}' refused: no snapshot exists. "
+                            "Snapshot the demo dir first (ghost.workers.snapshots."
+                            "SnapshotManager.snapshot) — deploys require a rollback point."),
+                "url": None,
+            }
+        age_s = time.time() - float(snap.get("created_at", 0))
+        if age_s > 24 * 3600:
+            audit("deploy.snapshot_required", subject=slug,
+                  reason="stale_snapshot", age_h=round(age_s / 3600, 1))
+            return {
+                "status": "snapshot_required",
+                "message": (f"Deploy of '{slug}' refused: newest snapshot is "
+                            f"{age_s / 3600:.1f}h old (>24h). Take a fresh snapshot."),
+                "url": None,
+            }
+        return None
+
     @staticmethod
     def _qa_gate(slug: str, demo_dir: str, allow_unverified: bool = False) -> Optional[Dict[str, Any]]:
         """Returns None if QA evidence clears the build for deploy, else a
@@ -170,18 +221,47 @@ class VercelDeployer:
 
     @classmethod
     async def deploy_demo(cls, slug: str, project_name: Optional[str] = None,
-                          allow_unverified: bool = False) -> Dict[str, Any]:
+                          allow_unverified: bool = False,
+                          grant_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Deploys a demo directory (`demos/<slug>`) to Vercel production using bunx vercel.
         Uses neutral project naming ({slug}-concept) without internal branding.
-        Requires passed screenshot QA (reports/qa.json) before dispatch, and
-        Tactical Authorization before cloud dispatch.
-        allow_unverified=True is the operator's explicit override — it is
-        logged to the audit ledger either way.
+        Requires (in order): halt clear -> a valid single-use DEPLOY GRANT ->
+        a FRESH SNAPSHOT of the demo dir -> passed screenshot QA -> Tactical
+        Authorization. allow_unverified=True is the operator's explicit QA
+        override — it is logged either way; it does NOT bypass grant/snapshot.
         """
-        demo_dir = os.path.join(DEMOS_DIR, slug)
+        demo_dir = os.path.join(_demos_dir(), slug)
         if not os.path.exists(demo_dir):
             return {"status": "error", "message": f"Demo directory not found at '{demo_dir}'"}
+
+        # ---- Halt gate (P0): the throat-cut handle freezes deploys too. ------
+        from ghost.core.halt import assert_not_halted
+        try:
+            assert_not_halted(f"deploy_demo:{slug}")
+        except Exception as e:
+            return {"status": "halted", "message": str(e), "url": None}
+
+        # ---- Grant gate (T2): a deploy is an effect — no grant, no deploy. ---
+        from ghost.core import grants
+        bounds = grants.verify(grant_token or "", capability="deploy", subject=slug)
+        if bounds is None:
+            from ghost.core.audit import audit
+            audit("deploy.grant_required", subject=slug,
+                  reason="no_valid_deploy_grant")
+            return {
+                "status": "grant_required",
+                "message": (f"Deploy of '{slug}' refused: no valid deploy grant. "
+                            "Request one via "
+                            "ghost.autonomy.outbound.issue_effect_grant('deploy', slug) "
+                            "— the control plane (not the LLM) authorizes effects."),
+                "url": None,
+            }
+
+        # ---- Snapshot precondition (T2): touch nothing without a rollback. ---
+        snapshot_block = cls._snapshot_gate(slug)
+        if snapshot_block:
+            return snapshot_block
 
         # ---- QA gate (P2, Roadmap §2 Stage 2): deploys are EVIDENCE-gated. ---
         # No passed QA report with captured screenshots -> refuse. Deploying an
@@ -190,12 +270,18 @@ class VercelDeployer:
         if qa_block:
             return qa_block
 
-        # ---- Halt gate (P0): the throat-cut handle freezes deploys too. ------
-        from ghost.core.halt import assert_not_halted
-        try:
-            assert_not_halted(f"deploy_demo:{slug}")
-        except Exception as e:
-            return {"status": "halted", "message": str(e), "url": None}
+        # ---- Outbox (T1c protocol): record BEFORE dispatching. One deploy per
+        # QA evidence — a retry with unchanged evidence hits the 'sent' row.
+        from ghost.core.audit import audit
+        qa_hash = cls._qa_hash(demo_dir)
+        ob_key = f"deploy:{slug}:{qa_hash[:12]}"
+        from ghost.store import outbox as _outbox
+        if _outbox.state_of(ob_key) in ("sent", "verified"):
+            audit("deploy.duplicate_refused", subject=slug, outbox_key=ob_key)
+            return {"status": "already_deployed",
+                    "message": f"Deploy for '{slug}' already recorded for this QA evidence.",
+                    "url": None}
+        _outbox.record("deploy", ob_key, {"slug": slug, "qa_hash": qa_hash[:12]})
 
         token = cls.get_token()
         if not token:
@@ -249,6 +335,7 @@ class VercelDeployer:
             except Exception:
                 pass
 
+            _outbox.transition(ob_key, "sent")
             return {
                 "status": "success",
                 "slug": slug,
@@ -257,6 +344,7 @@ class VercelDeployer:
                 "output": stdout[:300]
             }
         else:
+            _outbox.transition(ob_key, "failed")
             return {
                 "status": "error",
                 "message": f"Vercel deployment failed: {res.get('stderr') or res.get('stdout')}",

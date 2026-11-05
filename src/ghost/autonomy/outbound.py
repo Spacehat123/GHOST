@@ -58,7 +58,7 @@ class GateResult:
 
 class OutboundGateway:
     def __init__(self, knobs: Dict[str, Any], suppression, ladder,
-                 state_path: str = OUTBOUND_STATE_PATH,
+                 state_path: Optional[str] = None,
                  now: Optional[Callable[[], float]] = None):
         """knobs: policy knobs dict (max_new_contacts_per_day lives there).
         suppression: SuppressionManager-like (is_suppressed).
@@ -66,9 +66,11 @@ class OutboundGateway:
         self.knobs = knobs
         self.suppression = suppression
         self.ladder = ladder
-        self.state_path = state_path
+        # Re-resolved per construction (env redirects / test isolation).
+        self.state_path = state_path or os.environ.get("GHOST_OUTBOUND_STATE_PATH") \
+            or OUTBOUND_STATE_PATH
         self._now = now or time.time
-        os.makedirs(os.path.dirname(state_path), exist_ok=True)
+        os.makedirs(os.path.dirname(self.state_path), exist_ok=True)
         self._state = self._load()
 
     # ------------------------------------------------------------ day counters
@@ -186,6 +188,9 @@ class OutboundGateway:
                 "to": req.to_email,
                 "facts": len(result.meta.get("facts", [])),
                 "is_followup": req.is_followup,
+                # enforced AGAIN at the effect (sender lock 1b) — issue-time
+                # caps are not trusted to be the last word
+                "daily_cap": int(self.knobs.get("max_new_contacts_per_day", 50)),
             },
             ttl_s=ttl_s,
         )
@@ -208,3 +213,21 @@ class OutboundGateway:
 
 def build_default_gateway(knobs: Dict[str, Any], suppression, ladder) -> OutboundGateway:
     return OutboundGateway(knobs=knobs, suppression=suppression, ladder=ladder)
+
+
+def issue_effect_grant(capability: str, subject: str, ttl_s: float = 120.0,
+                       bounds: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    """Control-plane authority for non-outreach effects (deploy, …). The LLM
+    may REQUEST this; it can never mint tokens itself. Fails closed on halt —
+    a frozen agent authorizes nothing."""
+    from ghost.core import grants
+    from ghost.core.halt import is_halted
+    if is_halted():
+        audit("effect.grant_refused", subject=subject, capability=capability,
+              reason="halt")
+        return None
+    token = grants.issue(capability=capability, subject=subject,
+                         bounds=bounds or {"issued_by": "gateway"}, ttl_s=ttl_s)
+    if token:
+        audit("effect.grant_issued", subject=subject, capability=capability)
+    return token

@@ -1991,8 +1991,11 @@ class AutonomousDemoStateMachine:
         b = self.brand_data
         main_title, _ = split_business_name(b["business_name"])
 
-        # Attempt Vercel cloud deployment
-        deploy_res = await VercelDeployer.deploy_demo(self.slug, project_name=f"{self.slug}-concept")
+        # Attempt Vercel cloud deployment — control plane authorizes, effect executes
+        from ghost.autonomy.outbound import issue_effect_grant
+        deploy_grant = issue_effect_grant("deploy", self.slug)
+        deploy_res = await VercelDeployer.deploy_demo(self.slug, project_name=f"{self.slug}-concept",
+                                                      grant_token=deploy_grant)
         live_url = deploy_res.get("url")
         self.deployed_url = live_url
 
