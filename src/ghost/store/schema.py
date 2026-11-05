@@ -183,6 +183,19 @@ STATE = [
         k TEXT PRIMARY KEY, v TEXT)""",
     """CREATE TABLE IF NOT EXISTS agency_session (
         k TEXT PRIMARY KEY, v TEXT)""",
+    # --- human-reserved acts (T9): Ghost prepares, the operator clicks -------
+    """CREATE TABLE IF NOT EXISTS reserved_packages (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,              -- contract | refund | delete
+        subject TEXT NOT NULL,           -- lead_slug / client slug / site slug
+        state TEXT NOT NULL DEFAULT 'ready',   -- ready | approved | executed | dismissed | blocked
+        payload_json TEXT NOT NULL,      -- everything pre-filled for the one click
+        recommendation TEXT,
+        created_at REAL NOT NULL,
+        decided_at REAL,
+        decided_by TEXT,
+        outcome_json TEXT
+    )""",
 ]
 # --- migration machinery -------------------------------------------------------
 MIGRATION = [

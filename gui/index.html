@@ -42,6 +42,10 @@
         <span>⚔️ Command Deck</span>
       </button>
 
+      <button id="btn-operator" class="hud-btn-icon-link" title="Operator Control — integrations, reserved acts">
+        🛡️
+      </button>
+
       <button id="btn-settings" class="hud-btn-icon-link" title="OmniRoute Connection Settings">
         ⚙️
       </button>
@@ -104,6 +108,46 @@
       <div class="modal-footer">
         <span id="save-status" class="save-status"></span>
         <button id="btn-save-settings" class="hud-btn hud-btn-primary">Save Connection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operator Control Modal (T9): integrations + reserved acts -->
+  <div id="operator-modal" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 640px; max-height: 82vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">Operator Control</div>
+        <button id="btn-close-operator" class="modal-close">&times;</button>
+      </div>
+      <p class="modal-desc">
+        Integrations write through the control plane into the secrets vault (chmod 600).
+        Secrets are masked on read. Reserved acts are the ONLY human clicks in the loop.
+      </p>
+
+      <div class="form-group">
+        <label>Integrations</label>
+        <div id="operator-sections" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Connection Tests</label>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="hud-btn op-test" data-target="razorpay">Test Razorpay</button>
+          <button class="hud-btn op-test" data-target="smtp">Test SMTP</button>
+          <button class="hud-btn op-test" data-target="domain">Check DNS</button>
+          <button class="hud-btn op-test" data-target="ollama">Test Local Model</button>
+        </div>
+        <div id="op-test-result" class="save-status" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Reserved Acts — awaiting your signature</label>
+        <div id="reserved-queue" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <span id="op-status" class="save-status"></span>
+        <button id="btn-op-reload" class="hud-btn">Reload</button>
       </div>
     </div>
   </div>

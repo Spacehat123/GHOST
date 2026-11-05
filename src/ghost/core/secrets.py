@@ -67,6 +67,44 @@ def get(name: str, default: Optional[str] = None) -> Optional[str]:
     return _vault().get(name, default)
 
 
+# operator-settable secret names (the T9 settings UI writes ONLY these)
+SETTABLE_SECRETS = (
+    "GHOST_GRANT_SECRET",
+    "GHOST_OUTREACH_SMTP_HOST", "GHOST_OUTREACH_SMTP_PORT",
+    "GHOST_OUTREACH_SMTP_USER", "GHOST_OUTREACH_SMTP_PASSWORD",
+    "GHOST_OUTREACH_FROM", "GHOST_OUTREACH_REPLY_TO",
+    "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET",
+    "GHOST_SENDING_DOMAIN",
+)
+
+
+def set_secret(name: str, value: str) -> bool:
+    """Operator settings UI path (T9): write ONE secret into the vault.
+    Only SETTABLE_SECRETS names are accepted — the UI cannot invent
+    credential-shaped env entries. Atomic rename, chmod 600."""
+    if name not in SETTABLE_SECRETS:
+        logger.warning("set_secret refused: %s is not operator-settable", name)
+        return False
+    path = _vault_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    vault = dict(_vault())
+    vault[name] = str(value)
+    tmp = path + f".tmp.{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(vault, f, indent=2)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+    global _SECRET_CACHE, _SECRET_CACHE_KEY
+    _SECRET_CACHE = None   # invalidate; next get() re-reads
+    _SECRET_CACHE_KEY = None
+    try:
+        from ghost.core.audit import audit
+        audit("operator.secret_set", name=name)
+    except Exception:
+        pass
+    return True
+
+
 def require(name: str) -> str:
     """Capability-critical resolution: raises with setup instructions if absent."""
     val = get(name)

@@ -105,6 +105,146 @@ async def trigger_patrol():
     sweep = await watchdog.run_patrol_sweep()
     return {"status": "success", "report": sweep}
 
+# ------------------------- T9: human-reserved act packages -------------------
+
+@app.get("/api/reserved")
+async def reserved_list(state: str = None):
+    """The operator's one-screen queue: every package awaiting a click."""
+    from ghost.control.reserved import list_packages
+    return {"packages": list_packages(state=state)}
+
+
+@app.post("/api/reserved/{pid}/approve")
+async def reserved_approve(pid: str):
+    """THE one action on a finished package. Operator-only: this endpoint is
+    the sole authority that mints an operator grant and executes once."""
+    from ghost.control.reserved import approve
+    out = approve(pid)
+    if "error" in out:
+        raise HTTPException(status_code=409, detail=out["error"])
+    return out
+
+
+@app.post("/api/reserved/{pid}/dismiss")
+async def reserved_dismiss(pid: str):
+    from ghost.control.reserved import dismiss
+    out = dismiss(pid)
+    if "error" in out:
+        raise HTTPException(status_code=409, detail=out["error"])
+    return out
+
+# ------------------------- T9: control-plane settings ------------------------
+
+_SETTING_SECTIONS = {
+    "razorpay": ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"],
+    "smtp": ["GHOST_OUTREACH_SMTP_HOST", "GHOST_OUTREACH_SMTP_PORT",
+             "GHOST_OUTREACH_SMTP_USER", "GHOST_OUTREACH_SMTP_PASSWORD",
+             "GHOST_OUTREACH_FROM", "GHOST_OUTREACH_REPLY_TO"],
+    "domain": ["GHOST_SENDING_DOMAIN"],
+    "authority": ["GHOST_GRANT_SECRET"],
+}
+
+
+def _mask(value: Optional[str]) -> str:
+    if not value:
+        return ""
+    if len(value) <= 8:
+        return "***"
+    return f"{value[:4]}...{value[-4:]}"
+
+
+@app.get("/api/settings/sections")
+async def settings_sections():
+    """Every operator-configurable section, secrets MASKED (last 4 only).
+    The operator never edits config files — this is the surface."""
+    from ghost.core.secrets import get, SETTABLE_SECRETS
+    from ghost.core.dnscheck import check_domain_deliverability
+    sections = {}
+    for name, keys in _SETTING_SECTIONS.items():
+        sections[name] = {k: {"set": bool(get(k)), "masked": _mask(get(k))}
+                          for k in keys}
+    domain = get("GHOST_SENDING_DOMAIN")
+    sections["domain"]["dns"] = (check_domain_deliverability(domain)
+                                 if domain else {"note": "no sending domain set"})
+    sections["settable"] = list(SETTABLE_SECRETS)
+    return sections
+
+
+@app.post("/api/settings/section/{section}")
+async def settings_put(section: str, request: Request):
+    """Write one section through the control plane into the secrets vault.
+    Only SETTABLE_SECRETS names pass; everything is audited as operator.*"""
+    from ghost.core.secrets import set_secret, SETTABLE_SECRETS
+    if section not in _SETTING_SECTIONS:
+        raise HTTPException(status_code=404, detail=f"unknown section {section}")
+    body = await request.json()
+    written, refused = [], []
+    for key, value in (body or {}).items():
+        if key not in _SETTING_SECTIONS[section] or key not in SETTABLE_SECRETS:
+            refused.append(key)
+            continue
+        if value in (None, ""):
+            continue   # empty = keep existing (masked-value round-trip safety)
+        if set_secret(key, str(value)):
+            written.append(key)
+        else:
+            refused.append(key)
+    if refused:
+        raise HTTPException(status_code=400, detail=f"refused: {refused}")
+    return {"status": "success", "written": written}
+
+
+@app.post("/api/settings/test/{target}")
+async def settings_test(target: str):
+    """Live test-connection buttons: verify the integration BEFORE relying on
+    it. Every result is honest — not_configured is a state, not an error."""
+    from ghost.core.secrets import get
+    if target == "razorpay":
+        key_id, key_secret = get("RAZORPAY_KEY_ID"), get("RAZORPAY_KEY_SECRET")
+        if not (key_id and key_secret):
+            return {"ok": False, "state": "not_configured"}
+        import base64
+        import urllib.request
+        try:
+            auth = base64.b64encode(f"{key_id}:{key_secret}".encode()).decode()
+            req = urllib.request.Request("https://api.razorpay.com/v1/payments?count=1",
+                                         headers={"Authorization": f"Basic {auth}"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return {"ok": r.status == 200, "state": "ok" if r.status == 200 else "error"}
+        except Exception as e:
+            return {"ok": False, "state": "error", "error": str(e)[:150]}
+    if target == "smtp":
+        from ghost.autonomy.sender import smtp_configured
+        if not smtp_configured():
+            return {"ok": False, "state": "not_configured"}
+        import smtplib
+        import ssl
+        try:
+            with smtplib.SMTP(get("GHOST_OUTREACH_SMTP_HOST"),
+                              int(get("GHOST_OUTREACH_SMTP_PORT") or 587),
+                              timeout=10) as server:
+                server.starttls(context=ssl.create_default_context())
+                server.login(get("GHOST_OUTREACH_SMTP_USER"),
+                             get("GHOST_OUTREACH_SMTP_PASSWORD"))
+            return {"ok": True, "state": "ok"}
+        except Exception as e:
+            return {"ok": False, "state": "error", "error": str(e)[:150]}
+    if target == "domain":
+        domain = get("GHOST_SENDING_DOMAIN")
+        if not domain:
+            return {"ok": False, "state": "not_configured"}
+        from ghost.core.dnscheck import warmup_may_start
+        gate = warmup_may_start(domain)
+        return {"ok": bool(gate.get("allowed")), "state": "ok" if gate.get("allowed")
+                else "incomplete", "missing": gate.get("missing", [])}
+    if target == "ollama":
+        from ghost.core.model_routing import check_local_model
+        probe = check_local_model()
+        return {"ok": probe["status"] == "available", "state": probe["status"],
+                "models": probe.get("models", [])[:5]}
+    raise HTTPException(status_code=404, detail=f"unknown test target {target}")
+
+
 @app.get("/api/settings")
 async def get_settings():
     """Retrieve active connection settings (masking API key)."""

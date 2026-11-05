@@ -685,3 +685,126 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureAudioContext();
   }, { once: true });
 });
+
+
+// ===================================================== Operator Control (T9)
+const btnOperator = document.getElementById('btn-operator');
+const operatorModal = document.getElementById('operator-modal');
+const btnCloseOperator = document.getElementById('btn-close-operator');
+const opSections = document.getElementById('operator-sections');
+const opStatus = document.getElementById('op-status');
+const opTestResult = document.getElementById('op-test-result');
+const reservedQueue = document.getElementById('reserved-queue');
+
+const SECTION_LABELS = {
+  razorpay: 'Razorpay (payments)',
+  smtp: 'Outreach SMTP (the one sending path)',
+  domain: 'Sending domain',
+  authority: 'Grant authority'
+};
+
+async function loadOperator() {
+  try {
+    const [secRes, resRes] = await Promise.all([
+      fetch('/api/settings/sections'), fetch('/api/reserved')
+    ]);
+    const sections = await secRes.json();
+    opSections.innerHTML = '';
+    for (const [name, keys] of Object.entries(sections)) {
+      if (name === 'settable' || typeof keys !== 'object' || !keys) continue;
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1px solid #2a2f45; border-radius:8px; padding:8px;';
+      const rows = Object.entries(keys).filter(([k]) => k.includes('_')).map(([key, info]) => `
+        <div style="display:flex; gap:6px; align-items:center; margin:3px 0;">
+          <span style="flex:1; font-size:11px; opacity:.75;">${key}</span>
+          <input data-section="${name}" data-key="${key}" placeholder="${info.masked || 'not set'}"
+                 style="flex:1.2; background:#0d1020; border:1px solid #2a2f45; color:#e5e7eb;
+                        border-radius:4px; padding:3px 6px; font-size:11px;" />
+          <span style="font-size:10px; opacity:.6;">${info.set ? '● set' : '○ unset'}</span>
+        </div>`).join('');
+      const dnsNote = name === 'domain' && keys.dns
+        ? `<div style="font-size:10px; opacity:.7;">DNS: ${keys.dns.ready ? '✓ ready' : 'incomplete'}${keys.dns.missing ? ' — ' + keys.dns.missing.length + ' missing' : ''}</div>`
+        : '';
+      card.innerHTML = `<div style="font-size:12px; font-weight:600; margin-bottom:4px;">
+                          ${SECTION_LABELS[name] || name}</div>${rows}${dnsNote}
+                        <button class="hud-btn op-save" data-section="${name}"
+                                style="margin-top:6px; font-size:11px; padding:3px 10px;">Save ${name}</button>`;
+      opSections.appendChild(card);
+    }
+    opSections.querySelectorAll('.op-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const section = btn.dataset.section;
+        const payload = {};
+        opSections.querySelectorAll(`input[data-section="${section}"]`).forEach(inp => {
+          if (inp.value.trim()) payload[inp.dataset.key] = inp.value.trim();
+        });
+        const res = await fetch(`/api/settings/section/${section}`, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        opStatus.textContent = res.ok ? `✓ ${section} saved` : `error: ${(await res.json()).detail || 'failed'}`;
+        opStatus.style.color = res.ok ? '#34d399' : '#f87171';
+        loadOperator();
+      });
+    });
+    // reserved acts queue
+    const { packages } = await resRes.json();
+    const ready = packages.filter(p => p.state === 'ready');
+    reservedQueue.innerHTML = ready.length ? '' :
+      '<div style="font-size:11px; opacity:.6;">Nothing awaiting signature — Ghost is running the business.</div>';
+    ready.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'border:1px solid #2a2f45; border-radius:8px; padding:8px;';
+      row.innerHTML = `
+        <div style="font-size:12px; font-weight:600;">${p.kind.toUpperCase()} — ${p.subject}</div>
+        <div style="font-size:11px; opacity:.75; margin:3px 0;">${p.recommendation || ''}</div>
+        <details style="font-size:10px; opacity:.7;"><summary>pre-filled details</summary>
+          <pre style="white-space:pre-wrap;">${JSON.stringify(p.payload, null, 1).slice(0, 600)}</pre></details>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button class="hud-btn hud-btn-primary op-approve" data-id="${p.id}" style="font-size:11px; padding:3px 10px;">Sign / Approve</button>
+          <button class="hud-btn op-dismiss" data-id="${p.id}" style="font-size:11px; padding:3px 10px;">Dismiss</button>
+        </div>`;
+      reservedQueue.appendChild(row);
+    });
+    reservedQueue.querySelectorAll('.op-approve').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const res = await fetch(`/api/reserved/${btn.dataset.id}/approve`, {method: 'POST'});
+        const out = await res.json();
+        opStatus.textContent = res.ok ? `✓ executed: ${out.state}` : `blocked: ${out.detail || 'error'}`;
+        opStatus.style.color = res.ok ? '#34d399' : '#f87171';
+        loadOperator();
+      });
+    });
+    reservedQueue.querySelectorAll('.op-dismiss').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await fetch(`/api/reserved/${btn.dataset.id}/dismiss`, {method: 'POST'});
+        loadOperator();
+      });
+    });
+  } catch (e) {
+    opStatus.textContent = `load error: ${e}`;
+    opStatus.style.color = '#f87171';
+  }
+}
+
+btnOperator.addEventListener('click', () => {
+  opStatus.textContent = '';
+  opTestResult.textContent = '';
+  operatorModal.classList.remove('hidden');
+  loadOperator();
+});
+btnCloseOperator.addEventListener('click', () => operatorModal.classList.add('hidden'));
+operatorModal.addEventListener('click', (e) => {
+  if (e.target === operatorModal) operatorModal.classList.add('hidden');
+});
+document.getElementById('btn-op-reload').addEventListener('click', loadOperator);
+document.querySelectorAll('.op-test').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    opTestResult.textContent = `testing ${btn.dataset.target}...`;
+    opTestResult.style.color = '#93c5fd';
+    const res = await fetch(`/api/settings/test/${btn.dataset.target}`, {method: 'POST'});
+    const out = await res.json();
+    opTestResult.textContent = `${btn.dataset.target}: ${out.state}${out.error ? ' — ' + out.error : ''}${out.missing ? ' — missing: ' + out.missing.length : ''}`;
+    opTestResult.style.color = out.ok ? '#34d399' : '#f87171';
+  });
+});
