@@ -197,6 +197,22 @@ def cmd_replay(args) -> int:
     return 0 if ok is not False else 1
 
 
+def cmd_supervise(args) -> int:
+    """T4: run the supervisor loop in THIS process (separate from main).
+    File writes only — it never opens the store, even to freeze."""
+    from ghost.supervisor import service
+    return service.run_loop(interval_s=args.interval)
+
+
+def cmd_deadman(args) -> int:
+    """T4: external cron check — alarm if the SUPERVISOR went silent."""
+    from ghost.supervisor import service
+    rc = service.deadman(threshold_s=args.threshold * 60.0)
+    if rc == 0:
+        print("supervisor liveness OK")
+    return rc
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -215,6 +231,8 @@ COMMANDS = {
     "migrate": (cmd_migrate, "T1b: copy all stores into data/ghost.db (sources untouched)"),
     "parity": (cmd_parity, "T1c: legacy vs unified stores — no history may be missing"),
     "replay": (cmd_replay, "T1c: reconstruct a day from events (--day YYYY-MM-DD)"),
+    "supervise": (cmd_supervise, "T4: run the kill-switch supervisor (file writes only)"),
+    "deadman": (cmd_deadman, "T4: cron check — is the supervisor itself alive? (--threshold minutes)"),
 }
 
 
@@ -235,6 +253,12 @@ def main(argv=None) -> int:
                            help="write the migration report dict to this path")
         if name == "replay":
             p.add_argument("--day", default=None, help="YYYY-MM-DD (default today)")
+        if name == "supervise":
+            p.add_argument("--interval", type=float, default=15.0,
+                           help="supervision cycle seconds (default 15)")
+        if name == "deadman":
+            p.add_argument("--threshold", type=float, default=30.0,
+                           help="alarm threshold minutes (default 30)")
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

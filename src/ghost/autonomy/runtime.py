@@ -131,6 +131,11 @@ class AutonomyRuntime:
             path = write_digest_file(content, repo_dir=REPO_DIR)
             audit("digest.written", path=path)
             try:
+                from ghost.core import rhythm
+                rhythm.mark("digest")
+            except Exception:
+                pass
+            try:
                 from ghost.watchdog.service import AutonomousWatchdog
                 wd = AutonomousWatchdog.get_instance()
                 wd._sync_notify("Ghost Daily Digest", f"Written to {path}")

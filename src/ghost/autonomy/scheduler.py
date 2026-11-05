@@ -131,6 +131,14 @@ async def run_scheduler(
                     "decision_id": decision.decision_id,
                 }, idempotency_key=f"hunt:{decision.decision_id}")
 
+        # Expected-rhythm marker (T4): the loop RAN and decided. The supervisor
+        # alarms if no marker appears by the morning deadline (file only).
+        try:
+            from ghost.core import rhythm
+            rhythm.mark("scheduler_cycle")
+        except Exception:
+            pass
+
         for p in decision.pings:
             if ping:
                 ping("(c) unverifiable", {"decision": decision.decision_id, "ping": p})

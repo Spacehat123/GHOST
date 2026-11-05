@@ -33,7 +33,7 @@ def beat(note: str = "scheduler") -> float:
     now = time.time()
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"ts": now, "note": note}, f)
+        json.dump({"ts": now, "note": note, "pid": os.getpid()}, f)
     os.replace(tmp, path)
     return now
 
