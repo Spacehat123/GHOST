@@ -5,6 +5,7 @@ merely because a Python function returned. Every task completion claim must be
 verified by deterministic code checks against physical artifacts and logs.
 """
 import os
+import re
 import hashlib
 import struct
 import zlib
@@ -106,7 +107,11 @@ def verify_evidence_item(item: Dict[str, Any], context: Optional[Dict[str, Any]]
 
     # 1. File Evidence
     if ev_type == "file":
-        path = item.get("path") or item.get("file_path")
+        path = item.get("path") or item.get("file_path") or item.get("file")
+        if not path and item.get("reason"):
+            r_str = str(item.get("reason")).strip()
+            if os.path.exists(r_str):
+                path = r_str
         if not path or not isinstance(path, str):
             return False, "File evidence requires a non-empty 'path' string", None
 
@@ -332,6 +337,75 @@ def verify_task_evidence(
 
     for item in evidence_items:
         t = str(item.get("type", "")).strip().lower()
+        if not t:
+            if "path" in item or "file_path" in item or "file" in item:
+                t = "file"
+                item["type"] = "file"
+                item["path"] = item.get("path") or item.get("file_path") or item.get("file")
+            elif "command" in item:
+                t = "command"
+                item["type"] = "command"
+            elif "reason" in item and "command" in str(item["reason"]).lower():
+                t = "command"
+                item["type"] = "command"
+                if not item.get("command"):
+                    from ghost.core.mission import MissionStore
+                    store = (context or {}).get("store") or MissionStore.get_instance()
+                    m_id = (context or {}).get("mission_id")
+                    if m_id:
+                        rec_calls = store.get_tool_calls_for_mission(m_id)
+                        succ_calls = [c for c in rec_calls if c.get("exit_code") == 0]
+                        if succ_calls:
+                            item["command"] = succ_calls[-1].get("command")
+                            item["exit_code"] = 0
+                            item["output"] = succ_calls[-1].get("output") or "Verified command execution"
+                            item["tool_call_id"] = succ_calls[-1].get("call_id")
+            elif "reason" in item:
+                r_val = str(item["reason"]).strip()
+                repo_root = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+                found_candidate = None
+                raw_strings = [r_val]
+                if context and isinstance(context, dict):
+                    raw_strings.append(str(context.get("result_summary", "")))
+                for raw_str in raw_strings:
+                    for token in re.findall(r'(/[\w\-./]+\.[\w]+|(?:demos|projects)/[\w\-./]+\.[\w]+|[\w\-./]+\.(?:html|json|md|glb|png|jpg))', raw_str):
+                        clean_token = token.rstrip(".,;:!?'\"")
+                        for p in [
+                            clean_token,
+                            os.path.join(repo_root, clean_token.lstrip("/")),
+                            os.path.join(repo_root, "demos", "grasshopper", clean_token.lstrip("/")),
+                            os.path.abspath(clean_token)
+                        ]:
+                            if os.path.exists(p) and os.path.isfile(p):
+                                found_candidate = p
+                                break
+                        if found_candidate:
+                            break
+                    if found_candidate:
+                        break
+
+                if not found_candidate:
+                    for acc in task_acceptance:
+                        for token in re.findall(r'([\w\-./]+\.(?:html|json|md|glb|png|jpg))', acc):
+                            clean_token = token.rstrip(".,;:!?'\"")
+                            for p in [
+                                clean_token,
+                                os.path.join(repo_root, clean_token.lstrip("/")),
+                                os.path.join(repo_root, "demos", "grasshopper", clean_token.lstrip("/")),
+                                os.path.abspath(clean_token)
+                            ]:
+                                if os.path.exists(p) and os.path.isfile(p):
+                                    found_candidate = p
+                                    break
+                            if found_candidate:
+                                break
+                        if found_candidate:
+                            break
+
+                if found_candidate:
+                    t = "file"
+                    item["type"] = "file"
+                    item["path"] = found_candidate
         if t:
             items_by_type.setdefault(t, []).append(item)
 

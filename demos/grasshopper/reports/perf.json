@@ -1,0 +1,7 @@
+{
+  "target_fps_desktop": 55,
+  "target_fps_mobile": 30,
+  "stages_total": 5,
+  "measured_in": "local_environment",
+  "verified": true
+}

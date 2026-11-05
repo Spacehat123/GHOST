@@ -1016,6 +1016,43 @@ GHOST_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "download_glb",
+            "description": "Downloads an approved candidate GLB model to destination directory (e.g. demos/<slug>/assets/) and writes license row to SOURCES.json. Requires operator approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "candidate_url": {
+                        "type": "string",
+                        "description": "Direct URL to GLB model"
+                    },
+                    "destination_dir": {
+                        "type": "string",
+                        "description": "Target folder for downloaded asset (e.g. 'demos/grasshopper/assets')"
+                    },
+                    "license_name": {
+                        "type": "string",
+                        "description": "License identifier (e.g. 'CC0', 'CC-BY-4.0')"
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "Original model author / credit"
+                    },
+                    "operator_approved": {
+                        "type": "boolean",
+                        "description": "Operator approval flag (must be true)"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "description": "Optional business or project slug"
+                    }
+                },
+                "required": ["candidate_url", "destination_dir", "license_name", "operator_approved"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "generate_image_asset",
             "description": "Generates image assets using configured free providers (Cloudflare, Hugging Face, Gemini, Three.js Scene Render). Returns explicit unavailable status if unconfigured. Never fakes output.",
             "parameters": {
@@ -1708,11 +1745,17 @@ class OmniRouteBrain:
                 allowed = await request_tactical_authorization(target or args or "General action authorization requested")
                 return {"status": "authorized" if allowed else "denied", "allowed": allowed, "action": target}
             elif act == "read_context":
-                ctx_path = os.path.join(REPO_DIR, "context", target.lstrip("/"))
-                if os.path.exists(ctx_path) and os.path.isfile(ctx_path):
-                    with open(ctx_path, "r", encoding="utf-8") as f:
+                candidate_paths = [
+                    os.path.join(REPO_DIR, target.lstrip("/")),
+                    os.path.join(REPO_DIR, "context", target.lstrip("/")),
+                    os.path.join(REPO_DIR, "context", target.replace("context/", "", 1).lstrip("/")),
+                    os.path.abspath(target)
+                ]
+                found_path = next((p for p in candidate_paths if os.path.exists(p) and os.path.isfile(p)), None)
+                if found_path:
+                    with open(found_path, "r", encoding="utf-8") as f:
                         content = f.read()
-                    return {"file": target, "content": content}
+                    return {"file": target, "path": found_path, "content": content}
                 else:
                     return {"error": f"Context file '{target}' not found."}
             elif act == "launch_app":
@@ -2199,6 +2242,23 @@ class OmniRouteBrain:
             q = str(arguments.get("query", "")).strip()
             lim = int(arguments.get("max_results", 5))
             return GLBDiscovery.find_glb(query=q, max_results=lim)
+
+        elif tool_name == "download_glb":
+            from ghost.workers.find_glb import GLBDiscovery
+            c_url = str(arguments.get("candidate_url", "")).strip()
+            d_dir = str(arguments.get("destination_dir", "")).strip()
+            lic = str(arguments.get("license_name", "")).strip()
+            auth = str(arguments.get("author", "")).strip()
+            op_app = bool(arguments.get("operator_approved", False))
+            sl = arguments.get("slug")
+            return GLBDiscovery.download_glb(
+                candidate_url=c_url,
+                destination_dir=d_dir,
+                license_name=lic,
+                author=auth,
+                operator_approved=op_app,
+                slug=sl
+            )
 
         elif tool_name == "generate_image_asset":
             from ghost.workers.asset_providers import AssetManager

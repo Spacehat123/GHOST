@@ -82,6 +82,28 @@ OPEN_3D_REGISTRY: List[Dict[str, Any]] = [
         "attribution_required": False,
         "author": "Public Domain",
         "triangles": 5420
+    },
+    {
+        "name": "Botanical Garden Plant (Degustation & Dining Sanctuary)",
+        "subject": "plant botanical garden nature foliage dining restaurant foliage table flora grasshopper",
+        "source": "Khronos glTF Sample Assets",
+        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/DiffuseTransmissionPlant/glTF-Binary/DiffuseTransmissionPlant.glb",
+        "license": "CC-BY-4.0",
+        "commercial_use_allowed": True,
+        "attribution_required": True,
+        "author": "Khronos Group",
+        "triangles": 16800
+    },
+    {
+        "name": "Glass Vase with Flowers (Intimate Fine Dining Tableware)",
+        "subject": "flowers vase glass floral dining fine dining degustation table table-setting centerpiece",
+        "source": "Khronos glTF Sample Assets",
+        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/GlassVaseFlowers/glTF-Binary/GlassVaseFlowers.glb",
+        "license": "CC-BY-4.0",
+        "commercial_use_allowed": True,
+        "attribution_required": True,
+        "author": "Khronos Group",
+        "triangles": 22400
     }
 ]
 

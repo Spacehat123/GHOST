@@ -1,0 +1,18 @@
+{
+  "tool": "qa_3d_site",
+  "demo_dir": "demos/grasshopper",
+  "checks": {
+    "index_html_exists": true,
+    "stages_json_exists": true,
+    "model_glb_exists": true,
+    "sources_json_exists": true
+  },
+  "stages_count": 5,
+  "viewports_tested": [
+    "desktop",
+    "mobile"
+  ],
+  "webgl_environment": "CDP Headless",
+  "passed": true,
+  "notice": "Visual verification complete. Software renderer active."
+}

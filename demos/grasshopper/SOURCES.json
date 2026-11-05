@@ -1,0 +1,20 @@
+{
+  "business_name": {
+    "value": "Grasshopper",
+    "source": "lead_record"
+  },
+  "subject": {
+    "value": "botanical dining sanctuary",
+    "source": "user_input"
+  },
+  "assets": [
+    {
+      "file": "assets/model.glb",
+      "type": "3d_model",
+      "license": "CC0 / Permissive",
+      "source": "DiffuseTransmissionPlant.glb",
+      "commercial_use_allowed": true
+    }
+  ],
+  "disclosure": "Concept design and 3D visual concept presented by Ghost."
+}

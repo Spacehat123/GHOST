@@ -1,0 +1,87 @@
+[
+  {
+    "stage": 1,
+    "name": "Establishing Aerial",
+    "camera": {
+      "x": 12.0,
+      "y": 8.0,
+      "z": 18.0
+    },
+    "target": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 0.0
+    },
+    "fov": 38,
+    "headline": "Monolithic Form in Context",
+    "description": "Geometric purity aligned with the surrounding landscape and natural horizon."
+  },
+  {
+    "stage": 2,
+    "name": "Fa\u00e7ade & Material Rhythm",
+    "camera": {
+      "x": 6.5,
+      "y": 3.2,
+      "z": 9.0
+    },
+    "target": {
+      "x": 0.0,
+      "y": 2.5,
+      "z": 0.0
+    },
+    "fov": 35,
+    "headline": "Material Tactility",
+    "description": "Textured board-formed concrete and deep anodized louvers catching dynamic light."
+  },
+  {
+    "stage": 3,
+    "name": "Cantilever Detail",
+    "camera": {
+      "x": -4.0,
+      "y": 5.0,
+      "z": 7.0
+    },
+    "target": {
+      "x": -1.0,
+      "y": 3.0,
+      "z": 0.0
+    },
+    "fov": 32,
+    "headline": "Structural Defiance",
+    "description": "Six-meter unbraced cantilever floating above the entrance reflection pool."
+  },
+  {
+    "stage": 4,
+    "name": "Threshold & Entry",
+    "camera": {
+      "x": 1.5,
+      "y": 1.6,
+      "z": 5.0
+    },
+    "target": {
+      "x": 0.0,
+      "y": 1.6,
+      "z": -2.0
+    },
+    "fov": 42,
+    "headline": "The Transitional Void",
+    "description": "Compressed entry sequence expanding into a double-height luminous atrium."
+  },
+  {
+    "stage": 5,
+    "name": "Editorial Specification Offset",
+    "camera": {
+      "x": -7.5,
+      "y": 3.5,
+      "z": 12.0
+    },
+    "target": {
+      "x": 2.0,
+      "y": 1.5,
+      "z": 0.0
+    },
+    "fov": 30,
+    "headline": "Enduring Precision",
+    "description": "Constructed with low-carbon structural stone and passive solar orientation."
+  }
+]

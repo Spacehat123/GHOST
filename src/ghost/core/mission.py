@@ -569,7 +569,7 @@ class MissionStore:
                 task_acceptance=target_task.acceptance,
                 evidence_required=target_task.evidence_required,
                 evidence_items=new_evidence,
-                context={"mission_id": mission_id, "task_id": task_id, "store": self}
+                context={"mission_id": mission_id, "task_id": task_id, "store": self, "result_summary": summary}
             )
             if not ok:
                 raise ValueError(f"Evidence verification failed for task '{task_id}': {err_msg}")
@@ -720,7 +720,7 @@ class MissionStore:
                 UPDATE tasks
                 SET status = 'pending', result_summary = '', attempts = 0,
                     budget = ?
-                WHERE mission_id = ? AND status = 'blocked';
+                WHERE mission_id = ? AND status NOT IN ('done', 'skipped');
                 """,
                 (json.dumps(TaskBudget().to_dict()), mission_id)
             )

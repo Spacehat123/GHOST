@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grasshopper — Cinematic 3D Concept</title>
+  <style>
+    :root {
+      --canvas: #0a0a0c;
+      --surface: #141418;
+      --ink: #f0f0f4;
+      --ink-muted: #8e8e9a;
+      --accent: #d4af37;
+      --accent-glow: rgba(212, 175, 55, 0.25);
+      --font-serif: "Cinzel", "Playfair Display", Georgia, serif;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      cursor: default;
+    }
+    #webgl-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: auto;
+    }
+    #fallback-poster {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #111 center/cover no-repeat;
+      z-index: 0;
+    }
+    .hud {
+      position: fixed;
+      z-index: 10;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+    }
+    header.nav-bar {
+      position: absolute;
+      top: 2rem;
+      left: 2.5rem;
+      right: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: auto;
+    }
+    .brand-wordmark {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .nav-controls {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .views-indicator {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: var(--ink-muted);
+    }
+    .view-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+    .view-dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+    .sound-toggle-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--ink);
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+    }
+    .sound-toggle-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: var(--accent);
+    }
+    .stage-content {
+      position: absolute;
+      left: 4rem;
+      bottom: 5rem;
+      max-width: 480px;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .stage-number {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .stage-headline {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      line-height: 1.15;
+      font-weight: 400;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+    .stage-description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--ink-muted);
+    }
+    .content-scroll-flow {
+      position: relative;
+      z-index: 5;
+      margin-top: 500vh; /* Accommodates 5 scroll stages */
+      background: var(--canvas);
+    }
+    section.editorial-section {
+      padding: 8rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      margin-bottom: 3rem;
+      letter-spacing: 0.05em;
+    }
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+    }
+    .service-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 2.5rem 2rem;
+      border-radius: 4px;
+    }
+    .service-card h3 {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .service-card p {
+      color: var(--ink-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    footer.site-footer {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--ink-muted);
+      font-size: 0.85rem;
+    }
+    .concept-notice {
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    @media (max-width: 768px) {
+      .stage-content { left: 1.5rem; bottom: 3rem; right: 1.5rem; }
+      .stage-headline { font-size: 1.8rem; }
+      .service-grid { grid-template-columns: 1fr; }
+      header.nav-bar { left: 1.5rem; right: 1.5rem; }
+      footer.site-footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div id="webgl-container"></div>
+  <div id="fallback-poster"></div>
+
+  <div class="hud">
+    <header class="nav-bar">
+      <div class="brand-wordmark">Grasshopper</div>
+      <div class="nav-controls">
+        <div class="views-indicator" id="views-indicator">
+          <span class="view-dot active" data-index="0"></span>
+          <span class="view-dot" data-index="1"></span>
+          <span class="view-dot" data-index="2"></span>
+          <span class="view-dot" data-index="3"></span>
+          <span class="view-dot" data-index="4"></span>
+        </div>
+        <button class="sound-toggle-btn" id="sound-btn">Sound: Off</button>
+      </div>
+    </header>
+
+    <div class="stage-content" id="stage-content">
+      <div class="stage-number" id="stage-number">01 / STAGE</div>
+      <h1 class="stage-headline" id="stage-headline">Monolithic Precision</h1>
+      <p class="stage-description" id="stage-description">Architectural form and bespoke materials illuminated under dynamic PBR lighting.</p>
+    </div>
+  </div>
+
+  <div class="content-scroll-flow">
+    <section class="editorial-section" id="atmosphere">
+      <h2 class="section-title">Structure to Atmosphere</h2>
+      <div class="service-grid">
+        <div class="service-card">
+          <h3>Signature Architecture</h3>
+          <p>Bespoke structural design and precision material engineering crafted for permanence.</p>
+        </div>
+        <div class="service-card">
+          <h3>Material Integrity</h3>
+          <p>Uncompromising tactile selection of structural stone, anodized metals, and optical finishes.</p>
+        </div>
+        <div class="service-card">
+          <h3>Atmospheric Lighting</h3>
+          <p>Natural circadian orientation balanced by calibrated architectural illumination.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div>&copy; <span id="year">2026</span> Grasshopper. All rights reserved.</div>
+      <div class="concept-notice">Concept design & 3D real-time visual presented by Ghost.</div>
+      <div><a href="#top" style="color:inherit; text-decoration:none;">Back to Top ↑</a></div>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
