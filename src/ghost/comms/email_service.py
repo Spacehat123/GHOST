@@ -1,6 +1,9 @@
-"""High-Reliability Email Service for Ghost Agency Operations.
-Handles IMAP inbox monitoring and authenticated SMTP sending via Gmail.
-All outbound emails are gated by the Tactical Authorization Modal.
+"""Email Service — read-only inbox (IMAP) + draft queue for the operator.
+
+This service CANNOT send email, by design: the only sending path in Ghost is
+the effects-plane ColdOutreachSender (autonomy/sender.py), gated by grant
+tokens, the halt switch, suppression and SMTP credentials. Everything here
+either reads the inbox or prepares drafts in the CRM review queue.
 """
 import os
 import json
@@ -136,18 +139,38 @@ class EmailService:
                 except Exception:
                     pass
 
-    def send_email(
+    def draft_email(
         self,
         to_email: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None
+        html_body: Optional[str] = None,
+        crm: Optional[Any] = None,
     ) -> Dict[str, Any]:
-        """
-        Automated email dispatch is strictly forbidden per Ghost Human-In-The-Loop policy.
-        Ghost prepares drafts in the CRM review queue; only the operator verifies and sends.
-        """
-        raise RuntimeError(
-            "Automated email dispatch via SMTP is strictly prohibited per Ghost Human-In-The-Loop policy. "
-            "Ghost prepares drafts in the CRM review queue; only the operator verifies and manually sends them."
-        )
+        """The honest capability: prepare a draft in the CRM review queue.
+        Returns {"drafted": True, "sent": False, ...}; NEVER sends. If the CRM
+        is unreachable, the draft is appended to data/drafts.jsonl so it cannot
+        be lost — and that degradation is audited, not silent."""
+        record: Dict[str, Any] = {
+            "to": to_email, "subject": subject, "body": body,
+            "html_body": html_body, "at": time.time(),
+        }
+        try:
+            from ghost.crm.db import CRMDatabase
+            crm = crm or CRMDatabase.get_instance()
+            result = crm.add_or_update_draft(lead_id=to_email, channel="email",
+                                             body=body, subject=subject)
+            record["draft_id"] = result.get("id")
+            record["queue"] = "crm"
+        except Exception as e:
+            path = os.path.join(REPO_DIR, "data", "drafts.jsonl")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
+            record.update({"queue": "file", "path": path, "crm_error": str(e)[:200]})
+        from ghost.core.audit import audit
+        audit("email.drafted", subject=to_email, queue=record.get("queue"),
+              draft_id=record.get("draft_id"))
+        record["drafted"] = True
+        record["sent"] = False
+        return record

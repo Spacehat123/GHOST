@@ -15,6 +15,7 @@ os.environ["GHOST_HALT_META"] = os.path.join(TMP, "HALTED.json")
 os.environ["GHOST_LADDER_STATE_PATH"] = os.path.join(TMP, f"ladder-{uuid.uuid4().hex}.json")
 os.environ["GHOST_OUTBOUND_STATE_PATH"] = os.path.join(TMP, f"outbound-{uuid.uuid4().hex}.json")
 
+from ghost.core import heartbeat
 from ghost.core.audit import AuditLedger
 from ghost.core.halt import trip, resume
 from ghost.autonomy.ladder import AutonomyLadder, L0, L1, L2, L3, L4
@@ -242,6 +243,22 @@ class TestDigest(unittest.TestCase):
 
 
 class TestScheduler(unittest.TestCase):
+
+    def setUp(self):
+        # The scheduler now reads the REAL heartbeat age (T0 truth pass);
+        # give these tests a fresh beat so the engine doesn't fail closed
+        # over a missing marker.
+        hb_dir = tempfile.mkdtemp(prefix="ghost-p3-hb-")
+        self._old_hb = os.environ.get("GHOST_HEARTBEAT_PATH")
+        os.environ["GHOST_HEARTBEAT_PATH"] = os.path.join(hb_dir, "hb.json")
+        heartbeat.beat("test")
+        self.addCleanup(self._restore_hb)
+
+    def _restore_hb(self):
+        if self._old_hb is None:
+            os.environ.pop("GHOST_HEARTBEAT_PATH", None)
+        else:
+            os.environ["GHOST_HEARTBEAT_PATH"] = self._old_hb
 
     def test_hungry_snapshot_enqueues_bounded_hunt(self):
         crm = FakeCRM()

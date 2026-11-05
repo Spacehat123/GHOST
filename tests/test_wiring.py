@@ -8,6 +8,14 @@ import tempfile
 import unittest
 import uuid
 
+def _dep_available(name: str) -> bool:
+    try:
+        __import__(name)
+        return True
+    except ImportError:
+        return False
+
+
 TMP = tempfile.mkdtemp(prefix="ghost-wire-test-")
 os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
 os.environ["GHOST_QUEUE_DB_PATH"] = os.path.join(TMP, f"queue-{uuid.uuid4().hex}.db")
@@ -179,6 +187,7 @@ class TestServerRoutes(unittest.TestCase):
                          "/api/runtime/status", "/api/voice/interrupt"):
             self.assertIn(required, paths, f"missing route {required}")
 
+    @unittest.skipUnless(_dep_available("fastapi"), "fastapi not installed")
     def test_webhook_refuses_unsigned_body(self):
         from fastapi.testclient import TestClient
         from ghost.server.app import app

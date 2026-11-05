@@ -1,0 +1,6 @@
+[
+ "ghost.core.brain -> ghost.comms.email_service",
+ "ghost.core.brain -> ghost.comms.email_service.EmailService",
+ "ghost.core.brain -> ghost.workers.deploy",
+ "ghost.core.brain -> ghost.workers.deploy.VercelDeployer"
+]

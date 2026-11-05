@@ -14,6 +14,14 @@ from ghost.mcp.bridge import CDPAutomationEngine, MediaBridge, SystemAppBridge
 from ghost.core.agent import GhostAgent
 
 
+def _dep_available(name: str) -> bool:
+    try:
+        __import__(name)
+        return True
+    except ImportError:
+        return False
+
+
 class TestPerformanceAndWaylandUpgrades(unittest.IsolatedAsyncioTestCase):
 
     async def test_recon_scout_correlated_cdp(self):
@@ -520,6 +528,8 @@ class TestPerformanceAndWaylandUpgrades(unittest.IsolatedAsyncioTestCase):
             res = await SystemAppBridge.hyprctl_dispatch("workspace", "5")
             self.assertEqual(res["status"], "error")
 
+    @unittest.skipUnless(_dep_available("aiohttp") and _dep_available("websockets"),
+                         "aiohttp/websockets not installed — test patches their APIs")
     async def test_audit_engine_event_buffer_catches_load_event(self):
         """Verify PerformanceAuditor captures Page.loadEventFired in event_buffer during _send_cdp."""
         class FastLoadWS:

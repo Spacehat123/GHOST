@@ -1,0 +1,1 @@
+"""BRAIN PLANE — proposals only. No credentials, no effects, no secrets\nimports: the model's output is a typed proposal consumed by control.\nPopulated by the T6 strangler migration (from ghost/core/brain.py)."""

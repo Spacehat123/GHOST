@@ -16,26 +16,32 @@ import time
 from typing import Optional
 
 REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
-HEARTBEAT_PATH = os.environ.get("GHOST_HEARTBEAT_PATH") or os.path.join(REPO_DIR, "data", "heartbeat.json")
+
+
+def heartbeat_path() -> str:
+    """Re-resolved per call so tests can scope the marker via env (same
+    isolation pattern as AuditLedger.get_instance / secrets._vault_path)."""
+    return os.environ.get("GHOST_HEARTBEAT_PATH") or os.path.join(REPO_DIR, "data", "heartbeat.json")
 
 HEARTBEAT_INTERVAL_S = 60.0     # §3.3: beat every 60s
 STALE_AFTER_S = 180.0           # 3 missed beats = sick
 
 
 def beat(note: str = "scheduler") -> float:
-    os.makedirs(os.path.dirname(HEARTBEAT_PATH), exist_ok=True)
+    path = heartbeat_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     now = time.time()
-    tmp = HEARTBEAT_PATH + ".tmp"
+    tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump({"ts": now, "note": note}, f)
-    os.replace(tmp, HEARTBEAT_PATH)
+    os.replace(tmp, path)
     return now
 
 
 def age_s() -> float:
     """Seconds since the last beat. Missing marker -> huge age (fail closed)."""
     try:
-        with open(HEARTBEAT_PATH, "r", encoding="utf-8") as f:
+        with open(heartbeat_path(), "r", encoding="utf-8") as f:
             data = json.load(f)
         return max(0.0, time.time() - float(data.get("ts", 0)))
     except Exception:

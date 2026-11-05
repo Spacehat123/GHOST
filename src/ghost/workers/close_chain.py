@@ -124,7 +124,7 @@ def process_payment_webhook(
 
 def make_handlers(deps: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
     deps = deps or {}
-    send_email = deps.get("send_email") or _default_send_email
+    send_email = deps.get("send_email") or _default_welcome_delivery
     build_contract = deps.get("build_contract") or _default_build_contract
 
     async def send_contract(payload: Dict[str, Any]) -> Any:
@@ -144,8 +144,11 @@ def make_handlers(deps: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
             audit("welcome.blocked", subject=lead,
                   reason="no verified payment event on ledger")
             raise ChainError("welcome blocked: payment not verified on ledger")
-        send_email(payload)
-        audit("welcome.sent", subject=lead, invoice=payload.get("invoice_number"))
+        result = send_email(payload) or {}
+        if result.get("drafted") and not result.get("sent"):
+            audit("welcome.drafted", subject=lead, invoice=payload.get("invoice_number"))
+        else:
+            audit("welcome.sent", subject=lead, invoice=payload.get("invoice_number"))
         return {"welcomed": lead}
 
     return {
@@ -178,18 +181,16 @@ def _default_build_contract(payload: Dict[str, Any]) -> str:
     return f"contract-{payload.get('invoice_number')}.pdf"
 
 
-def _default_send_email(payload: Dict[str, Any]) -> None:
-    """Default welcome sender. Overridable via deps for tests."""
-    try:
-        from ghost.comms.email_service import EmailService
-        svc = EmailService.get_instance()
-        lead = payload.get("lead_slug", "client")
-        svc.send_email(
-            to=lead,
-            subject="Welcome — let's build your new website",
-            body="Payment confirmed. Your onboarding link: <onboarding page URL>",
-        )
-        audit("email.sent", subject=lead, kind="welcome")
-    except Exception as e:
-        audit("email.failed", reason=str(e)[:300])
-        raise
+def _default_welcome_delivery(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """No injected sender -> the honest path: a draft in the CRM review queue
+    for the operator to send. The ONLY sending path in Ghost is the
+    effects-plane ColdOutreachSender; this default must never raise for lack
+    of SMTP credentials."""
+    from ghost.comms.email_service import EmailService
+    svc = EmailService.get_instance()
+    lead = payload.get("lead_slug", "client")
+    return svc.draft_email(
+        to_email=lead,
+        subject="Welcome — let's build your new website",
+        body="Payment confirmed. Your onboarding link: <onboarding page URL>",
+    )

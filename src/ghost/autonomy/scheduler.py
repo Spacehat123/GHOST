@@ -15,6 +15,7 @@ import logging
 import time
 from typing import Any, Callable, Dict, Optional
 
+from ghost.core import heartbeat
 from ghost.core.audit import audit
 from ghost.core.halt import is_halted
 from ghost.policy.engine import PolicyEngine, StateSnapshot, load_config
@@ -75,9 +76,9 @@ class TelemetryProvider:
             halted=is_halted(),
             halt_reason=(halted_state or {}).get("reason"),
             open_complaints=open_complaints,
-            domain_health="green",
-            heartbeat_age_s=1.0,
-            incidents_over_slo=0,
+            domain_health="green",   # KNOWN PLACEHOLDER — wired to site_monitor in T5
+            heartbeat_age_s=heartbeat.age_s(),   # real watchdog age; missing marker = inf (fail closed)
+            incidents_over_slo=0,    # KNOWN PLACEHOLDER — wired to RetainerStore in T5
             client_replies_waiting=replies_waiting,
             hot_leads_waiting=hot_leads,
             pipeline_value_inr=pipeline_value,

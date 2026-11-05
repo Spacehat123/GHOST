@@ -79,3 +79,4 @@ context/user/User Profile.md
 configs/vercel.json
 configs/figma.json
 temp/
+data/drafts.jsonl
