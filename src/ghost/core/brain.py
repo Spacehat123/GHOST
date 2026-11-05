@@ -450,7 +450,13 @@ GHOST_TOOLS = [
                     },
                     "contact_info": {
                         "type": "object",
-                        "description": "Optional contact details {phone, email, address}"
+                        "description": "Optional contact details",
+                        "properties": {
+                            "phone": {"type": "string"},
+                            "email": {"type": "string"},
+                            "address": {"type": "string"},
+                            "whatsapp": {"type": "string"}
+                        }
                     }
                 },
                 "required": ["restaurant_name"]
@@ -1621,6 +1627,8 @@ class OmniRouteBrain:
     @classmethod
     async def execute_tool_call(cls, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool invoked by the LLM function call, normalized via single contract."""
+        from ghost.core.validator import canonical_tool_name
+        tool_name = canonical_tool_name(tool_name)   # aliases passed validation but used to fail dispatch
         logger.info(f"Executing tool call: {tool_name} with args: {arguments}")
 
         # Determine semantic action name

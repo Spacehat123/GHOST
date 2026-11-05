@@ -388,6 +388,7 @@ class GhostOrb {
     this.rotSegmentedTrack = 0;
     this.rotInnerDashes = 0;
     this.rotGearCore = 0;
+    this.rotOctagon = 0;
 
     // Scanline & glitch state
     this.glitchTimer = 0;
@@ -512,20 +513,25 @@ class GhostOrb {
     ctx.strokeStyle = palette.neonAccent;
     ctx.lineWidth = 1.2;
 
-    if (this.emblemText === 'ROSE') {
-      this._drawRoseGlyph(ctx);
-    } else {
-      this._drawGhostGlyph(ctx);
-    }
+    const drawGlyph = () => {
+      if (this.emblemText === 'ROSE') this._drawRoseGlyph(ctx);
+      else this._drawGhostGlyph(ctx);
+    };
+    drawGlyph();
 
-    // Horizontal cybernetic strike flash (≤0.15s during reveal or glitch only)
+    // Glitch (reveal / state change only, a few frames): two thin horizontal slices
+    // of the wordmark are re-drawn shifted sideways. No bars, no strike-through.
     if (isGlitching) {
-      ctx.beginPath();
-      ctx.strokeStyle = '#06070a';
-      ctx.lineWidth = 2.4;
-      ctx.moveTo(-52, 0);
-      ctx.lineTo(52, 0);
-      ctx.stroke();
+      [[-9, 5], [4, 4]].forEach(([y, h]) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-80, y, 160, h);
+        ctx.clip();
+        ctx.translate((Math.random() - 0.5) * 14, 0);
+        ctx.globalAlpha *= 0.9;
+        drawGlyph();
+        ctx.restore();
+      });
     }
 
     ctx.restore();
@@ -668,11 +674,14 @@ class GhostOrb {
     ctx.fill();
 
     // Micro splatter particles
+    // NOTE: each dot needs its own moveTo. Chained arcs() get joined by straight
+    // lines, and fill() then paints the polygon between them: that was the solid
+    // white bar striking through the wordmark.
     ctx.beginPath();
-    ctx.arc(-65, -5, 1.2, 0, Math.PI * 2);
-    ctx.arc(-63, 8, 1.0, 0, Math.PI * 2);
-    ctx.arc(67, 3, 1.3, 0, Math.PI * 2);
-    ctx.arc(65, -9, 0.9, 0, Math.PI * 2);
+    [[-65, -5, 1.2], [-63, 8, 1.0], [67, 3, 1.3], [65, -9, 0.9]].forEach(([x, y, r]) => {
+      ctx.moveTo(x + r, y);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+    });
     ctx.fill();
 
     ctx.restore();
@@ -793,19 +802,7 @@ class GhostOrb {
 
     // 5. Core Disc (fading in during Phase C)
     if (pose.coreDisc > 0.01) {
-      const coreR = baseRadius * 0.74 * scale;
-      const coreGrad = ctx.createRadialGradient(rigCx, rigCy, 0, rigCx, rigCy, coreR);
-      coreGrad.addColorStop(0, `rgba(255, 0, 85, ${0.45 * pose.coreDisc})`);
-      coreGrad.addColorStop(0.65, `rgba(255, 42, 112, ${0.22 * pose.coreDisc})`);
-      coreGrad.addColorStop(0.95, `rgba(10, 14, 24, ${0.85 * pose.coreDisc})`);
-      coreGrad.addColorStop(1, '#06070a');
-
-      ctx.save();
-      ctx.fillStyle = coreGrad;
-      ctx.beginPath();
-      ctx.arc(rigCx, rigCy, coreR, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      this.drawCoreDisc(ctx, rigCx, rigCy, baseRadius, pose.coreDisc, scale);
     }
 
     // 6. 3D Gyroscope Rings (§5.3): White Ring B (Rear), Red Ring, White Ring A (Front)
@@ -955,6 +952,7 @@ class GhostOrb {
     this.rotSegmentedTrack += -0.009 * speed;
     this.rotInnerDashes += 0.018 * speed;
     this.rotGearCore += -0.025 * speed;
+    this.rotOctagon += 0.0012 * speed;      // very slow drift; keeps the octagon calm
 
     // 1. Ambient Background Bloom (Audio-Reactive Halo)
     const auraRadius = baseRadius * (2.1 + this.amplitude * 0.4);
@@ -991,22 +989,29 @@ class GhostOrb {
     // 3. Shared HUD Layer Passes
     this.drawHudLayers(ctx, cx, cy, baseRadius, palette);
 
-    // 4. Core Disk & Radial Specular Fill
-    const coreDiskR = baseRadius * 0.74;
-    const coreDiskGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreDiskR);
-    const fillAlpha = 0.55 + this.amplitude * 0.25;
-    coreDiskGrad.addColorStop(0, `rgba(255, 0, 85, ${fillAlpha})`);
-    coreDiskGrad.addColorStop(0.65, `rgba(255, 42, 112, ${fillAlpha * 0.5})`);
-    coreDiskGrad.addColorStop(0.95, 'rgba(10, 14, 24, 0.85)');
-    coreDiskGrad.addColorStop(1, '#06070a');
-
-    ctx.fillStyle = coreDiskGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, coreDiskR, 0, Math.PI * 2);
-    ctx.fill();
+    // 4. Core Disk (shared with the intro so the hand-off has no pop)
+    this.drawCoreDisc(ctx, cx, cy, baseRadius, 1.0);
 
     // 5. Stylized Cybernetic Stencil Typography ("GHOST")
     this.drawStencilText(ctx, cx, cy, baseRadius, palette);
+  }
+
+  drawCoreDisc(ctx, cx, cy, baseRadius, alpha = 1.0, scale = 1.0) {
+    // Dark glassy centre so the white wordmark pops; crimson energy only builds
+    // toward the rim (like light caught on a lens) and swells with speech.
+    const r = baseRadius * 0.74 * scale;
+    const a = this.amplitude;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0.00, `rgba(12, 3, 10, ${0.90 * alpha})`);
+    g.addColorStop(0.55, `rgba(38, 5, 22, ${0.86 * alpha})`);
+    g.addColorStop(0.86, `rgba(110, 8, 50, ${(0.62 + a * 0.2) * alpha})`);
+    g.addColorStop(1.00, `rgba(255, 0, 85, ${(0.30 + a * 0.25) * alpha})`);
+    ctx.save();
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   drawHudLayers(ctx, cx, cy, baseRadius, palette) {
@@ -1141,54 +1146,69 @@ class GhostOrb {
     ctx.restore();
 
     // -------------------------------------------------------------
-    // D. AUDIO-REACTIVE EQUALIZER WAVE RING (R ~ 0.98x)
+    // D. AUDIO-REACTIVE OCTAGON (R ~ 0.98x)
+    // A true regular octagon: straight edges, softly rounded corners. Audio no
+    // longer makes the outline lumpy; it nudges each corner outward a little,
+    // brightens the glow and stretches the edge-centre ticks.
     // -------------------------------------------------------------
     ctx.save();
     ctx.translate(cx, cy);
+    ctx.rotate(this.rotOctagon || 0);
 
-    const rWaveBase = baseRadius * 0.98;
-    const wavePoints = 64;
+    const oR = baseRadius * 0.98;               // circumradius (centre → corner)
+    const amp = this.amplitude;
+    const corner = [];
+    for (let k = 0; k < 8; k++) {
+      const ang = Math.PI / 8 + k * (Math.PI / 4);   // flat edges at top/bottom/left/right
+      const bin = this.audioBins[k % 6] || 0.1;
+      const rr = oR * (1 + bin * amp * 0.07);
+      corner.push({ x: Math.cos(ang) * rr, y: Math.sin(ang) * rr, ang });
+    }
+
+    // Outline with rounded corners (arcTo between midpoints keeps edges perfectly straight)
+    const cornerRound = baseRadius * 0.07;
     ctx.beginPath();
-    for (let w = 0; w <= wavePoints; w++) {
-      const theta = (w / wavePoints) * Math.PI * 2;
-      const binIdx = Math.floor((w / wavePoints) * 6) % 6;
-      const binAmp = this.audioBins[binIdx] || 0.1;
-
-      const ripple = Math.sin(theta * 8 + this.time * 4) * 3;
-      const audioDisp = binAmp * 26 * (this.amplitude * 1.8 + 0.2);
-      const r = rWaveBase + ripple + audioDisp;
-
-      const wx = Math.cos(theta) * r;
-      const wy = Math.sin(theta) * r;
-
-      if (w === 0) ctx.moveTo(wx, wy);
-      else ctx.lineTo(wx, wy);
+    for (let k = 0; k < 8; k++) {
+      const p0 = corner[k], p1 = corner[(k + 1) % 8];
+      const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+      if (k === 0) {
+        const pm = { x: (corner[7].x + p0.x) / 2, y: (corner[7].y + p0.y) / 2 };
+        ctx.moveTo(pm.x, pm.y);
+      }
+      ctx.arcTo(p0.x, p0.y, mid.x, mid.y, cornerRound);
     }
     ctx.closePath();
 
+    // glow pass + crisp pass
+    ctx.strokeStyle = palette.ringSecondary;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = palette.coreGlow;
+    ctx.shadowBlur = 14 + amp * 18;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = palette.neonAccent;
     ctx.lineWidth = 1.4;
-    ctx.shadowColor = palette.coreGlow;
-    ctx.shadowBlur = 14 + this.amplitude * 16;
     ctx.stroke();
 
-    // Radial equalizer pips
-    const pipCount = 32;
-    for (let p = 0; p < pipCount; p++) {
-      const pAngle = (p / pipCount) * Math.PI * 2;
-      const pBin = this.audioBins[p % 6] || 0.1;
-      const pipH = 3 + pBin * 18 * (this.amplitude * 1.5 + 0.3);
+    // Corner nodes (small squares) and edge-centre ticks
+    for (let k = 0; k < 8; k++) {
+      const c = corner[k];
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.ang);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-1.8, -1.8, 3.6, 3.6);
+      ctx.restore();
 
-      const x1 = Math.cos(pAngle) * rWaveBase;
-      const y1 = Math.sin(pAngle) * rWaveBase;
-      const x2 = Math.cos(pAngle) * (rWaveBase + pipH);
-      const y2 = Math.sin(pAngle) * (rWaveBase + pipH);
-
+      const mAng = k * (Math.PI / 4);             // edge-centre direction
+      const apothem = oR * Math.cos(Math.PI / 8);
+      const bin = this.audioBins[k % 6] || 0.1;
+      const tickLen = 5 + bin * 14 * (amp * 1.5 + 0.3);
       ctx.beginPath();
       ctx.strokeStyle = palette.neonAccent;
-      ctx.lineWidth = 1.2;
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.lineWidth = 1.6;
+      ctx.moveTo(Math.cos(mAng) * apothem, Math.sin(mAng) * apothem);
+      ctx.lineTo(Math.cos(mAng) * (apothem + tickLen), Math.sin(mAng) * (apothem + tickLen));
       ctx.stroke();
     }
     ctx.restore();

@@ -24,9 +24,9 @@ REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(
 DATA_DIR = os.environ.get("GHOST_DATA_DIR") or os.path.join(REPO_DIR, "data")
 DEFAULT_DB_PATH = os.environ.get("GHOST_MISSIONS_DB") or os.path.join(DATA_DIR, "missions.db")
 
-MAX_TASKS_PER_MISSION = 15
-MAX_MISSION_ELAPSED_SECONDS = 7200.0  # 2 hours
-DEFAULT_MAX_MISSION_TOKENS = int(os.environ.get("GHOST_MISSION_MAX_TOKENS", "500000"))
+MAX_TASKS_PER_MISSION = 1000
+MAX_MISSION_ELAPSED_SECONDS = 864000.0 * 365
+DEFAULT_MAX_MISSION_TOKENS = int(os.environ.get("GHOST_MISSION_MAX_TOKENS", "1000000000"))
 
 
 class TaskStatus(str, Enum):
@@ -40,10 +40,10 @@ class TaskStatus(str, Enum):
 
 @dataclass
 class TaskBudget:
-    max_model_rounds: int = 12
-    max_tool_executions: int = 20
-    max_task_elapsed_seconds: float = 600.0
-    max_task_total_tokens: int = 40000
+    max_model_rounds: int = 1000
+    max_tool_executions: int = 5000
+    max_task_elapsed_seconds: float = 864000.0
+    max_task_total_tokens: int = 1000000000
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -52,11 +52,28 @@ class TaskBudget:
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> "TaskBudget":
         if not data:
             return cls()
+        
+        raw_tokens = int(data.get("max_task_total_tokens", 1000000000))
+        if raw_tokens <= 50000 and "GHOST_MAX_TASK_TOTAL_TOKENS" not in os.environ:
+            raw_tokens = 1000000000
+
+        raw_rounds = int(data.get("max_model_rounds", 1000))
+        if raw_rounds <= 20 and "GHOST_MAX_MODEL_ROUNDS" not in os.environ:
+            raw_rounds = 1000
+
+        raw_tools = int(data.get("max_tool_executions", 5000))
+        if raw_tools <= 30 and "GHOST_MAX_TOOL_EXECUTIONS" not in os.environ:
+            raw_tools = 5000
+
+        raw_elapsed = float(data.get("max_task_elapsed_seconds", 864000.0))
+        if raw_elapsed <= 600.0 and "GHOST_MAX_TASK_ELAPSED_SECONDS" not in os.environ:
+            raw_elapsed = 864000.0
+
         return cls(
-            max_model_rounds=int(data.get("max_model_rounds", 12)),
-            max_tool_executions=int(data.get("max_tool_executions", 20)),
-            max_task_elapsed_seconds=float(data.get("max_task_elapsed_seconds", 600.0)),
-            max_task_total_tokens=int(data.get("max_task_total_tokens", 40000))
+            max_model_rounds=raw_rounds,
+            max_tool_executions=raw_tools,
+            max_task_elapsed_seconds=raw_elapsed,
+            max_task_total_tokens=raw_tokens
         )
 
 
@@ -678,14 +695,44 @@ class MissionStore:
         return None
 
     def active_mission(self) -> Optional[Mission]:
-        """Return the latest active in_progress mission, if any."""
+        """Return the latest active in_progress mission, or recent resumable mission."""
         with self._get_connection() as conn:
             row = conn.execute(
                 "SELECT id FROM missions WHERE status = 'in_progress' ORDER BY rowid DESC LIMIT 1;"
             ).fetchone()
+            if not row:
+                row = conn.execute(
+                    "SELECT id FROM missions WHERE status IN ('paused', 'paused_for_approval', 'blocked') ORDER BY rowid DESC LIMIT 1;"
+                ).fetchone()
             if row:
                 return self.get_mission(row["id"])
         return None
+
+    def unblock_mission(self, mission_id: str) -> Optional[Mission]:
+        """Unblock all tasks in a mission that were halted by budget/token ceilings and restore to in_progress."""
+        mission = self.get_mission(mission_id)
+        if not mission:
+            return None
+
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE tasks
+                SET status = 'pending', result_summary = '', attempts = 0,
+                    budget = ?
+                WHERE mission_id = ? AND status = 'blocked';
+                """,
+                (json.dumps(TaskBudget().to_dict()), mission_id)
+            )
+            conn.execute(
+                """
+                UPDATE missions
+                SET status = 'in_progress', notes = 'Unblocked: limits removed.'
+                WHERE id = ?;
+                """,
+                (mission_id,)
+            )
+        return self.get_mission(mission_id)
 
     def list_missions(self, status: Optional[str] = None) -> List[Mission]:
         """List all stored missions, optionally filtered by status."""

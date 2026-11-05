@@ -1015,6 +1015,23 @@ class SystemAppBridge:
         return await ShellExecutor.run(f'notify-send -a "Ghost" "{safe_title}" "{safe_msg}"')
 
     @staticmethod
+    async def quickshell_ipc(command: str) -> Dict[str, Any]:
+        """Send an IPC call to the running Quickshell instance (`qs ipc call <target> <function> [args…]`).
+
+        brain.py advertises `quickshell_ipc` / `toggle_wallpaper` but this method did not exist, so every
+        such call died with AttributeError. Input like "notch toggle wallpaper" is split into
+        target=notch, function=toggle, args=[wallpaper]; adjust to match your shell's IPC handlers.
+        """
+        import shlex
+        import shutil
+        parts = shlex.split(command or "")
+        if len(parts) < 2:
+            return {"status": "failed", "error": "quickshell_ipc needs '<target> <function> [args…]', e.g. 'notch toggle wallpaper'."}
+        if not shutil.which("qs"):
+            return {"status": "config_required", "message": "Quickshell CLI 'qs' was not found on PATH."}
+        return await ShellExecutor.run("qs ipc call " + " ".join(shlex.quote(p) for p in parts))
+
+    @staticmethod
     async def hyprctl_command(cmd: str) -> Dict[str, Any]:
         """Execute a hyprctl command to inspect or switch workspaces/windows."""
         return await ShellExecutor.run(f"hyprctl {cmd}")

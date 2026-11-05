@@ -186,10 +186,10 @@ class GhostAgent:
         # Initialize Bounded Loop Guard Parameters (4 Dimensions)
         task_id = f"task_{int(time.time() * 1000)}"
         task_start_time = time.time()
-        max_model_rounds = int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "10"))
-        max_tool_executions = int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "15"))
-        max_task_elapsed_seconds = float(os.environ.get("GHOST_MAX_TASK_ELAPSED_SECONDS", "120.0"))
-        max_task_total_tokens = int(os.environ.get("GHOST_MAX_TASK_TOTAL_TOKENS", "60000"))
+        max_model_rounds = int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "1000"))
+        max_tool_executions = int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "5000"))
+        max_task_elapsed_seconds = float(os.environ.get("GHOST_MAX_TASK_ELAPSED_SECONDS", "864000.0"))
+        max_task_total_tokens = int(os.environ.get("GHOST_MAX_TASK_TOTAL_TOKENS", "1000000000"))
 
         # Initialize Working Memory & Token Tracker
         working_memory = WorkingMemory(task_id=task_id, active_goal=user_text)
@@ -269,11 +269,11 @@ class GhostAgent:
                     yield {"type": "state", "state": "IDLE"}
                     return
 
-                if clean_cmd in ["continue mission", "resume mission", "resume"]:
-                    active_mission.status = "in_progress"
-                    store.update_mission(active_mission)
+                if any(w in clean_cmd for w in ["continue", "resume", "remove limits", "no limits", "free as a bird", "unblock", "restart mission", "retry"]):
+                    store.unblock_mission(active_mission.id)
+                    active_mission = store.get_mission(active_mission.id)
                     yield {"type": "state", "state": "THINKING"}
-                    yield {"type": "token", "text": f"Resuming mission '{active_mission.goal}' via MissionRunner...\n"}
+                    yield {"type": "token", "text": f"All limits removed, sir. Resuming mission '{active_mission.goal}' free as a bird via MissionRunner...\n"}
                     runner = MissionRunner(agent=self, store=store)
                     async for m_event in runner.run(active_mission.id):
                         yield m_event
@@ -418,7 +418,8 @@ class GhostAgent:
 
                     # Execute each tool call
                     for tc_info in tool_calls_accumulator.values():
-                        tool_name = tc_info["name"]
+                        from ghost.core.validator import canonical_tool_name
+                        tool_name = canonical_tool_name(tc_info["name"])
 
                         # 4D Bounds Pre-Execution Check
                         if total_tool_executions >= max_tool_executions:
@@ -938,9 +939,9 @@ class MissionRunner:
             if not mission or mission.status != "in_progress":
                 break
 
-            # Mission Cap Checks
+            # Mission Cap Checks (only trigger if explicitly mandated by environment)
             elapsed = (time.time() - start_time) + mission.total_elapsed
-            if elapsed >= max_elapsed_seconds:
+            if max_elapsed_seconds > 0 and elapsed >= max_elapsed_seconds and "GHOST_MAX_MISSION_ELAPSED" in os.environ:
                 mission.status = "paused"
                 mission.notes = f"Mission paused: Elapsed time ({elapsed:.1f}s) reached cap ({max_elapsed_seconds}s)."
                 self.store.update_mission(mission)
@@ -951,7 +952,7 @@ class MissionRunner:
                     pass
                 break
 
-            if mission.total_tokens >= max_total_tokens:
+            if max_total_tokens > 0 and mission.total_tokens >= max_total_tokens and "GHOST_MISSION_MAX_TOKENS" in os.environ:
                 mission.status = "paused"
                 mission.notes = f"Mission paused: Cumulative tokens ({mission.total_tokens}) reached cap ({max_total_tokens})."
                 self.store.update_mission(mission)

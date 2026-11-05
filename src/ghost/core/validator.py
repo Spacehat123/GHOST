@@ -8,6 +8,20 @@ from typing import Tuple, Optional, Dict, Any, List
 
 logger = logging.getLogger("ghost.validator")
 
+# Names the model sometimes invents for real tools. Resolved BEFORE validation and dispatch.
+TOOL_ALIASES = {
+    "shell_execution": "system_run",
+    "shell_run": "system_run",
+    "run_shell": "system_run",
+    "exec_command": "system_run",
+    "data_fetcher": "web_search",
+}
+
+
+def canonical_tool_name(name: str) -> str:
+    """Map an alias to the real tool name (identity for real names)."""
+    return TOOL_ALIASES.get(name, name)
+
 class ToolArgumentValidator:
     """
     Validates tool arguments strictly against the provided tool schemas (GHOST_TOOLS).
@@ -44,15 +58,7 @@ class ToolArgumentValidator:
 
         tool_spec = None
         effective_name = tool_name
-        TOOL_ALIASES = {
-            "shell_execution": "system_run",
-            "shell_run": "system_run",
-            "run_shell": "system_run",
-            "exec_command": "system_run",
-            "data_fetcher": "web_search",
-        }
-        if effective_name in TOOL_ALIASES:
-            effective_name = TOOL_ALIASES[effective_name]
+        effective_name = canonical_tool_name(effective_name)
 
         for item in tool_definitions:
             fn = item.get("function", {})
