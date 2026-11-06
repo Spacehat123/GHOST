@@ -65,8 +65,8 @@ def handle(request: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": False, "error": f"unknown op {op!r}"}
 
 
-def serve(socket_path: Optional[str] = None, stop: Optional[threading.Event] = None) -> None:
-    path = socket_path or socket_path()
+def serve(sock_path: Optional[str] = None, stop: Optional[threading.Event] = None) -> None:
+    path = sock_path or socket_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if os.path.exists(path):
         os.unlink(path)
@@ -98,11 +98,11 @@ def serve(socket_path: Optional[str] = None, stop: Optional[threading.Event] = N
 
 # ------------------------------------------------------------- the RPC client
 
-def call(request: Dict[str, Any], socket_path: Optional[str] = None,
+def call(request: Dict[str, Any], sock_path: Optional[str] = None,
          timeout: float = 3.0) -> Optional[Dict[str, Any]]:
     """Client side (main process). None = authority unreachable — callers
     fail closed. Never raises into callers."""
-    path = socket_path or socket_path()
+    path = sock_path or socket_path()
     if not os.path.exists(path):
         return None
     try:

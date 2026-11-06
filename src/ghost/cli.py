@@ -267,6 +267,13 @@ def cmd_darkrun(args) -> int:
     return 2
 
 
+def cmd_grantd(args) -> int:
+    """P4: run the grant authority daemon — the signing key leaves the main
+    process. Foreground; the supervisor owns it in production."""
+    from ghost.authority import service
+    return service.main(["--socket", args.socket] if args.socket else [])
+
+
 def cmd_metrics(args) -> int:
     from ghost.core.metrics import compute_metrics
     print(json.dumps(compute_metrics(), indent=2, default=str))
@@ -290,6 +297,7 @@ COMMANDS = {
     "reconcile": (cmd_reconcile, "T5: records vs reality — payments, sends, deploys"),
     "sim": (cmd_sim, "T6: simulated day with fixture leads (deterministic)"),
     "darkrun": (cmd_darkrun, "T10: 30-day dark run — preflight/start/status/stop"),
+    "grantd": (cmd_grantd, "P4: grant authority daemon (key isolation; run alongside supervise)"),
 }
 
 
@@ -320,6 +328,8 @@ def main(argv=None) -> int:
             p.add_argument("--seed", type=int, default=20261106)
             p.add_argument("--leads", type=int, default=50)
             p.add_argument("--cycles", type=int, default=5)
+        if name == "grantd":
+            p.add_argument("--socket", default=None, help="override the unix socket path")
         if name == "darkrun":
             p.add_argument("--action", required=True,
                            choices=["preflight", "start", "status", "stop"])

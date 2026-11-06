@@ -115,6 +115,26 @@ def preflight() -> Dict[str, Any]:
     except Exception as e:
         checks.append(_check("supervisor_alive", False, f"check failed: {str(e)[:120]}"))
 
+    # 8b. grant AUTHORITY isolation (P4): production runs want the key OUT of
+    # the main process — grantd reachable is green; in-process secret amber.
+    try:
+        from ghost.authority.service import call
+        resp = call({"op": "ping"})
+        if resp and resp.get("ok"):
+            checks.append(_check("grant_authority_isolated", True,
+                                 "grantd reachable (key isolated from the brain/effects process)"))
+        elif get("GHOST_GRANT_SECRET"):
+            checks.append(_check("grant_authority_isolated", False,
+                                 "grantd NOT running; grants fall back to IN-PROCESS signing "
+                                 "(dev mode — the key shares the LLM process)",
+                                 "start `ghost grantd` (separate process) before the run"))
+        else:
+            checks.append(_check("grant_authority_isolated", False,
+                                 "no daemon and no in-process secret — no authority at all",
+                                 "set GHOST_GRANT_SECRET and start `ghost grantd`"))
+    except Exception as e:
+        checks.append(_check("grant_authority_isolated", False, f"check failed: {str(e)[:120]}"))
+
     # 9. simulated day still passes (the machinery's determinism receipt)
     checks.append(_check(
         "sim_receipt", os.path.exists(os.path.join(
