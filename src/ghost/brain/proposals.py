@@ -79,6 +79,12 @@ PROPOSAL_REGISTRY: Dict[str, Dict[str, Any]] = {
                         "ghost.workers.lead_qualifier.qualify",
                         "ghost.workers.lead_qualifier.verify_scores",
                         required_args=["lead_slug"]),
+    "dossier.build": _r("dossier.build", LOCAL_MUTATION,
+                        "ghost.workers.dossier.DossierBuilder.build_for_lead",
+                        "ghost.workers.dossier.verify_dossier",
+                        required_args=["slug"],
+                        note="writes dossiers/<slug>/ — facts + provenance-stamped "
+                             "photos; the verifier re-hashes every photo"),
     "leads.choose_flow": _r("leads.choose_flow", PIPELINE_EFFECT,
                             "ghost.workers.flow_router.route",
                             "ghost.workers.flow_router.verify_route",

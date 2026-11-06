@@ -262,12 +262,13 @@ async def create_campaign(request: Request):
     body = await request.json()
     name = (body.get("name") or "").strip()
     city = (body.get("city") or "").strip()
+    cities = body.get("cities")   # Operator's 11 goal 2: research breadth — one campaign per city
     categories = body.get("categories") or []
     harvest_per_batch = int(body.get("harvest_per_batch", 100))
     keep_fraction = float(body.get("keep_fraction", 0.33))
 
-    if not name or not city:
-        raise HTTPException(status_code=400, detail="Campaign name and city are required.")
+    if not name or (not city and not cities):
+        raise HTTPException(status_code=400, detail="Campaign name and city (or cities) are required.")
 
     if not isinstance(categories, list) or len(categories) != 3:
         raise HTTPException(status_code=400, detail="Exactly 3 categories must be provided.")
@@ -277,27 +278,36 @@ async def create_campaign(request: Request):
         raise HTTPException(status_code=400, detail="The three campaign categories must be distinct.")
 
     crm = CRMDatabase.get_instance()
-    camp = crm.create_campaign(
-        name=name,
-        city=city,
-        harvest_per_batch=harvest_per_batch,
-        keep_fraction=keep_fraction
-    )
 
-    batches = []
-    for cat in norm_cats:
-        b = crm.create_batch(campaign_id=camp["id"], category=cat)
-        batches.append(b)
+    # singular `city` or a `cities` list — one validated campaign per city
+    city_list = ([str(c).strip() for c in cities if str(c).strip()]
+                 if isinstance(cities, list) and cities else ([city] if city else []))
+    if not city_list:
+        raise HTTPException(status_code=400, detail="At least one city is required.")
 
-    crm.record_event(
-        event_type="campaign_created",
-        payload={"campaign_id": camp["id"], "city": city, "categories": norm_cats}
-    )
+    created = []
+    for i, c in enumerate(city_list):
+        camp = crm.create_campaign(
+            name=f"{name} · {c}" if len(city_list) > 1 else name,
+            city=c,
+            harvest_per_batch=harvest_per_batch,
+            keep_fraction=keep_fraction
+        )
+        batches = []
+        for cat in norm_cats:
+            b = crm.create_batch(campaign_id=camp["id"], category=cat)
+            batches.append(b)
+        crm.record_event(
+            event_type="campaign_created",
+            payload={"campaign_id": camp["id"], "city": c, "categories": norm_cats}
+        )
+        created.append({"campaign": camp, "batches": batches})
 
     return {
         "status": "success",
-        "campaign": camp,
-        "batches": batches
+        "campaign": created[0]["campaign"],
+        "batches": created[0]["batches"],
+        "campaigns": created if len(created) > 1 else None,
     }
 
 

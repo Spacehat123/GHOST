@@ -23,6 +23,7 @@ legacy direct-tool path is deleted per capability once parity is proven (T6b).**
 |---|---|---|---|---|---|
 | 1 | `scout_expensive_venues_without_website` | `leads.scout` | PIPELINE_EFFECT | workers/lead_sources + campaign | lead_hunt.candidates audit + dedupe check |
 | 2 | `qualify_venue_lead` | `leads.qualify` | PIPELINE_EFFECT | workers/lead_qualifier | scores present + gaps_json valid |
+| 2b | (new, Operator's 11 P2) | `dossier.build` | LOCAL_MUTATION | workers/dossier (facts + photos) | verify_dossier re-hashes every photo vs SOURCES.json |
 | 3 | `assess_3d_fit` / `choose_flow` | `leads.choose_flow` | PIPELINE_EFFECT | workers/flow_router | flow ∈ {standard,motion,3d} + reason cited |
 | 4 | `build_luxury_demo` / `build_3d_site` / `build_motion_site` | `demo.build` | PIPELINE_EFFECT (cost-capped by grant bounds) | workers/demo* + glb_tools | **three_qa screenshots (existing)** |
 | 5 | `deploy_demo_vercel` | `demo.deploy` | EXTERNAL_EFFECT | workers/deploy (T2 grant+snapshot+outbox ✓) | deploy URL HTTP 200 (reconciliation ✓) |
@@ -87,7 +88,7 @@ prevent.
 | item | state |
 |---|---|
 | converted + legacy branch DELETED | `deploy_demo_vercel`, `scout_expensive_venues_without_website` (identical executors, verified parity) |
-| adapter-wired (route in proposals mode) | `pipeline.upsert_client`, `pipeline.update_stage`, `demo.deploy`, `leads.scout` |
+| adapter-wired (route in proposals mode) | `pipeline.upsert_client`, `pipeline.update_stage`, `demo.deploy`, `leads.scout`, `dossier.build` (Operator's 11 P2) |
 | mapped but unwired (stay legacy) | `choose_flow`, `build_*`, `whatsapp_action`, everything in the READ/LOCAL_MUTATION tables |
 | baseline violations remaining | 4 — brain→comms.email_service (drafts/IMAP reads) + brain→workers.deploy (`vercel_check_token` READ); burn when the READ wave converts |
 | line-count trajectory | 2,376 → 2,373 so far; the burn accelerates as each wave deletes its branch |

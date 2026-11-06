@@ -276,6 +276,71 @@ class LeadQualifier:
         has_contact_path = has_phone or has_email or has_social
         return (min(10.0, score), has_contact_path)
 
+    @classmethod
+    def assess_need_and_payment(cls, lead: Dict[str, Any], pitch_type: str,
+                                gaps: List[str], score_revenue: float,
+                                entity_type: str) -> Dict[str, Dict[str, Any]]:
+        """Operator's 11 (goal 3): NEED (how badly they need a website) and
+        PAY_LIKELIHOOD (evidence they can and will pay) — each a 0–30 score
+        with WRITTEN, evidence-citing reasons stored in gaps_json. Both are
+        re-presentations of already-observed evidence (friction gaps, revenue
+        proxies, entity type) — no new speculation, every reason auditable."""
+        reasons: List[str] = []
+        need = 0.0
+        if pitch_type == "no_site":
+            need += 18.0
+            reasons.append("no website at all (+18) — maximum need")
+        elif pitch_type == "no_booking_path":
+            need += 10.0
+            reasons.append("modern site but no direct booking/inquiry path (+10)")
+        elif pitch_type == "weak_site":
+            need += 8.0
+            reasons.append("site exists but underperforms (+8)")
+        for g in gaps:
+            if g == "active_social_without_site":
+                need += 6.0
+                reasons.append("active social presence without a site (+6) — they invest in presence, not infrastructure")
+            elif g.startswith("slow_mobile_load_"):
+                need += 5.0
+                reasons.append(f"slow mobile load ({g.replace('slow_mobile_load_', '')}) (+5)")
+            elif g in ("no_viewport", "no_tap_to_call", "broken_page_or_http_error"):
+                need += 4.0
+                reasons.append(f"site gap: {g} (+4)")
+        need = min(30.0, need)
+
+        pay_reasons: List[str] = []
+        pay = 0.0
+        rating = lead.get("rating")
+        reviews = lead.get("review_count") or 0
+        if isinstance(rating, (int, float)) and rating >= 4.3:
+            pay += 8.0
+            pay_reasons.append(f"rating {rating} (+8) — a business protecting this reputation pays to keep it")
+        if reviews >= 100:
+            pay += 8.0
+            pay_reasons.append(f"{reviews} reviews (+8) — established demand, budget authority likely")
+        elif reviews >= 30:
+            pay += 4.0
+            pay_reasons.append(f"{reviews} reviews (+4) — real customer volume")
+        if entity_type == "limited_company":
+            pay += 6.0
+            pay_reasons.append("registered limited company (+6) — formal budget process, lower flight risk")
+        if score_revenue >= 20.0:
+            pay += 8.0
+            pay_reasons.append(f"revenue pillar {score_revenue:.0f}/30 (+8) — price-point evidence supports the ticket")
+        pay = min(30.0, pay)
+
+        return {
+            "need": {"score": round(need, 1), "reasons": reasons,
+                     "summary": ("high — they are losing customers to this gap" if need >= 20
+                                 else "moderate — visible improvement path" if need >= 10
+                                 else "low — nothing observed says they need us yet")},
+            "pay_likelihood": {"score": round(pay, 1), "reasons": pay_reasons,
+                               "summary": ("strong — evidence says they can and will pay"
+                                           if pay >= 20 else
+                                           "moderate — some budget signals" if pay >= 10
+                                           else "weak — no payment-capability evidence yet")},
+        }
+
     def evaluate_lead(
         self,
         lead: Dict[str, Any],
@@ -297,6 +362,13 @@ class LeadQualifier:
         entity_type = lead.get("entity_type")
         if not entity_type or entity_type == "unknown":
             entity_type = self.infer_entity_type(lead.get("name", ""))
+
+        # Operator's 11 goal 3: explicit need + pay-likelihood, with written
+        # reasons, riding the same gaps_json the pipeline already carries.
+        assessment = self.assess_need_and_payment(
+            lead, pitch_type, gaps_dict.get("gaps", []), score_rev, entity_type)
+        gaps_dict["need"] = assessment["need"]
+        gaps_dict["pay_likelihood"] = assessment["pay_likelihood"]
 
         return {
             "score_revenue": score_rev,

@@ -97,6 +97,28 @@ class CampaignOrchestrator:
 
         return (None, None)
 
+    def create_campaigns(
+        self,
+        name: str,
+        city: Any,
+        categories: List[str],
+        config: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """Operator's 11 goal 2 — research breadth: `city` may be a LIST of
+        cities; one validated campaign per city, deterministic names. A single
+        string behaves exactly like create_campaign. The area files live in
+        configs/areas/<City>.json (the operator sets which cities to hunt)."""
+        cities = city if isinstance(city, list) else [city]
+        if not cities or any(not str(c).strip() for c in cities):
+            raise ValueError("At least one non-empty city is required.")
+        campaigns = []
+        for c in cities:
+            c = str(c).strip()
+            per_city_name = f"{name} · {c}" if len(cities) > 1 else name
+            campaigns.append(self.create_campaign(
+                name=per_city_name, city=c, categories=categories, config=config))
+        return campaigns
+
     def create_campaign(
         self,
         name: str,
@@ -110,7 +132,6 @@ class CampaignOrchestrator:
         """
         if not categories or len(categories) < 1:
             raise ValueError("A campaign must contain at least one category.")
-
         # Duplicate & synonym check
         col_a, col_b = self.check_duplicate_or_synonym(categories)
         if col_a and col_b:

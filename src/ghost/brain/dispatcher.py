@@ -109,6 +109,24 @@ def _verify_scout(vf, p: Proposal, result: Any) -> Dict[str, Any]:
     return {"action": p.action, "location": p.args["location"], **out}
 
 
+def _invoke_dossier(ex, p: Proposal, grant):
+    # ex IS DossierBuilder.build_for_lead (unbound) — needs an instance
+    from ghost.workers.dossier import DossierBuilder
+    return ex(DossierBuilder(), p.args["slug"], recon=p.args.get("recon"))
+
+
+def _verify_dossier(vf, p: Proposal, result: Any) -> Dict[str, Any]:
+    # the verifier re-hashes every photo against SOURCES.json — a dossier can
+    # only pass by actually containing what it claims (Operator's 11 P2)
+    rep = vf(p.args["slug"])
+    ok = bool(rep.get("verified")) and result.get("status") == "ok"
+    return {"action": p.action, "slug": p.args["slug"],
+            "status": "ok" if ok else "failed",
+            "verified": bool(ok),
+            "photos": result.get("photos"), "inquire": result.get("inquire"),
+            "reasons": rep.get("reasons", [])}
+
+
 def _invoke_upsert_client(ex, p: Proposal, grant):
     # ex IS CRMDatabase.add_or_update_client (unbound) — needs the instance
     from ghost.crm.db import CRMDatabase
@@ -134,6 +152,7 @@ ADAPTERS: Dict[str, Dict[str, Any]] = {
     "pipeline.update_stage": {"invoke": _invoke_update_stage, "verify": _verify_update_stage},
     "pipeline.upsert_client": {"invoke": _invoke_upsert_client, "verify": _verify_upsert_client},
     "leads.scout": {"invoke": _invoke_scout, "verify": _verify_scout},
+    "dossier.build": {"invoke": _invoke_dossier, "verify": _verify_dossier},
 }
 
 # ladder capability per proposal action (the autonomy ladder gates effects)
@@ -142,6 +161,7 @@ LADDER_CAPABILITY = {
     "pipeline.update_stage": "contracts",
     "pipeline.upsert_client": "contracts",
     "leads.scout": "lead_hunting",
+    "dossier.build": "lead_hunting",
 }
 
 
