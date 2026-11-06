@@ -189,6 +189,51 @@ class TestStandaloneWorkerPurity(unittest.TestCase):
                     banned.append(node.module)
         self.assertEqual(banned, [], f"the fixer worker must stay stdlib-only: {banned}")
 
+    def test_pool_key_travels_by_env_never_disk(self):
+        """Operator mandate: the fixer uses the MODEL POOL (OmniRoute), not
+        local Ollama — and the pool key reaches the worker via ENVIRONMENT
+        only. The brief file on disk must never contain it."""
+        src = open(os.path.join(os.path.dirname(__file__), "..", "src",
+                                "ghost", "control", "fixer_worker.py")).read()
+        self.assertIn("GHOST_MODEL_POOL_KEY", src)
+        self.assertIn("GHOST_MODEL_POOL_URL", src)
+        self.assertNotIn("ollama", src.lower(), "local Ollama is out — pool only")
+        # the brief is never a credential channel:
+        self.assertNotIn('brief_in.get("api_key"', src)
+        self.assertNotIn('brief_in["api_key"]', src)
+        self.assertNotIn('"api_key"', src)
+        fixers_src = open(os.path.join(os.path.dirname(__file__), "..", "src",
+                                       "ghost", "control", "fixers.py")).read()
+        self.assertNotIn("check_local_model", fixers_src)
+
+    def test_real_worker_passes_key_via_env_and_clean_brief(self):
+        from unittest.mock import patch, MagicMock
+        from ghost.control import fixers as fx
+        captured = {}
+
+        def fake_run(*args, **kwargs):
+            captured["env"] = kwargs.get("env") or {}
+            captured["brief_path"] = args[0][2]
+            out = MagicMock(returncode=0)
+            out.stdout = json.dumps({"patch": {}, "evidence": "dry", "tool_calls": 1,
+                                     "tokens": 0})
+            return out
+
+        site = os.path.join(TMP, f"pool-{uuid.uuid4().hex}.html")
+        with open(site, "w") as f:
+            f.write("x")
+        spec = type("S", (), {"worktree": TMP, "brief": "b", "budget": type("B", (), {
+            "max_seconds": 60.0})(), "created_at": time.time(),
+            "scope_files": [site]})()
+        with patch.object(fx.subprocess, "run", fake_run):
+            fx.real_worker(spec, {"worktree": TMP, "files": {"x.html": site},
+                                  "env": {"SANDBOX": "1"}}, lambda: False)
+        self.assertIn("GHOST_MODEL_POOL_KEY", captured["env"])
+        brief = json.load(open(captured["brief_path"]))
+        self.assertNotIn("api_key", brief)
+        self.assertNotIn("pool_key", json.dumps(brief))
+        self.assertIn("model", brief)
+
 
 class TestWiring(EnvPinned):
 

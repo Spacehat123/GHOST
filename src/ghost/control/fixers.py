@@ -26,7 +26,38 @@ from ghost.core.audit import audit
 from ghost.paths import data_dir
 
 WORKER_SCRIPT = os.path.join(os.path.dirname(__file__), "fixer_worker.py")
-DEFAULT_MODEL = "qwen2.5:7b"
+
+
+def _pool_config() -> Dict[str, str]:
+    """Ghost's model pool = the same OmniRoute router the brain uses. Read
+    from the operator's own config; absent/unset = the fixer escalates
+    honestly instead of pretending."""
+    path = os.path.join(os.path.dirname(data_dir()), "configs", "omniroute.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        return {"base_url": str(cfg.get("base_url", "")).rstrip("/"),
+                "api_key": str(cfg.get("api_key", "")),
+                "model": str(cfg.get("model", ""))}
+    except (OSError, ValueError):
+        return {"base_url": "", "api_key": "", "model": ""}
+
+
+def model_available() -> bool:
+    """Probe the model pool the way the worker will use it: a real
+    OpenAI-compatible /models call with the configured key."""
+    cfg = _pool_config()
+    if not (cfg["base_url"] and cfg["api_key"]):
+        return False
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{cfg['base_url']}/models",
+            headers={"Authorization": f"Bearer {cfg['api_key']}"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
 
 
 @dataclass
@@ -43,26 +74,21 @@ def _staged_dir() -> str:
     return os.environ.get("GHOST_FIXER_STAGED") or os.path.join(data_dir(), "fixer_staged")
 
 
-def model_available() -> bool:
-    try:
-        from ghost.core.model_routing import check_local_model
-        return check_local_model().get("status") == "available"
-    except Exception:
-        return False
-
-
 def real_worker(spec, ctx: Dict[str, Any], is_cancelled) -> Dict[str, Any]:
     """The SidecarManager worker callable that runs the STANDALONE script as
-    a real subprocess under the sandbox env — no ghost module is importable
-    where it runs, and the only network call it can make is local Ollama."""
-    from ghost.core.model_routing import load_routing
+    a real subprocess under the sandbox env. No ghost module is importable
+    where it runs; its ONLY network call is Ghost's model pool, and the pool
+    key reaches it via ENVIRONMENT ONLY — never a file, never a grant, never
+    a client credential."""
+    cfg = _pool_config()
+    env = dict(ctx["env"])
+    env["GHOST_MODEL_POOL_URL"] = cfg["base_url"]
+    env["GHOST_MODEL_POOL_KEY"] = cfg["api_key"]
     brief_in = {
         "worktree": ctx["worktree"],
         "files": {k: v for k, v in ctx["files"].items()},
         "brief": spec.brief,
-        "model": os.environ.get("GHOST_FIXER_MODEL", DEFAULT_MODEL),
-        "ollama_url": os.environ.get("OLLAMA_BASE_URL")
-                      or load_routing().get("local_ollama_url", "http://127.0.0.1:11434"),
+        "model": os.environ.get("GHOST_FIXER_MODEL") or cfg["model"],
         "budget_s": max(5.0, spec.budget.max_seconds - (time.time() - spec.created_at)),
     }
     brief_path = os.path.join(spec.worktree, "brief.json")
@@ -70,7 +96,7 @@ def real_worker(spec, ctx: Dict[str, Any], is_cancelled) -> Dict[str, Any]:
         json.dump(brief_in, f)
     proc = subprocess.run(
         [sys.executable, WORKER_SCRIPT, brief_path],
-        env=ctx["env"], capture_output=True, text=True,
+        env=env, capture_output=True, text=True,
         timeout=max(10.0, brief_in["budget_s"]))
     if proc.returncode != 0:
         return {"patch": {}, "evidence": f"worker exited {proc.returncode}: "

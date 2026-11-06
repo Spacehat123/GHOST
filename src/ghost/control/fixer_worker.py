@@ -1,14 +1,16 @@
 """THE LLM FIXER WORKER (Operator's 11 P7) — a STANDALONE process.
 
-Runs under the sidecar sandbox env: no PYTHONPATH, no credentials — ghost's
-own modules (the effects plane included) are structurally unimportable from
-here, and a static test enforces this file imports STDLIB ONLY. Its only
-network call is the local Ollama runtime.
+Runs under the sidecar sandbox env: no PYTHONPATH — ghost's own modules (the
+effects plane included) are structurally unimportable from here, and a
+static test enforces this file imports STDLIB ONLY. Its only network call is
+Ghost's MODEL POOL (the same OmniRoute router the brain uses), reached with
+a key passed via ENVIRONMENT ONLY (GHOST_MODEL_POOL_KEY) — the key is never
+written to disk, and client credentials/grants never reach this process.
 
 Input (argv[1]): JSON {worktree, files: {name: abs_path}, brief, model,
-ollama_url, budget_s}
+budget_s}
 Behavior, per scoped file (one bounded pass, temperature 0, no tools):
-  read the file copy -> ask the local model for the corrected FULL file
+  read the file copy -> ask the model pool for the corrected FULL file
   content -> write the patched copy into the worktree
 Output (stdout, JSON):
   {"patch": {name: new_content}, "evidence": str, "tool_calls": n, "tokens": n}
@@ -53,16 +55,23 @@ def _strip_fences(text: str) -> str:
     return t.rstrip() + "\n"
 
 
-def _ask_model(ollama_url: str, model: str, prompt: str,
-               timeout: float) -> str:
-    body = json.dumps({"model": model, "prompt": prompt, "stream": False,
-                       "options": {"temperature": 0}}).encode()
-    req = urllib.request.Request(f"{ollama_url.rstrip('/')}/api/generate",
-                                 data=body, method="POST",
-                                 headers={"Content-Type": "application/json"})
+def _ask_pool(pool_url: str, api_key: str, model: str, prompt: str,
+              timeout: float) -> str:
+    """One OpenAI-compatible chat call against Ghost's model pool."""
+    body = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+    }).encode()
+    req = urllib.request.Request(
+        f"{pool_url.rstrip('/')}/chat/completions",
+        data=body, method="POST",
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {api_key}"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode())
-    return str(data.get("response", ""))
+    choices = data.get("choices") or []
+    return str((choices[0].get("message", {}) or {}).get("content", "")) if choices else ""
 
 
 def main() -> int:
@@ -76,8 +85,15 @@ def main() -> int:
     worktree = brief_in["worktree"]
     files = brief_in.get("files") or {}
     brief_text = str(brief_in.get("brief", ""))[:2000]
-    model = str(brief_in.get("model", "qwen2.5:7b"))
-    ollama_url = str(brief_in.get("ollama_url", "http://127.0.0.1:11434"))
+    model = str(brief_in.get("model", ""))
+    # the pool key arrives via ENVIRONMENT ONLY — it never touches the disk
+    pool_url = os.environ.get("GHOST_MODEL_POOL_URL", "").rstrip("/")
+    api_key = os.environ.get("GHOST_MODEL_POOL_KEY", "")
+    if not pool_url or not api_key:
+        print(json.dumps({"patch": {}, "tokens": 0, "tool_calls": 0,
+                          "evidence": "model pool not configured in worker env — "
+                                      "no fix attempted, nothing invented"}))
+        return 0
     deadline = time.time() + float(brief_in.get("budget_s", 180))
 
     patch: dict = {}
@@ -95,8 +111,8 @@ def main() -> int:
                 continue
             prompt = PROMPT_TEMPLATE.format(brief=brief_text,
                                             content=content[:MAX_PROMPT_BYTES])
-            answer = _ask_model(ollama_url, model, prompt,
-                                timeout=max(10.0, deadline - time.time()))
+            answer = _ask_pool(pool_url, api_key, model, prompt,
+                               timeout=max(10.0, deadline - time.time()))
             tokens += 1
             fixed = _strip_fences(answer)
             if not fixed.strip():
