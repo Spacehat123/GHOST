@@ -468,8 +468,13 @@ class GhostOrb {
   }
 
   resize() {
-    this.width = typeof window !== 'undefined' ? window.innerWidth : 1920;
-    this.height = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    // Prefer the canvas's own CSS box (the HUD sizes it compactly, bottom-right,
+    // reference aesthetic) and fall back to the window for a fullscreen stage.
+    const box = (typeof this.canvas !== 'undefined' && this.canvas.clientWidth > 0)
+      ? { w: this.canvas.clientWidth, h: this.canvas.clientHeight }
+      : null;
+    this.width = box ? box.w : (typeof window !== 'undefined' ? window.innerWidth : 1920);
+    this.height = box ? box.h : (typeof window !== 'undefined' ? window.innerHeight : 1080);
     const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
     this.canvas.width = this.width * dpr;
     this.canvas.height = this.height * dpr;

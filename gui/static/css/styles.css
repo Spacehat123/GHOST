@@ -1,30 +1,53 @@
+/* ==============================================================================
+   GHOST HUD — "quiet room" aesthetic (huwprosser reference, Nov 2026)
+   Near-black canvas, huge breathing space, hairline surfaces, one rose accent.
+   Nothing glows. Nothing shouts. The orb is the only light in the room.
+   ============================================================================== */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Display", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   user-select: none;
 }
 
+:root {
+  --bg: #08090c;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+  --surface: rgba(255, 255, 255, 0.025);
+  --text: #e9ebf1;
+  --text-mid: #9aa0ae;
+  --text-dim: #5d6472;
+  --rose: #ff2e63;
+  --rose-soft: rgba(255, 46, 99, 0.55);
+  --amber: #e5b567;
+  --green: #3ecf8e;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 body {
-  /* Exact Obsidian Void background: #050811 inner center -> #020408 edges */
-  background: radial-gradient(circle at 50% 50%, #050811 0%, #03060d 55%, #020408 100%);
-  color: #f1f5f9;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #0b0c11 0%, var(--bg) 55%, #060709 100%);
+  color: var(--text);
   min-height: 100vh;
   width: 100vw;
   overflow: hidden;
   position: relative;
 }
 
-/* Ambient Top Minimalist HUD */
+/* ---------------------------------------------------------------- top bar -- */
+
 .top-hud {
   position: absolute;
-  top: 1.5rem;
-  left: 2rem;
-  right: 2rem;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.1rem 1.75rem;
   z-index: 20;
   pointer-events: auto;
 }
@@ -32,123 +55,162 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .brand-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #60a5fa;
-  box-shadow: 0 0 14px #93c5fd, 0 0 4px #ffffff;
+  background: var(--rose);
+  opacity: 0.9;
 }
 
 .brand-title {
-  font-size: 0.95rem;
-  letter-spacing: 0.28em;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.8rem;
+  letter-spacing: 0.34em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
   text-transform: uppercase;
 }
 
 .brand-tag {
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  color: rgba(147, 197, 253, 0.75);
-  border: 1px solid rgba(147, 197, 253, 0.2);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  text-transform: uppercase;
 }
 
 .hud-right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
-.hud-status {
+/* pill buttons — the reference's slim uppercase cluster */
+.hud-pill-group {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  background: rgba(5, 8, 17, 0.5);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 0.9rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
+  gap: 0.35rem;
+  margin-right: 0.35rem;
+}
+
+.hud-pill-btn {
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--text-mid);
+  padding: 0.34rem 0.7rem;
+  border-radius: 5px;
+  font-size: 0.6rem;
+  font-family: var(--mono);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.hud-pill-btn:hover {
+  border-color: var(--hairline-strong);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.hud-pill-btn.active {
+  border-color: var(--rose-soft);
+  color: #fff;
+  background: rgba(255, 46, 99, 0.08);
 }
 
 .telemetry-chip {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(147, 197, 253, 0.15);
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: #93c5fd;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.12);
-  transition: all 0.3s ease;
+  gap: 0.4rem;
+  border: 1px solid var(--hairline);
+  padding: 0.34rem 0.7rem;
+  border-radius: 5px;
+  font-size: 0.6rem;
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.telemetry-chip:hover {
+  color: var(--text-mid);
+  border-color: var(--hairline-strong);
 }
 
 .telemetry-icon {
-  color: #60a5fa;
-  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-size: 0.65rem;
 }
 
+/* status — a dot and a word, nothing more */
+.hud-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.34rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  font-size: 0.6rem;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+}
+
+.state-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.3s ease;
+}
+
+.status-IDLE .state-indicator { background: var(--text-dim); }
+.status-LISTENING .state-indicator { background: var(--rose); }
+.status-THINKING .state-indicator { background: var(--amber); }
+.status-SPEAKING .state-indicator { background: var(--rose); }
+.status-INTERRUPTED .state-indicator { background: var(--amber); }
+
+.status-LISTENING, .status-SPEAKING { color: #fff; border-color: var(--rose-soft); }
+.status-THINKING, .status-INTERRUPTED { color: #fff; }
+
+/* icon links — quiet circles */
 .hud-btn-icon-link {
-  background: rgba(5, 8, 17, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 1rem;
-  width: 34px;
-  height: 34px;
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--text-mid);
+  font-size: 0.95rem;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(16px);
+  transition: border-color 0.18s ease, color 0.18s ease;
 }
 
 .hud-btn-icon-link:hover {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(96, 165, 250, 0.4);
-  transform: scale(1.05);
+  border-color: var(--hairline-strong);
+  color: var(--text);
 }
 
-.state-indicator {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #3b82f6;
-  transition: all 0.3s ease;
-}
+/* ------------------------------------------------------------------ orb ---- */
+/* The only light in the room: a compact ring, bottom-right, like the
+   reference's ROSE presence. The canvas owns its box; orb.js sizes to it. */
 
-/* State dynamic styling */
-.status-IDLE .state-indicator { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
-.status-LISTENING .state-indicator { background: #06b6d4; box-shadow: 0 0 12px #22d3ee; }
-.status-THINKING .state-indicator { background: #8b5cf6; box-shadow: 0 0 12px #a78bfa; }
-.status-SPEAKING .state-indicator { background: #60a5fa; box-shadow: 0 0 16px #93c5fd; }
-.status-INTERRUPTED .state-indicator { background: #f59e0b; box-shadow: 0 0 14px #fbbf24; }
-
-/* Canvas Fullscreen Viewport */
 #canvas-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 2.4rem;
+  bottom: 3.6rem;
+  width: 240px;
+  height: 240px;
   z-index: 1;
 }
 
@@ -158,39 +220,67 @@ body {
   display: block;
 }
 
-/* Floating Bottom Transcript HUD */
+/* ------------------------------------------------------- bottom telemetry -- */
+
+.bottom-hud-bar {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.75rem;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.hud-telemetry-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.telemetry-status-tag {
+  color: var(--rose);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.telemetry-divider {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+/* -------------------------------------------------------- transcript bubble */
+
 .bottom-hud {
   position: absolute;
-  bottom: 2.2rem;
+  bottom: 5.6rem;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 640px;
+  width: 88%;
+  max-width: 620px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.7rem;
   z-index: 20;
 }
 
-/* Live Floating Transparent Subtitle Transcript */
 .transcript-bubble {
   min-height: 40px;
   max-height: 120px;
   width: 100%;
-  background: rgba(5, 8, 17, 0.55);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(59, 66, 196, 0.15);
+  background: rgba(10, 11, 15, 0.82);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 0.7rem 1.1rem;
   overflow-y: auto;
   text-align: center;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: rgba(241, 245, 249, 0.95);
-  transition: all 0.25s ease;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  transition: border-color 0.25s ease;
 }
 
 .transcript-bubble:empty {
@@ -199,30 +289,31 @@ body {
 }
 
 .transcript-speaker {
-  font-size: 0.72rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #93c5fd;
-  margin-bottom: 0.2rem;
+  letter-spacing: 0.18em;
+  color: var(--rose);
+  margin-bottom: 0.25rem;
   text-transform: uppercase;
+  font-family: var(--mono);
 }
 
-/* Tool execution card popup */
+/* tool chips — small mono tags */
 .tool-badge-container {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .tool-chip {
-  background: rgba(59, 66, 196, 0.25);
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  color: #bfdbfe;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-family: monospace;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--text-mid);
+  font-size: 0.65rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 4px;
+  font-family: var(--mono);
   letter-spacing: 0.06em;
   animation: fadeIn 0.3s ease;
 }
@@ -232,17 +323,16 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Floating Actions Bar */
+/* ------------------------------------------------------------- action bar -- */
+
 .action-bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  background: rgba(5, 8, 17, 0.65);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.7rem;
+  background: rgba(10, 11, 15, 0.85);
+  border: 1px solid var(--hairline);
   padding: 0.35rem 0.5rem 0.35rem 1rem;
-  border-radius: 9999px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
   width: 100%;
 }
 
@@ -251,13 +341,13 @@ body {
   background: transparent;
   border: none;
   outline: none;
-  color: #fff;
-  font-size: 0.9rem;
+  color: var(--text);
+  font-size: 0.88rem;
   letter-spacing: 0.02em;
 }
 
 .action-bar input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-dim);
 }
 
 .hud-btn {
@@ -266,54 +356,61 @@ body {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.45rem 0.95rem;
-  border-radius: 9999px;
-  font-size: 0.78rem;
+  border-radius: 7px;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  border: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--text-mid);
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.hud-btn:hover {
+  border-color: var(--hairline-strong);
+  color: var(--text);
 }
 
 .hud-btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #ffffff;
-  box-shadow: 0 0 16px rgba(37, 99, 235, 0.45);
+  border-color: var(--rose-soft);
+  color: #fff;
+  background: rgba(255, 46, 99, 0.1);
 }
 
 .hud-btn-primary:hover {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  box-shadow: 0 0 22px rgba(59, 130, 246, 0.65);
+  background: rgba(255, 46, 99, 0.18);
+  border-color: var(--rose);
 }
 
 .hud-btn-danger {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
+  border-color: rgba(255, 92, 92, 0.4);
+  color: #ff8a8a;
 }
 
 .hud-btn-danger:hover {
-  background: rgba(239, 68, 68, 0.35);
+  background: rgba(255, 92, 92, 0.1);
 }
 
 .hud-btn-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   padding: 0;
 }
 
-/* Modal Backdrop & Card */
+/* ----------------------------------------------------------------- modals -- */
+
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(2, 4, 8, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(4, 5, 7, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -330,11 +427,10 @@ body {
 .modal-card {
   width: 90%;
   max-width: 480px;
-  background: rgba(10, 14, 26, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
+  background: #0c0d12;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 32px rgba(59, 130, 246, 0.15);
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
@@ -347,37 +443,38 @@ body {
 }
 
 .modal-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
 }
 
 .modal-close {
   background: transparent;
   border: none;
-  font-size: 1.4rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.3rem;
+  color: var(--text-dim);
   cursor: pointer;
   line-height: 1;
 }
 
 .modal-close:hover {
-  color: #fff;
+  color: var(--text);
 }
 
 .modal-desc {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.4;
+  color: var(--text-mid);
+  line-height: 1.45;
 }
 
 .modal-desc code {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--rose);
+  background: rgba(255, 46, 99, 0.08);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
 }
 
 .form-group {
@@ -387,28 +484,29 @@ body {
 }
 
 .form-group label {
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
   text-transform: uppercase;
+  font-family: var(--mono);
 }
 
 .form-group input,
 .form-group select {
-  background: rgba(5, 8, 17, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
   padding: 0.55rem 0.8rem;
   font-size: 0.85rem;
-  color: #fff;
+  color: var(--text);
   outline: none;
   transition: border-color 0.2s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #3b82f6;
+  border-color: var(--rose-soft);
 }
 
 .form-row {
@@ -425,44 +523,38 @@ body {
 }
 
 .save-status {
-  font-size: 0.78rem;
-  color: #34d399;
+  font-size: 0.75rem;
+  color: var(--green);
 }
 
-/* Tactical Authorization Dialog Styling */
+/* tactical authorization — the one red moment, and it doesn't pulse */
 .auth-card {
   max-width: 440px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 32px rgba(239, 68, 68, 0.25);
-  animation: pulseAuth 2s infinite ease-in-out;
-}
-
-@keyframes pulseAuth {
-  0% { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 20px rgba(239, 68, 68, 0.2); }
-  50% { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 36px rgba(239, 68, 68, 0.4); }
-  100% { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 20px rgba(239, 68, 68, 0.2); }
+  border: 1px solid var(--rose-soft);
 }
 
 .auth-header {
-  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  border-bottom: 1px solid rgba(255, 46, 99, 0.2);
   padding-bottom: 0.5rem;
 }
 
 .auth-tag {
-  color: #f87171;
-  font-weight: 800;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
+  color: var(--rose);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-family: var(--mono);
 }
 
 .auth-body {
-  font-size: 0.9rem;
-  color: #f1f5f9;
-  line-height: 1.5;
-  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.55;
+  background: var(--surface);
   padding: 0.8rem 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
 }
 
 .auth-footer {
@@ -473,76 +565,8 @@ body {
   margin-top: 0.5rem;
 }
 
-/* ==============================================================================
-   Tactical Pill HUD Buttons & Telemetry Bar (Reference Video Aesthetic)
-   ============================================================================== */
-.hud-pill-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-right: 0.5rem;
-}
+/* ----------------------------------------------------------- clean focus -- */
 
-.hud-pill-btn {
-  background: rgba(12, 16, 26, 0.65);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
-  padding: 0.32rem 0.65rem;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.hud-pill-btn:hover {
-  background: rgba(255, 0, 85, 0.15);
-  border-color: rgba(255, 0, 85, 0.5);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
-}
-
-.hud-pill-btn.active {
-  background: rgba(255, 0, 85, 0.25);
-  border-color: #ff0055;
-  color: #ffffff;
-}
-
-/* Bottom Telemetry HUD Line */
-.bottom-hud-bar {
-  position: absolute;
-  bottom: 1.5rem;
-  left: 2rem;
-  z-index: 20;
-  pointer-events: none;
-}
-
-.hud-telemetry-line {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.telemetry-status-tag {
-  color: #10b981; /* Terminal green status */
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-}
-
-.telemetry-divider {
-  color: rgba(255, 255, 255, 0.2);
-}
-
-/* Clean Focus View (Triggered by CLEAR VIEW button) */
 body.clean-focus .top-hud,
 body.clean-focus .bottom-hud-bar,
 body.clean-focus #transcript-bubble,
@@ -556,3 +580,6 @@ body.clean-focus {
   cursor: none;
 }
 
+/* emoji glyphs obey the monochrome language */
+.hud-btn-icon-link { filter: grayscale(1); opacity: 0.85; }
+.hud-btn-icon-link:hover { filter: grayscale(1); opacity: 1; }
