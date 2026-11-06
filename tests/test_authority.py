@@ -21,6 +21,7 @@ import uuid
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TMP = tempfile.mkdtemp(prefix="ghost-auth-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 
 from ghost.authority import protocol
 from ghost.authority.service import call as authority_call, handle, serve
@@ -80,7 +81,7 @@ class TestIsolationTwoProcess(unittest.TestCase):
     def _stop(self):
         self.daemon.terminate()
         self.daemon.wait(timeout=10)
-        os.environ.pop("GHOST_GRANT_SOCKET", None)
+        os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, f"dead-{uuid.uuid4().hex}.sock")
         for p in (self.halt_file, self.halt_meta):
             if os.path.exists(p):
                 os.remove(p)
@@ -138,7 +139,7 @@ class TestInProcessFallback(unittest.TestCase):
                        ("GHOST_GRANT_SECRET", "GHOST_GRANT_SOCKET",
                         "GHOST_AUTHORITY_NONCE_DB", "GHOST_AUDIT_DB_PATH",
                         "GHOST_HALT_FILE", "GHOST_HALT_META")}
-        os.environ.pop("GHOST_GRANT_SOCKET", None)   # no daemon in these tests
+        os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, f"dead-{uuid.uuid4().hex}.sock")   # no daemon in these tests — never the live default socket
         os.environ["GHOST_GRANT_SECRET"] = f"fb-{uuid.uuid4().hex}"
         os.environ["GHOST_AUTHORITY_NONCE_DB"] = os.path.join(TMP, f"n-{uuid.uuid4().hex}.db")
         os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"a-{uuid.uuid4().hex}.db")

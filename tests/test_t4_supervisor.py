@@ -23,6 +23,7 @@ import uuid
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC = os.path.join(REPO, "src")
 TMP = tempfile.mkdtemp(prefix="ghost-t4-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 
 MAIN_DRIVER = '''
 import json, os, time

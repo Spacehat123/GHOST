@@ -19,6 +19,7 @@ import uuid
 from unittest.mock import patch
 
 TMP = tempfile.mkdtemp(prefix="ghost-t5-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 # Module-level pins keep import-time binds scoped, but other test files POP
 # some of these at run time (chaos + GHOST_GRANT_SECRET) — every test class
 # below re-pins per test with cleanup (the T2 lesson).

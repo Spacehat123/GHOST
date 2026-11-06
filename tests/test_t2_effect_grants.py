@@ -17,6 +17,7 @@ import uuid
 from unittest.mock import patch
 
 TMP = tempfile.mkdtemp(prefix="ghost-t2-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 DEMOS = os.path.join(TMP, "demos")
 os.makedirs(DEMOS, exist_ok=True)
 

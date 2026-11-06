@@ -16,6 +16,7 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 TMP = tempfile.mkdtemp(prefix="ghost-p3-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
 os.environ["GHOST_CRM_DB_PATH"] = os.path.join(TMP, f"crm-{uuid.uuid4().hex}.db")
 os.environ["GHOST_DEMOS_DIR"] = os.path.join(TMP, "demos")
@@ -42,7 +43,7 @@ class EnvPinned(unittest.TestCase):
         os.environ["GHOST_SNAPSHOTS_DIR"] = os.path.join(TMP, f"snap-{uuid.uuid4().hex}")
         os.environ["GHOST_GRANT_SECRET"] = f"p3-{uuid.uuid4().hex}"
         os.environ["GHOST_AUTHORITY_NONCE_DB"] = os.path.join(TMP, f"n-{uuid.uuid4().hex}.db")
-        os.environ.pop("GHOST_GRANT_SOCKET", None)   # in-process fallback: daemon not under test here
+        os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, f"dead-{uuid.uuid4().hex}.sock")   # in-process fallback: never the live default socket
         os.environ["GHOST_UNIFIED_DB_PATH"] = os.path.join(TMP, f"ghost-{uuid.uuid4().hex}.db")
         os.environ["GHOST_HALT_FILE"] = os.path.join(TMP, f"HALTED-{uuid.uuid4().hex}")
         os.environ["GHOST_HALT_META"] = os.environ["GHOST_HALT_FILE"] + ".json"

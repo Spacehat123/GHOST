@@ -5,6 +5,7 @@ import unittest
 import uuid
 
 TMP = tempfile.mkdtemp(prefix="ghost-w2-test-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
 os.environ["GHOST_HALT_FILE"] = os.path.join(TMP, "HALT")
 os.environ["GHOST_HALT_META"] = os.path.join(TMP, "HALT.json")

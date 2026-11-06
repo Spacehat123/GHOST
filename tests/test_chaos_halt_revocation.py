@@ -16,6 +16,7 @@ import uuid
 from unittest.mock import patch
 
 TMP = tempfile.mkdtemp(prefix="ghost-t3-")
+os.environ["GHOST_GRANT_SOCKET"] = os.path.join(TMP, "no-grantd.sock")  # suite must NEVER reach a live grantd
 
 PINNED = ("GHOST_AUDIT_DB_PATH", "GHOST_UNIFIED_DB_PATH", "GHOST_GRANT_SECRET",
           "GHOST_REVOCATION_EPOCH", "GHOST_OUTBOUND_STATE_PATH",
