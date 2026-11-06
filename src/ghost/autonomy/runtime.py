@@ -162,6 +162,23 @@ class AutonomyRuntime:
                 await asyncio.sleep(step)
                 slept += step
 
+    async def _ladder_loop(self) -> None:
+        """Operator's 11 P10: trust follows evidence. The ledger is mapped
+        onto the ladder (successes build streaks; VERIFIED incidents demote)
+        on a short cadence — promotion itself stays operator-only."""
+        interval = float(os.environ.get("GHOST_LADDER_SYNC_INTERVAL_S", "60"))
+        from ghost.autonomy.ladder_evidence import sync_ladder_from_ledger
+        while not self.stopped:
+            try:
+                sync_ladder_from_ledger()
+            except Exception as e:
+                audit("ladder.sync_error", error=str(e)[:200])
+            slept = 0.0
+            while slept < interval and not self.stopped:
+                step = min(5.0, interval - slept)
+                await asyncio.sleep(step)
+                slept += step
+
     def _make_digest_hook(self):
         def hook() -> None:
             # Daily dual-read parity (T1c): in unified mode, verify no legacy
@@ -218,6 +235,7 @@ class AutonomyRuntime:
             asyncio.create_task(self._staleness_enforcer_loop(), name="staleness"),
             asyncio.create_task(self._scheduler_loop(), name="scheduler"),
             asyncio.create_task(self._intake_loop(), name="intake"),
+            asyncio.create_task(self._ladder_loop(), name="ladder-evidence"),
             asyncio.create_task(
                 self.queue.run_worker(self._build_handlers(),
                                       poll_interval=self.queue_poll_s),
