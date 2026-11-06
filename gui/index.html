@@ -210,6 +210,7 @@
         <button class="deck-tab-btn" data-view="campaigns">Campaigns</button>
         <button class="deck-tab-btn" data-view="confirmation">Confirmation</button>
         <button class="deck-tab-btn" data-view="demos">Demos</button>
+        <button class="deck-tab-btn" data-view="microjobs">Micro-jobs</button>
         <button class="deck-tab-btn" data-view="templates">Templates</button>
         <button class="deck-tab-btn" data-view="suppression">Suppression</button>
         <button class="deck-tab-btn" data-view="events">Activity Log</button>
@@ -298,6 +299,19 @@
           <div class="deck-section-desc">Open the demo locally, look at it yourself, then approve hosting.
             Every approval click mints ONE single-use deploy grant; QA-evidence, snapshot and halt gates still apply.</div>
           <div id="demos-list"></div>
+        </div>
+      </section>
+
+      <!-- 3c. Micro-jobs copilot (Operator's 11 P8) -->
+      <section id="view-microjobs" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Micro-jobs — Ghost finds, drafts; YOU send</div>
+          <div class="deck-section-desc">Read-only watch on your saved searches + RSS feeds (configs/microjobs.json).
+            Fit-scored against what Ghost actually delivers. No auto-bid path exists — every proposal waits for your send.</div>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="deck-btn" onclick="deckMicrojobsSweep()">🔄 Sweep sources now</button>
+          </div>
+          <div id="microjobs-list"></div>
         </div>
       </section>
 

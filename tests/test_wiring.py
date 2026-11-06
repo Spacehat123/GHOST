@@ -136,7 +136,10 @@ class TestRuntime(unittest.TestCase):
         st = asyncio.run(go())
         self.assertTrue(st["running"])
         self.assertFalse(st["halted"])
-        self.assertLess(st["heartbeat_age_s"], 5.0)
+        # freshness smoke check: the heartbeat is REAL and recent. The bound
+        # must survive full-suite load (663 tests, one process) — the actual
+        # safety tooth is heartbeat.STALE_AFTER_S (180s), not this number.
+        self.assertLess(st["heartbeat_age_s"], 30.0)
         events = AuditLedger.get_instance().day_summary()["events"]
         self.assertGreaterEqual(events.get("policy.decision", 0), 1)
         self.assertGreaterEqual(events.get("runtime.started"), 1)

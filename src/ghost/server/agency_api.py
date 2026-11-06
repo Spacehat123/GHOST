@@ -630,6 +630,73 @@ async def authorize_demo_host(slug: str, request: Request):
 
 
 # =============================================================================
+# 5c. Micro-jobs copilot (Operator's 11 P8 — goal 9)
+# Ghost finds small jobs it can actually deliver and DRAFTS proposals.
+# A human presses send — there is deliberately no auto-bid path (ToS).
+# =============================================================================
+
+@agency_router.get("/microjobs", dependencies=[Depends(verify_auth_token)])
+async def list_microjobs(status: Optional[str] = Query(None)):
+    """The micro-jobs board: discovered jobs + the proposal attached to each."""
+    from ghost.workers.microjobs import JobStore
+    store = JobStore()
+    jobs = store.list_jobs(status)
+    for j in jobs:
+        j["reasons"] = json.loads(j.get("reasons_json") or "[]")
+        prop = store.get_proposal(j["id"])
+        j["proposal"] = prop
+    return {"jobs": jobs,
+            "note": "Ghost drafts; you press send (ToS — no auto-bid path exists)"}
+
+
+@agency_router.post("/microjobs/sweep", dependencies=[Depends(verify_auth_token)])
+async def sweep_microjobs():
+    """One read-only source sweep (configs/microjobs.json: your saved search
+    URLs + RSS feeds). Fetch failures are reported, never hidden."""
+    from ghost.workers.microjobs import sweep
+    return sweep()
+
+
+@agency_router.post("/microjobs/{job_id}/propose", dependencies=[Depends(verify_auth_token)])
+async def propose_microjob(job_id: str):
+    """Draft ONE tailored proposal for ONE job — awaiting_human_send."""
+    from ghost.workers.microjobs import (JobStore, draft_proposal_text,
+                                         score_fit)
+    store = JobStore()
+    job = store.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    if store.get_proposal(job_id):
+        return {"status": "already_drafted", "proposal": store.get_proposal(job_id)}
+    fit = {"fit_score": job.get("fit_score", 0),
+           "deliverables": [r.split(" (")[0] for r in
+                            json.loads(job.get("reasons_json") or "[]")]}
+    body = draft_proposal_text(job, fit)
+    prop = store.add_proposal(job_id, body)
+    from ghost.core.audit import audit
+    audit("microjobs.proposal_drafted", subject=job_id,
+          note="awaiting_human_send — the operator edits and sends")
+    return {"status": "drafted", "proposal": prop}
+
+
+@agency_router.post("/microjobs/{job_id}/status", dependencies=[Depends(verify_auth_token)])
+async def microjob_status(job_id: str, request: Request):
+    """Operator marks the outcome: sent / won / lost / skipped."""
+    from ghost.workers.microjobs import JobStore
+    body = await request.json()
+    status = str(body.get("status", ""))
+    store = JobStore()
+    ok = store.set_status(job_id, status)
+    if not ok and status in ("sent", "won", "lost"):
+        ok = store.set_proposal_status(job_id, status)
+    if not ok:
+        raise HTTPException(status_code=400, detail=f"unknown status {status!r}")
+    from ghost.core.audit import audit
+    audit("microjobs.status", subject=job_id, status=status, by="operator")
+    return {"status": "ok", "job_id": job_id, "new_status": status}
+
+
+# =============================================================================
 # 6. Outreach Drafts & Review Queue
 # =============================================================================
 

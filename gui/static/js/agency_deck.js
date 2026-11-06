@@ -106,10 +106,71 @@
     if (viewId === 'campaigns') loadCampaigns();
     if (viewId === 'confirmation') loadConfirmationQueue();
     if (viewId === 'demos') loadDemos();
+    if (viewId === 'microjobs') loadMicrojobs();
     if (viewId === 'templates') loadTemplates();
     if (viewId === 'suppression') loadSuppression();
     if (viewId === 'events') loadEvents();
   }
+
+  // Micro-jobs copilot (Operator's 11 P8): Ghost drafts, the human sends
+  async function loadMicrojobs() {
+    const res = await deckFetch('/api/microjobs');
+    const listEl = document.getElementById('microjobs-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Micro-jobs board unavailable.</div>'; return; }
+    const { jobs } = await res.json();
+    if (!jobs.length) {
+      listEl.innerHTML = '<div class="deck-section-desc">No jobs yet — add your saved Upwork search URLs / RSS feeds to configs/microjobs.json, then Sweep.</div>';
+      return;
+    }
+    listEl.innerHTML = jobs.map(j => `
+      <div class="deck-panel-box" style="margin-bottom:14px; background:var(--deck-card);">
+        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:260px;">
+            <div style="font-weight:600;">${j.title || '(untitled)'}
+              <span style="opacity:0.55; font-size:0.85em;">${j.budget_text ? '· ' + j.budget_text : ''}</span></div>
+            <div style="font-size:0.85em; opacity:0.75;">
+              ${j.source} · fit ${j.fit_score} · ${j.status}
+              ${j.url ? `· <a href="${j.url}" target="_blank" rel="noopener">open</a>` : ''}</div>
+            ${(j.reasons || []).slice(0, 2).map(r => `<div style="font-size:0.8em; opacity:0.6;">• ${r}</div>`).join('')}
+            ${j.proposal ? `<div style="font-size:0.85em; margin-top:8px; padding:8px; background:rgba(255,255,255,0.04); border-radius:6px;">
+              <b>${j.proposal.status === 'awaiting_human_send' ? '✍️ awaiting your send' : j.proposal.status}</b><br>${(j.proposal.body || '').slice(0, 220)}…</div>` : ''}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            ${j.proposal ? '' : `<button class="deck-btn" onclick="deckProposeJob('${j.id}')">✍️ Draft proposal</button>`}
+            ${j.proposal && j.proposal.status === 'awaiting_human_send' ? `
+            <button class="deck-btn deck-btn-highlight" onclick="deckJobStatus('${j.id}','sent')">📤 Mark sent</button>` : ''}
+            <button class="deck-btn" onclick="deckJobStatus('${j.id}','won')">🏆 Won</button>
+            <button class="deck-btn" onclick="deckJobStatus('${j.id}','lost')">✕ Lost</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function deckMicrojobsSweep() {
+    const res = await deckFetch('/api/microjobs/sweep', { method: 'POST' });
+    const out = await res.json().catch(() => ({}));
+    alert(out.status === 'ok'
+      ? `Sweep done: ${out.stored} new job(s), ${out.above_min_score} above fit threshold${out.failed ? `, ${out.failed} source(s) failed` : ''}`
+      : 'Sweep failed — see Activity Log.');
+    loadMicrojobs();
+  }
+
+  async function deckProposeJob(jobId) {
+    const res = await deckFetch(`/api/microjobs/${jobId}/propose`, { method: 'POST' });
+    if (!res.ok) { alert('Could not draft the proposal.'); return; }
+    loadMicrojobs();
+  }
+
+  async function deckJobStatus(jobId, status) {
+    await deckFetch(`/api/microjobs/${jobId}/status`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }) });
+    loadMicrojobs();
+  }
+  window.deckMicrojobsSweep = deckMicrojobsSweep;
+  window.deckProposeJob = deckProposeJob;
+  window.deckJobStatus = deckJobStatus;
 
   // Demo approval loop (Operator's 11 P3): open locally → verify → approve & host
   async function loadDemos() {

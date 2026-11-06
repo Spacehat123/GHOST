@@ -1,0 +1,7 @@
+{
+  "rss_feeds": [],
+  "upwork_search_urls": [],
+  "min_fit_score": 3.0,
+  "max_jobs_per_sweep": 20,
+  "_how_to_use": "Paste the search URLs you want watched (upwork_search_urls) and any job-board RSS feeds (rss_feeds). Ghost reads them read-only, scores fit against what it can actually deliver, and drafts proposals ONLY when you click. A human always presses send — there is no auto-bid path by design (Upwork ToS)."
+}
