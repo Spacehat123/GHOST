@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "decisions": 5,
+  "final_state": {
+    "statuses": {
+      "demo_built": 50
+    },
+    "contacted": 50,
+    "pipeline_value_inr": 1250000.0
+  },
+  "deterministic": true,
+  "recorded_at": null
+}
