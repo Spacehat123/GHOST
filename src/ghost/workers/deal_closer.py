@@ -328,16 +328,21 @@ class DealCloser:
             "client_name": client_legal,
             "client_address": client_address
         }
-        pay_link_dep = provider_engine.create_payment_link(inv_dep_data)
+        # Target directory — resolved FIRST: the Operator's 11 P4 QR artifact
+        # (scan-to-pay, when a real rail exists) lands next to the pack files.
+        out_dir = os.path.join(DOCUMENTS_BASE_DIR, lead_slug)
+        os.makedirs(out_dir, exist_ok=True)
+
+        pay_link_dep = None
+        attach = getattr(provider_engine, "attach_payment_artifacts", None)
+        if attach is not None:
+            dep_art = attach(inv_dep_data, out_dir)
+            pay_link_dep = dep_art["link"]
         if pay_link_dep:
             inv_dep_data["payment_link"] = pay_link_dep
 
         pay_instructions_dep = provider_engine.payment_instructions(inv_dep_data)
         tokens["PAYMENT_INSTRUCTIONS"] = pay_instructions_dep
-
-        # Target directory
-        out_dir = os.path.join(DOCUMENTS_BASE_DIR, lead_slug)
-        os.makedirs(out_dir, exist_ok=True)
 
         generated_documents: List[Dict[str, Any]] = []
 
@@ -468,7 +473,11 @@ class DealCloser:
                 "client_name": client_legal,
                 "client_address": client_address
             }
-            pay_link_bal = provider_engine.create_payment_link(inv_bal_data)
+            pay_link_bal = None
+            attach_bal = getattr(provider_engine, "attach_payment_artifacts", None)
+            if attach_bal is not None:
+                bal_art = attach_bal(inv_bal_data, out_dir)
+                pay_link_bal = bal_art["link"]
             if pay_link_bal:
                 inv_bal_data["payment_link"] = pay_link_bal
             pay_instructions_bal = provider_engine.payment_instructions(inv_bal_data)

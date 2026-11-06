@@ -196,5 +196,139 @@ class TestPayments(unittest.TestCase):
                         )
 
 
+class TestRazorpayRealRails(unittest.TestCase):
+    """P4 (Operator's 11): REAL collection rails. No fabricated URL may ever
+    exist; keys absent -> honest fallback (UPI) or honest None; the QR is a
+    deterministic scan-to-pay image of something real."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self._saved = {k: os.environ.get(k) for k in
+                       ("RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "GHOST_UPI_ID")}
+        for k in ("RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "GHOST_UPI_ID"):
+            os.environ.pop(k, None)
+        self.out_dir = self.tmpdir.name
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        self.tmpdir.cleanup()
+
+    def _provider(self, upi_id=None):
+        cfg = {"key_id_env": "RAZORPAY_KEY_ID", "key_secret_env": "RAZORPAY_KEY_SECRET"}
+        p = RazorpayProvider(config=cfg, crm=self.crm if hasattr(self, "crm") else None)
+        p.payments_cfg = {"upi_id": upi_id, "upi_payee_name": "Pranav Studio"}
+        return p
+
+    def _invoice(self, **over):
+        inv = {"invoice_number": "INV-2026-070-DEP", "amount": "5000.00",
+               "currency": "INR", "lead_id": "lead_10",
+               "client_name": "Salt Hospitality Ltd"}
+        inv.update(over)
+        return inv
+
+    def test_real_link_via_api(self):
+        calls = []
+
+        def transport(url, payload, key_id, key_secret):
+            calls.append((url, payload, key_id, key_secret))
+            return 200, {"id": "plink_real123", "short_url": "https://rzp.io/i/real123"}
+
+        os.environ["RAZORPAY_KEY_ID"] = "rzp_test_kid"
+        os.environ["RAZORPAY_KEY_SECRET"] = "rzp_test_ksec"
+        link = self._provider().create_payment_link(self._invoice(), transport=transport)
+        self.assertEqual(link, "https://rzp.io/i/real123")
+        url, payload, kid, ksec = calls[0]
+        self.assertEqual(url, "https://api.razorpay.com/v1/payment_links")
+        self.assertEqual(payload["amount"], 500000, "Decimal-exact paise")
+        self.assertEqual(payload["currency"], "INR")
+        self.assertEqual(payload["notes"]["invoice_number"], "INV-2026-070-DEP",
+                         "webhook events must be able to match this invoice")
+        self.assertEqual(payload["notes"]["lead_id"], "lead_10")
+        self.assertEqual(payload["customer"]["name"], "Salt Hospitality Ltd")
+        self.assertEqual(kid, "rzp_test_kid")
+
+    def test_api_failure_is_honest_no_link(self):
+        def transport(url, payload, kid, ksec):
+            return 500, {"error": "provider down"}
+
+        os.environ["RAZORPAY_KEY_ID"] = "rzp_test_kid"
+        os.environ["RAZORPAY_KEY_SECRET"] = "rzp_test_ksec"
+        link = self._provider(upi_id="studio@upi").create_payment_link(
+            self._invoice(), transport=transport)
+        self.assertIsNone(link, "API failure must not silently fall back or fabricate")
+
+    def test_upi_fallback_deterministic(self):
+        p = self._provider(upi_id="studio@upi")
+        l1 = p.create_payment_link(self._invoice())
+        l2 = p.create_payment_link(self._invoice())
+        self.assertTrue(l1.startswith("upi://pay?pa=studio%40upi"))
+        self.assertIn("am=5000.00", l1)
+        self.assertIn("cu=INR", l1)
+        self.assertIn("tn=INV-2026-070-DEP", l1)
+        self.assertEqual(l1, l2, "same invoice -> same URI -> same QR")
+
+    def test_no_keys_no_upi_honest_none(self):
+        link = self._provider(upi_id=None).create_payment_link(self._invoice())
+        self.assertIsNone(link)
+
+    def test_non_inr_uses_bank_instructions_not_links(self):
+        link = self._provider(upi_id="studio@upi").create_payment_link(
+            self._invoice(currency="GBP"))
+        self.assertIsNone(link, "UPI is INR-only; GBP keeps bank instructions")
+
+    def test_attach_renders_deterministic_qr(self):
+        from ghost.workers.payments.razorpay_provider import render_qr_png
+        p = self._provider(upi_id="studio@upi")
+        inv = self._invoice()
+        art = p.attach_payment_artifacts(inv, self.out_dir)
+        self.assertEqual(art["rail"], "upi_qr")
+        self.assertTrue(os.path.exists(art["qr_path"]))
+        # deterministic: an independent render of the same URI is byte-identical
+        again = render_qr_png(inv["payment_link"], os.path.join(self.out_dir, "again.png"))
+        self.assertEqual(open(art["qr_path"], "rb").read(),
+                         open(again, "rb").read())
+        # instructions reference the QR artifact
+        instr = p.payment_instructions(inv)
+        self.assertIn("QR", instr)
+        self.assertIn("upi://", instr)
+
+    def test_qr_of_real_api_link(self):
+        os.environ["RAZORPAY_KEY_ID"] = "rzp_test_kid"
+        os.environ["RAZORPAY_KEY_SECRET"] = "rzp_test_ksec"
+
+        def transport(url, payload, kid, ksec):
+            return 200, {"id": "plink_1", "short_url": "https://rzp.io/i/scan-me"}
+
+        p = self._provider()
+        inv = self._invoice()
+        # attach with the API transport injected (mirrors the live path)
+        original_create = p.create_payment_link
+        p.create_payment_link = lambda invoice, transport=transport: original_create(invoice, transport=transport)
+        art = p.attach_payment_artifacts(inv, self.out_dir)
+        self.assertEqual(art["rail"], "razorpay_payment_link")
+        self.assertEqual(art["link"], "https://rzp.io/i/scan-me")
+        self.assertTrue(os.path.exists(art["qr_path"]),
+                        "the QR encodes the REAL short_url — scan-to-pay")
+        instr = p.payment_instructions(inv)
+        self.assertIn("https://rzp.io/i/scan-me", instr)
+
+    def test_qr_library_missing_is_honest(self):
+        import sys
+        from ghost.workers.payments import razorpay_provider as rp
+        saved = sys.modules.get("qrcode")
+        sys.modules["qrcode"] = None   # import raises ImportError
+        try:
+            self.assertIsNone(rp.render_qr_png("upi://pay?pa=x@y", os.path.join(self.out_dir, "n.png")))
+        finally:
+            if saved is None:
+                sys.modules.pop("qrcode", None)
+            else:
+                sys.modules["qrcode"] = saved
+
+
 if __name__ == "__main__":
     unittest.main()
