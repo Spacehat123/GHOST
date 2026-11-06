@@ -24,8 +24,11 @@ REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "
 
 
 def mode() -> str:
-    value = os.environ.get(MODE_ENV, "legacy").strip().lower()
-    return value if value in MODES else "legacy"
+    # T-review P3: the cutover completes — unified is the DEFAULT. The old
+    # stores stopped being written; parity guards the window. Rollback =
+    # GHOST_STORE_MODE=legacy (the old stores are intact, never deleted).
+    value = os.environ.get(MODE_ENV, "unified").strip().lower()
+    return value if value in MODES else "unified"
 
 
 def unified() -> bool:

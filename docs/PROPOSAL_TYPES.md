@@ -76,3 +76,22 @@ LLM emits: {"proposal": {"action": "demo.deploy",
 - Money in Decimal; never delete paid-client data; halt dominates every path.
 - Legacy path deleted only at golden-trace parity (6c) — trace = recorded legacy
   session, same inputs → equivalent observable outcomes.
+
+## Strangler progress (measured, not claimed — review finding #2)
+
+**core/brain.py is still 2,373 lines.** The model-facing tool layer is only
+PARTLY converted — this is a strangler migration with a legacy fallback, and
+pretending otherwise would be the exact dishonesty this project exists to
+prevent.
+
+| item | state |
+|---|---|
+| converted + legacy branch DELETED | `deploy_demo_vercel`, `scout_expensive_venues_without_website` (identical executors, verified parity) |
+| adapter-wired (route in proposals mode) | `pipeline.upsert_client`, `pipeline.update_stage`, `demo.deploy`, `leads.scout` |
+| mapped but unwired (stay legacy) | `choose_flow`, `build_*`, `whatsapp_action`, everything in the READ/LOCAL_MUTATION tables |
+| baseline violations remaining | 4 — brain→comms.email_service (drafts/IMAP reads) + brain→workers.deploy (`vercel_check_token` READ); burn when the READ wave converts |
+| line-count trajectory | 2,376 → 2,373 so far; the burn accelerates as each wave deletes its branch |
+
+The honest reading: **the planes are enforced by contract tests today; they
+become physical as the waves land.** The authority daemon (grant key out of
+the main process) is the exception — it IS structural isolation, not a test.

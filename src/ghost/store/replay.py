@@ -41,6 +41,8 @@ def derive_day(day: str, ledger: AuditLedger, limit: int = 20000) -> Dict[str, A
         "events_by_type": dict(sorted(by_type.items())),
         "derived": derived,
         "decisions": decisions,
-        "jobs_enqueued": enqueued,
+        # volatile identifiers (uuid job ids) are NOT replay state — a day's
+        # decision-relevant shape is the count, not the random handles
+        "jobs_enqueued_count": len(enqueued),
         "tokens_by_intent": dict(sorted(tokens_by_intent.items())),
     }
