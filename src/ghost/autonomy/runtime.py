@@ -76,6 +76,12 @@ class AutonomyRuntime:
         except Exception as e:
             logger.warning("close_chain handlers unavailable: %s", e)
 
+        # Operator's 11 P5: the once-daily follow-up sweep (drafts ONLY).
+        def draft_followups(payload: Dict[str, Any]) -> Any:
+            from ghost.autonomy.intake import draft_due_followups
+            return draft_due_followups()
+        handlers["followups.draft"] = draft_followups
+
         return handlers
 
     # ------------------------------------------------------------------- tasks
@@ -115,6 +121,24 @@ class AutonomyRuntime:
             digest_hook=digest_hook,
         )
 
+    async def _intake_loop(self) -> None:
+        """Operator's 11 P5: poll the reply inbox on an interval instead of
+        waiting for the 300s scheduler cycle. Read-only IMAP; everything it
+        does downstream is drafts/suppressions/pings — never a send."""
+        interval = float(os.environ.get("GHOST_INTAKE_INTERVAL_S", "300"))
+        from ghost.autonomy.intake import poll_email_replies
+        ping = _operator_ping()
+        while not self.stopped:
+            try:
+                poll_email_replies(ping=ping)
+            except Exception as e:
+                audit("intake.loop_error", error=str(e)[:200])
+            slept = 0.0
+            while slept < interval and not self.stopped:
+                step = min(5.0, interval - slept)
+                await asyncio.sleep(step)
+                slept += step
+
     def _make_digest_hook(self):
         def hook() -> None:
             # Daily dual-read parity (T1c): in unified mode, verify no legacy
@@ -137,6 +161,14 @@ class AutonomyRuntime:
             content = build_digest()
             path = write_digest_file(content, repo_dir=REPO_DIR)
             audit("digest.written", path=path)
+            # Operator's 11 P5: the daily follow-up sweep rides the digest —
+            # one idempotent queue job per day, drafts only, nothing sent.
+            try:
+                if self.queue is not None:
+                    self.queue.enqueue("followups.draft", {"day": content.get("day", "")},
+                                       idempotency_key=f"followups:{content.get('day', '')}")
+            except Exception as e:
+                audit("followups.enqueue_failed", error=str(e)[:160])
             try:
                 from ghost.core import rhythm
                 rhythm.mark("digest")
@@ -162,6 +194,7 @@ class AutonomyRuntime:
             asyncio.create_task(self._heartbeat_loop(), name="heartbeat"),
             asyncio.create_task(self._staleness_enforcer_loop(), name="staleness"),
             asyncio.create_task(self._scheduler_loop(), name="scheduler"),
+            asyncio.create_task(self._intake_loop(), name="intake"),
             asyncio.create_task(
                 self.queue.run_worker(self._build_handlers(),
                                       poll_interval=self.queue_poll_s),

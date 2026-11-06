@@ -75,6 +75,10 @@ SETTABLE_SECRETS = (
     "GHOST_OUTREACH_FROM", "GHOST_OUTREACH_REPLY_TO",
     "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET",
     "GHOST_SENDING_DOMAIN",
+    # inbox reading (Operator's 11 P5): the reply-intake IMAP account —
+    # configured from the UI, never a config file the operator must edit
+    "GHOST_INBOX_EMAIL", "GHOST_IMAP_HOST", "GHOST_IMAP_PORT",
+    "GHOST_IMAP_USER", "GHOST_IMAP_PASSWORD",
 )
 
 

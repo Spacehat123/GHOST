@@ -43,6 +43,30 @@ class EmailService:
                 logger.error(f"Failed loading email config: {e}")
         return {}
 
+    def _resolved_config(self) -> Dict[str, Any]:
+        """Per-call resolution (the audit/heartbeat pattern): the file is the
+        legacy fallback, but the OPERATOR UI (secrets vault / env) wins —
+        the operator never edits config files (Operator's 11 P5)."""
+        cfg = dict(self._load_config())
+        try:
+            from ghost.core.secrets import get
+            for env_name, key, cast in (
+                    ("GHOST_INBOX_EMAIL", "email", str),
+                    ("GHOST_IMAP_USER", "email", str),
+                    ("GHOST_IMAP_PASSWORD", "app_password", str),
+                    ("GHOST_IMAP_HOST", "imap_server", str),
+                    ("GHOST_IMAP_PORT", "imap_port", int)):
+                val = get(env_name)
+                if val:
+                    cfg[key] = cast(val)
+        except Exception:
+            pass   # vault unreadable -> file config stands, honestly
+        return cfg
+
+    def imap_configured(self) -> bool:
+        cfg = self._resolved_config()
+        return bool(cfg.get("email")) and bool(cfg.get("app_password"))
+
     @staticmethod
     def _clean_header(header_val: Optional[str]) -> str:
         if not header_val:
@@ -57,15 +81,17 @@ class EmailService:
         return "".join(res)
 
     def check_inbox(self, unread_only: bool = True, limit: int = 5) -> List[Dict[str, Any]]:
-        """Fetch recent emails from inbox via IMAP SSL."""
-        cfg = self._config or self._load_config()
+        """Fetch recent emails from inbox via IMAP SSL. Config resolves per
+        call: secrets vault (operator UI) wins over the legacy file."""
+        cfg = self._resolved_config()
         user = cfg.get("email")
-        pwd = cfg.get("app_password", "").replace(" ", "")
+        pwd = str(cfg.get("app_password", "")).replace(" ", "")
         server = cfg.get("imap_server", "imap.gmail.com")
         port = int(cfg.get("imap_port", 993))
 
         if not user or not pwd:
-            logger.warning("Email credentials missing in email.json")
+            logger.warning("Email/IMAP credentials not configured (set them in "
+                           "🛡️ Operator Control → email) — inbox not read")
             return []
 
         emails = []
@@ -120,6 +146,7 @@ class EmailService:
 
                 emails.append({
                     "id": mid.decode(),
+                    "message_id": (msg.get("Message-ID") or "").strip(),
                     "sender": from_hdr,
                     "sender_email": sender_email.lower(),
                     "subject": subject,

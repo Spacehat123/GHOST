@@ -874,10 +874,18 @@ class CRMDatabase:
         return {"id": did, "lead_id": lead_id, "channel": channel, "subject": subject, "body": body, "link": link, "status": status}
 
     def get_drafts_for_lead(self, lead_id: str) -> List[Dict[str, Any]]:
-        """Retrieve all drafts for a lead."""
+        """Retrieve all drafts for a lead. Resolves EITHER the lead's uuid id
+        or its slug: the legacy data model wrote slugs into drafts.lead_id
+        while ids are random (the migration census's known lie) — callers
+        should not have to know which key a given row carries."""
+        key = lead_id.strip()
         with self._get_connection() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM drafts WHERE lead_id = ? ORDER BY created_at DESC", (lead_id.strip(),))
+            cur.execute(
+                "SELECT * FROM drafts WHERE lead_id = ? "
+                "OR lead_id = (SELECT slug FROM leads WHERE id = ?) "
+                "OR lead_id = (SELECT id FROM leads WHERE slug = ?) "
+                "ORDER BY created_at DESC", (key, key, key))
             return [dict(r) for r in cur.fetchall()]
 
     def get_draft(self, draft_id: str) -> Optional[Dict[str, Any]]:

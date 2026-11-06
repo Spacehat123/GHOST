@@ -744,19 +744,55 @@ async def mark_draft_sent(draft_id: str):
 
 @agency_router.post("/drafts/{draft_id}/reply", dependencies=[Depends(verify_auth_token)])
 async def record_draft_reply(draft_id: str, request: Request):
-    """
-    Records reply from prospect.
-    If opt-out intent detected or manual opt-out requested, triggers suppression immediately.
-    """
+    """The relay path (Operator's 11 P5 — WhatsApp/email replies the operator
+    pastes in). The pasted text is UNTRUSTED: it goes through the T7
+    quarantine and the reply loop (classify → suppress/ping/draft) BEFORE any
+    bookkeeping. Fixed in P5: this endpoint used to call a method that did
+    not exist and 500'd on every reply."""
     crm = CRMDatabase.get_instance()
-    drafter = OutreachDrafter(crm=crm)
 
     body = await request.json()
-    reply_text = body.get("reply_text", "")
-    is_opt_out = bool(body.get("is_opt_out", False))
+    reply_text = str(body.get("reply_text", "")).strip()
+    if not reply_text:
+        raise HTTPException(status_code=400, detail="reply_text is required.")
 
-    res = drafter.handle_incoming_reply(draft_id, reply_text=reply_text, is_manual_opt_out=is_opt_out)
-    return res
+    # resolve the draft → its lead (the reply belongs to a conversation)
+    with crm._get_connection() as conn:
+        row = conn.execute("SELECT * FROM drafts WHERE id = ?", (draft_id.strip(),)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Draft {draft_id!r} not found.")
+    draft = dict(row)
+    lead = crm.get_lead(draft.get("lead_id") or "")
+    if not lead:
+        raise HTTPException(status_code=404, detail="Draft has no resolvable lead.")
+    slug = lead["slug"]
+
+    # 1. classification path — quarantine runs INSIDE ingest_reply; flagged
+    #    injections ping (c) with ZERO effects
+    from ghost.autonomy.reply_loop import ingest_reply
+    from ghost.workers.suppression import SuppressionManager
+    from ghost.autonomy.ladder import AutonomyLadder
+    verdict_out = ingest_reply(slug, reply_text,
+                               suppression=SuppressionManager(crm=crm),
+                               crm=crm, ladder=AutonomyLadder())
+
+    # 2. bookkeeping — mark the draft replied, advance the lead (the
+    #    interaction log is already written by ingest_reply; no double log)
+    with crm._get_connection() as conn:
+        conn.execute("UPDATE drafts SET status = 'replied' WHERE id = ?", (draft_id.strip(),))
+        conn.commit()
+    suppress = SuppressionManager(crm=crm)
+    opted_out = bool(body.get("is_opt_out", False)) or suppress.detect_opt_out_intent(reply_text)
+    if opted_out:
+        suppress.opt_out_lead(slug, reason="operator relay: opt-out intent in reply")
+    elif not verdict_out.get("quarantined") and lead.get("status") not in ("suppressed",):
+        crm.update_lead(slug, status="replied")
+        crm.record_event("lead_replied", lead.get("id"), {"slug": slug})
+
+    return {"status": "quarantined" if verdict_out.get("quarantined") else
+            ("opted_out" if opted_out else "replied"),
+            "slug": slug, "verdict": str(verdict_out.get("verdict") or ""),
+            "actions": verdict_out.get("actions", [])}
 
 
 # =============================================================================

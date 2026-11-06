@@ -148,6 +148,9 @@ _SETTING_SECTIONS = {
              "GHOST_OUTREACH_FROM", "GHOST_OUTREACH_REPLY_TO"],
     "domain": ["GHOST_SENDING_DOMAIN"],
     "authority": ["GHOST_GRANT_SECRET"],
+    # Operator's 11 P5: the reply-intake inbox — read-only IMAP, vault-first
+    "email": ["GHOST_INBOX_EMAIL", "GHOST_IMAP_HOST", "GHOST_IMAP_PORT",
+              "GHOST_IMAP_USER", "GHOST_IMAP_PASSWORD"],
 }
 
 
@@ -248,6 +251,16 @@ async def settings_test(target: str):
         probe = check_local_model()
         return {"ok": probe["status"] == "available", "state": probe["status"],
                 "models": probe.get("models", [])[:5]}
+    if target == "email":
+        # Operator's 11 P5: reply-intake inbox — read-only IMAP login probe
+        from ghost.comms.email_service import EmailService
+        if not EmailService.get_instance().imap_configured():
+            return {"ok": False, "state": "not_configured"}
+        try:
+            msgs = EmailService.get_instance().check_inbox(unread_only=True, limit=1)
+            return {"ok": True, "state": "ok", "unread_sample": len(msgs)}
+        except Exception as e:
+            return {"ok": False, "state": "error", "error": str(e)[:150]}
     raise HTTPException(status_code=404, detail=f"unknown test target {target}")
 
 
