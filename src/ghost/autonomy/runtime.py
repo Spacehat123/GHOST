@@ -105,6 +105,12 @@ class AutonomyRuntime:
             return diagnose_and_fix(issue)
         handlers["fixer.customer_report"] = customer_report
 
+        # Operator's 11 P8.1: the "when free" micro-jobs sweep (drafts only).
+        def microjobs_sweep(payload: Dict[str, Any]) -> Any:
+            from ghost.workers.microjobs import sweep
+            return sweep()
+        handlers["microjobs.sweep"] = microjobs_sweep
+
         return handlers
 
     # ------------------------------------------------------------------- tasks
@@ -179,6 +185,34 @@ class AutonomyRuntime:
                 await asyncio.sleep(step)
                 slept += step
 
+    async def _microjobs_loop(self) -> None:
+        """Operator's 11 P8.1: goal 9's 'when free of this part' — when the
+        pipeline has been idle past the knob (default 1h) and no client work
+        is waiting, sweep the job sources ONCE per hour into the board.
+        Drafts only; a human still sends every proposal."""
+        from ghost.workers.microjobs import should_sweep, sweep_key
+        interval = float(os.environ.get("GHOST_MICROJOBS_CHECK_INTERVAL_S", "600"))
+        while not self.stopped:
+            try:
+                should, reason = should_sweep()
+                if should:
+                    if self.queue is not None:
+                        self.queue.enqueue("microjobs.sweep", {"trigger": reason},
+                                           idempotency_key=sweep_key())
+                        audit("microjobs.auto_sweep_enqueued", reason=reason[:120],
+                              key=sweep_key())
+                    else:
+                        audit("microjobs.auto_sweep_skipped", reason="no queue")
+                else:
+                    audit("microjobs.idle_check", should=False, reason=reason[:120])
+            except Exception as e:
+                audit("microjobs.loop_error", error=str(e)[:200])
+            slept = 0.0
+            while slept < interval and not self.stopped:
+                step = min(5.0, interval - slept)
+                await asyncio.sleep(step)
+                slept += step
+
     def _make_digest_hook(self):
         def hook() -> None:
             # Daily dual-read parity (T1c): in unified mode, verify no legacy
@@ -236,6 +270,7 @@ class AutonomyRuntime:
             asyncio.create_task(self._scheduler_loop(), name="scheduler"),
             asyncio.create_task(self._intake_loop(), name="intake"),
             asyncio.create_task(self._ladder_loop(), name="ladder-evidence"),
+            asyncio.create_task(self._microjobs_loop(), name="microjobs"),
             asyncio.create_task(
                 self.queue.run_worker(self._build_handlers(),
                                       poll_interval=self.queue_poll_s),

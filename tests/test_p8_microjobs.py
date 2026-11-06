@@ -221,5 +221,109 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(body["considered"], 0, "no sources configured yet — honest zero")
 
 
+class TestIdleTrigger(unittest.TestCase):
+    """P8.1 (operator): 'wire if idle>1hr' — goal 9's 'when free' encoded."""
+
+    def setUp(self):
+        self.db = os.path.join(TMP, f"mj-idle-{uuid.uuid4().hex}.db")
+        os.environ["GHOST_MICROJOBS_DB"] = self.db
+
+    def _sources(self):
+        return {"rss_feeds": ["https://feeds.example/j.rss"], "upwork_search_urls": []}
+
+    def test_no_sources_never_sweeps(self):
+        from ghost.workers.microjobs import should_sweep
+        should, reason = should_sweep(cfg={"rss_feeds": [], "upwork_search_urls": []},
+                                      crm=_QuietCRM(), ledger=_EmptyLedger())
+        self.assertFalse(should)
+        self.assertIn("no sources", reason)
+
+    def test_recent_activity_blocks_old_activity_allows(self):
+        import time as _t
+        from ghost.workers.microjobs import should_sweep, idle_seconds
+
+        class _LedgerWith:
+            """Fake ledger with one client-facing event at a controlled ts."""
+
+            def __init__(self, ts):
+                self.ts = ts
+
+            def query(self, event_type=None, limit=1):
+                if event_type == "demo.hosted":
+                    return [{"id": 1, "ts": self.ts, "event_type": event_type,
+                             "subject": "s1"}]
+                return []
+
+        recent = _LedgerWith(_t.time() - 300)          # 5 min ago
+        idle = idle_seconds(ledger=recent)
+        self.assertIsNotNone(idle)
+        self.assertLess(idle, 3600.0)
+        should, reason = should_sweep(crm=_QuietCRM(), ledger=recent,
+                                      cfg=dict(self._sources(), idle_hours_before_sweep=1.0))
+        self.assertFalse(should)
+        self.assertIn("active", reason)
+        # older than the threshold -> idle -> sweep
+        old = _LedgerWith(_t.time() - 2 * 3600)
+        self.assertGreaterEqual(idle_seconds(ledger=old), 3600.0)
+        should, reason = should_sweep(crm=_QuietCRM(), ledger=old,
+                                      cfg=dict(self._sources(), idle_hours_before_sweep=1.0))
+        self.assertTrue(should, reason)
+        self.assertIn("idle", reason)
+
+    def test_service_first_blocks_even_when_idle(self):
+        from ghost.workers.microjobs import should_sweep
+
+        class BusyCRM:
+            def pipeline_counts(self):
+                return {"open_complaints": 1, "replies_waiting": 0}
+
+        should, reason = should_sweep(crm=BusyCRM(), ledger=_EmptyLedger(),
+                                      cfg=self._sources())
+        self.assertFalse(should)
+        self.assertIn("service-first", reason)
+
+    def test_halt_blocks(self):
+        from ghost.core.halt import trip, resume
+        from ghost.workers.microjobs import should_sweep
+        trip(reason="test")
+        try:
+            should, reason = should_sweep(crm=_QuietCRM(), ledger=_EmptyLedger(),
+                                          cfg=self._sources())
+            self.assertFalse(should)
+            self.assertIn("halt", reason)
+        finally:
+            resume(by="test-cleanup")
+
+    def test_sweep_key_is_hourly(self):
+        from ghost.workers.microjobs import sweep_key
+        t0 = 3600.0 * 472222            # aligned to an hour boundary
+        self.assertEqual(sweep_key(t0), sweep_key(t0 + 3599))
+        self.assertNotEqual(sweep_key(t0), sweep_key(t0 + 3601))
+
+    def test_handler_and_loop_wired_in_runtime(self):
+        import asyncio
+        from ghost.autonomy.runtime import AutonomyRuntime
+        self.assertIn("microjobs.sweep", AutonomyRuntime()._build_handlers())
+        rt = AutonomyRuntime(with_lead_hunt=False)
+
+        async def go():
+            await rt.start()
+            names = [t.get_name() for t in rt._tasks]
+            await rt.stop()
+            return names
+
+        self.assertIn("microjobs", asyncio.run(go()))
+
+
+class _QuietCRM:
+    def pipeline_counts(self):
+        return {"open_complaints": 0, "replies_waiting": 0}
+
+
+class _EmptyLedger:
+    def query(self, event_type=None, limit=1):
+        return []
+
+
 if __name__ == "__main__":
     unittest.main()

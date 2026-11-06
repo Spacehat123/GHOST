@@ -39,6 +39,7 @@ DEFAULT_CONFIG = {
     "upwork_search_urls": [],
     "min_fit_score": 3.0,
     "max_jobs_per_sweep": 20,
+    "idle_hours_before_sweep": 1.0,   # goal 9: "when free of this part" — encoded
 }
 
 # what Ghost can ACTUALLY deliver (flows.json sectors + the real pipeline)
@@ -365,3 +366,62 @@ def _search_page(url: str) -> str:
         return fetch_via_browser(url)
     except Exception:
         return fetch_url(url)
+
+
+# ------------------------------------------------- the "when free" trigger (P8.1)
+
+# what counts as the pipeline being BUSY: any client-facing evidence, recent
+_ACTIVITY_EVENTS = ("lead_hunt.completed", "demo.hosted", "outbound.delivered",
+                    "reply.ingested", "payment.verified", "contract.sent",
+                    "followup.drafted")
+
+
+def idle_seconds(ledger=None) -> Optional[float]:
+    """Seconds since the last client-facing pipeline event (newest wins).
+    None = no activity ever recorded — a fresh system counts as idle."""
+    from ghost.core.audit import AuditLedger
+    led = ledger or AuditLedger.get_instance()
+    newest = 0.0
+    for et in _ACTIVITY_EVENTS:
+        rows = led.query(event_type=et, limit=1)   # newest first
+        if rows:
+            newest = max(newest, float(rows[0].get("ts") or 0))
+    if not newest:
+        return None
+    return max(0.0, time.time() - newest)
+
+
+def should_sweep(crm=None, ledger=None, cfg: Optional[Dict[str, Any]] = None,
+                 now: Optional[float] = None) -> tuple:
+    """Goal 9's 'when free of this part', encoded: sweep only when (a) sources
+    exist, (b) Ghost is not halted, (c) no open service work (SERVICE-FIRST,
+    same rule as hunting), and (d) the pipeline has been idle past the knob.
+    Returns (should, reason) — the reason is always auditable."""
+    from ghost.core.halt import is_halted
+    cfg = cfg or load_config()
+    if not (cfg.get("rss_feeds") or cfg.get("upwork_search_urls")):
+        return False, "no sources configured"
+    if is_halted():
+        return False, "halted"
+    try:
+        counts = (crm or _default_crm()).pipeline_counts()
+        if int(counts.get("open_complaints", 0)) > 0 or int(counts.get("replies_waiting", 0)) > 0:
+            return False, "service-first: open complaints/replies come first"
+    except Exception:
+        return False, "telemetry unreadable — fail closed"
+    idle_h = float(cfg.get("idle_hours_before_sweep", 1.0))
+    idle = idle_seconds(ledger)
+    if idle is not None and idle < idle_h * 3600.0:
+        return False, f"pipeline active {idle / 60:.0f}min ago (< {idle_h}h idle threshold)"
+    return True, (f"pipeline idle {idle / 60:.0f}min" if idle is not None
+                  else "no pipeline activity recorded")
+
+
+def sweep_key(now: Optional[float] = None) -> str:
+    """At most ONE auto-sweep per hour, wherever the trigger fires from."""
+    return f"microjobs:{int((now or time.time()) // 3600)}"
+
+
+def _default_crm():
+    from ghost.crm.db import CRMDatabase
+    return CRMDatabase.get_instance()
