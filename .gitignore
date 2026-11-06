@@ -83,3 +83,6 @@ data/drafts.jsonl
 data/*.db-shm
 data/*.db-wal
 data/ghost.db*
+
+# --- Ghost secrets vault (operator-set via the UI; NEVER in git) ---
+configs/secrets.json
