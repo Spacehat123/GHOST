@@ -23,10 +23,10 @@ import time
 from typing import Any, Dict, List, Optional
 
 from ghost.core.audit import audit
+from ghost.paths import data_dir
 
 STATE_PATH = os.environ.get("GHOST_DARKRUN_STATE") or os.path.join(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-    "data", "darkrun_state.json")
+    data_dir(), "darkrun_state.json")
 RUN_DAYS = 30
 
 
@@ -137,10 +137,9 @@ def preflight() -> Dict[str, Any]:
 
     # 9. simulated day still passes (the machinery's determinism receipt)
     checks.append(_check(
-        "sim_receipt", os.path.exists(os.path.join(
-            os.path.dirname(STATE_PATH), "sim_receipt.json")),
+        "sim_receipt", os.path.exists(os.path.join(data_dir(), "sim_receipt.json")),
         "the 50-lead simulated day must pass before a live day starts",
-        "run `ghost sim` (and record the receipt)"))
+        "run `ghost sim` (it records the receipt)"))
 
     ready = all(c["ok"] for c in checks)
     report = {"ready": ready, "checks": checks,

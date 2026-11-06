@@ -9,6 +9,7 @@ sequence of decision_ids and the same final state, so `ghost replay --day`
 derives identical day-state from either run's events.
 """
 import asyncio
+import json
 import os
 import tempfile
 import time
@@ -146,3 +147,34 @@ def run_simulated_day(seed: int = 20261106, n_leads: int = 50, cycles: int = 5,
         "derived_day": derive_day(day_str, ledger),
         "work_dir": work_dir,
     }
+
+
+def record_sim_receipt(seed: int = 20261106, n_leads: int = 50,
+                       cycles: int = 5) -> Dict[str, Any]:
+    """Run the simulated day TWICE (same seed, fresh walls) and write the
+    determinism receipt the dark-run preflight consumes (gate 9, T10).
+    Determinism is EARNED here — two identical runs — never declared."""
+    rep1 = run_simulated_day(seed=seed, n_leads=n_leads, cycles=cycles)
+    rep2 = run_simulated_day(seed=seed, n_leads=n_leads, cycles=cycles)
+    deterministic = (rep1["decision_ids"] == rep2["decision_ids"]
+                     and rep1["final_state"] == rep2["final_state"]
+                     and rep1["reply_categories"] == rep2["reply_categories"]
+                     and rep1["derived_day"] == rep2["derived_day"])
+    final = rep1["final_state"]
+    receipt = {
+        "ok": bool(deterministic and rep1["decision_ids"]),
+        "decisions": len(rep1["decision_ids"]),
+        "contacted": final.get("contacted", 0),
+        "statuses": final.get("statuses", {}),
+        "pipeline_value_inr": final.get("pipeline_value_inr", 0.0),
+        "deterministic": deterministic,
+    }
+    from ghost.paths import data_dir
+    path = os.environ.get("GHOST_SIM_RECEIPT") or os.path.join(
+        data_dir(), "sim_receipt.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".tmp", "w") as f:
+        json.dump(receipt, f, indent=2, sort_keys=True)
+    os.replace(path + ".tmp", path)
+    receipt["path"] = path
+    return receipt

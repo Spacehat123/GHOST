@@ -228,14 +228,20 @@ def cmd_reconcile(args) -> int:
 
 def cmd_sim(args) -> int:
     """T6: a simulated day — 50 fixture leads, zero operator input,
-    deterministic. The proof harness every later phase must pass."""
-    from ghost.sim.day import run_simulated_day
-    rep = run_simulated_day(seed=args.seed, n_leads=args.leads, cycles=args.cycles)
-    print(json.dumps({k: v for k, v in rep.items() if k != "work_dir"},
-                     indent=2, sort_keys=True, default=str))
-    print(f"\n✅ simulated day complete — {len(rep['decision_ids'])} decisions, "
-          f"replay-deterministic (same seed → same decision_ids)")
-    return 0
+    deterministic. The proof harness every later phase must pass. Runs the
+    day twice and records the determinism receipt (T10 preflight gate 9)."""
+    from ghost.sim.day import record_sim_receipt
+    receipt = record_sim_receipt(seed=args.seed, n_leads=args.leads,
+                                 cycles=args.cycles)
+    print(json.dumps(receipt, indent=2, sort_keys=True, default=str))
+    if receipt["ok"]:
+        print(f"\n✅ simulated day complete — {receipt['decisions']} decisions, "
+              f"determinism re-proven (same seed, two runs, identical day); "
+              f"receipt at {receipt['path']}")
+        return 0
+    print("\n❌ simulated day FAILED its determinism re-check — "
+          "the receipt records the failure; the dark run will refuse to start")
+    return 1
 
 
 def cmd_darkrun(args) -> int:

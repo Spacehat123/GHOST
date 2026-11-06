@@ -1,0 +1,10 @@
+{
+  "contacted": 50,
+  "decisions": 5,
+  "deterministic": true,
+  "ok": true,
+  "pipeline_value_inr": 1250000.0,
+  "statuses": {
+    "demo_built": 50
+  }
+}

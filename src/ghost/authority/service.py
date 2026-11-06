@@ -35,9 +35,9 @@ SOCKET_PATH_ENV = "GHOST_GRANT_SOCKET"
 
 
 def socket_path() -> str:
+    from ghost.paths import data_dir
     return os.environ.get(SOCKET_PATH_ENV) or os.path.join(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-        "data", "grantd.sock")
+        data_dir(), "grantd.sock")
 
 
 def handle(request: Dict[str, Any]) -> Dict[str, Any]:
@@ -46,6 +46,8 @@ def handle(request: Dict[str, Any]) -> Dict[str, Any]:
     if op == "ping":
         return {"ok": True, "halt": protocol.halt_active(), "epoch": protocol.current_epoch()}
     if op == "issue":
+        if protocol.halt_active():
+            return {"ok": False, "error": "system halted — no authority minted"}
         token = protocol.sign(
             capability=str(request.get("capability", "")),
             subject=str(request.get("subject", "")),

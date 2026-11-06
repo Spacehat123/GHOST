@@ -60,6 +60,11 @@ def issue(capability: str, subject: str, bounds: Dict[str, Any],
         audit("grant.issue_refused", subject=subject, capability=capability,
               reason="no authority daemon and no in-process secret")
         return None
+    from ghost.core.halt import is_halted
+    if is_halted():
+        audit("grant.issue_refused", subject=subject, capability=capability,
+              reason="system halted — no authority minted", via="in_process_fallback")
+        return None
     from ghost.core.revocation import current_epoch
     token = protocol.sign(capability, subject, bounds, ttl_s)
     if token is None:

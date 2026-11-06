@@ -38,9 +38,9 @@ def current_epoch() -> int:
 # ---- nonce store (the daemon's OWN sqlite — it is that file's sole writer) ----
 
 def nonce_db_path() -> str:
+    from ghost.paths import data_dir
     return os.environ.get("GHOST_AUTHORITY_NONCE_DB") or os.path.join(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-        "data", "grant_authority.db")
+        data_dir(), "grant_authority.db")
 
 
 def _nonce_conn(path: Optional[str] = None) -> sqlite3.Connection:

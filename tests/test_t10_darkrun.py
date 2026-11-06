@@ -30,11 +30,14 @@ class EnvPinned(unittest.TestCase):
         self._saved = {k: os.environ.get(k) for k in
                        ("GHOST_AUDIT_DB_PATH", "GHOST_GRANT_SECRET",
                         "GHOST_UNIFIED_DB_PATH", "GHOST_HALT_FILE",
-                        "GHOST_HALT_META", "GHOST_SECRETS_PATH")}
+                        "GHOST_HALT_META", "GHOST_SECRETS_PATH",
+                        "GHOST_DATA_DIR", "GHOST_SIM_RECEIPT")}
         os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
         os.environ["GHOST_GRANT_SECRET"] = f"t10-{uuid.uuid4().hex}"
         os.environ["GHOST_UNIFIED_DB_PATH"] = os.path.join(TMP, f"ghost-{uuid.uuid4().hex}.db")
         os.environ["GHOST_SECRETS_PATH"] = os.path.join(TMP, f"sec-{uuid.uuid4().hex}.json")
+        os.environ["GHOST_DATA_DIR"] = os.path.join(TMP, f"data-{uuid.uuid4().hex}")
+        os.environ.pop("GHOST_SIM_RECEIPT", None)
         self.addCleanup(self._restore)
 
     def _restore(self):
@@ -89,9 +92,9 @@ class TestLifecycle(EnvPinned):
         from ghost.supervisor.service import beat
         beat()
         # sim receipt marker
-        receipt = os.path.join(os.path.dirname(os.environ["GHOST_DARKRUN_STATE"]),
-                               "sim_receipt.json")
-        os.makedirs(os.path.dirname(receipt), exist_ok=True)
+        from ghost.paths import data_dir
+        receipt = os.path.join(data_dir(), "sim_receipt.json")
+        os.makedirs(data_dir(), exist_ok=True)
         json.dump({"ok": True}, open(receipt, "w"))
         os.environ["GHOST_SILERO_MODEL_PATH"] = "/dev/null"  # exists → check passes
         out = darkrun.start()
@@ -117,3 +120,33 @@ class TestLifecycle(EnvPinned):
         self.assertEqual(st["day"], 4)
         self.assertEqual(st["of"], 30)
         darkrun.stop()
+
+
+class TestSimReceipt(EnvPinned):
+    """`ghost sim` records the determinism receipt — gate 9 consumes a REAL
+    artifact, not a hand-made file (P0: nothing wrote sim_receipt.json)."""
+
+    def test_record_sim_receipt_earned_then_seen_by_preflight(self):
+        from ghost.paths import data_dir
+        from ghost.sim.day import record_sim_receipt
+        audit_before = os.environ["GHOST_AUDIT_DB_PATH"]
+        receipt = record_sim_receipt(seed=4242, n_leads=6, cycles=2)
+        self.assertTrue(os.path.exists(receipt["path"]))
+        self.assertEqual(os.path.dirname(receipt["path"]),
+                         data_dir(), "the receipt belongs in the data dir")
+        self.assertTrue(receipt["deterministic"],
+                        "same seed twice must reproduce the identical day")
+        self.assertTrue(receipt["ok"])
+        self.assertEqual(receipt["contacted"], 6)
+        # the sim poisoned the audit env with its own ledger — re-pin, then
+        # the preflight gate must see the receipt we just earned
+        os.environ["GHOST_AUDIT_DB_PATH"] = audit_before
+        rep = darkrun.preflight()
+        gate = next(c for c in rep["checks"] if c["name"] == "sim_receipt")
+        self.assertTrue(gate["ok"], f"gate 9 must see the recorded receipt: {gate}")
+
+    def test_missing_receipt_fails_gate_9(self):
+        rep = darkrun.preflight()
+        gate = next(c for c in rep["checks"] if c["name"] == "sim_receipt")
+        self.assertFalse(gate["ok"])
+        self.assertIn("ghost sim", gate["operator_action"])

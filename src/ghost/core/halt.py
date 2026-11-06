@@ -17,8 +17,19 @@ import uuid
 from typing import Optional
 
 REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
-HALT_FILE = os.environ.get("GHOST_HALT_FILE") or os.path.join(REPO_DIR, "data", "HALTED")
-HALT_META = os.environ.get("GHOST_HALT_META") or HALT_FILE + ".json"
+
+
+def halt_file() -> str:
+    """Re-resolved per call (env redirects / test isolation) — the T0 rule
+    heartbeat and the revocation epoch already follow. The old import-time
+    HALT_FILE constant silently ignored env set after import, which means a
+    redirected halt sentinel could be missed."""
+    return os.environ.get("GHOST_HALT_FILE") or os.path.join(REPO_DIR, "data", "HALTED")
+
+
+def halt_meta_file() -> str:
+    return os.environ.get("GHOST_HALT_META") or halt_file() + ".json"
+
 
 REASON_OPERATOR = "operator"
 REASON_HEARTBEAT = "heartbeat_lost"   # watchdog teeth: sick agent must not talk to customers
@@ -31,7 +42,7 @@ class HaltActive(RuntimeError):
 
 
 def is_halted() -> bool:
-    return os.path.exists(HALT_FILE)
+    return os.path.exists(halt_file())
 
 
 def halt_state() -> Optional[dict]:
@@ -39,7 +50,7 @@ def halt_state() -> Optional[dict]:
     if not is_halted():
         return None
     try:
-        with open(HALT_META, "r", encoding="utf-8") as f:
+        with open(halt_meta_file(), "r", encoding="utf-8") as f:
             meta = json.load(f)
         meta["halted_for_s"] = round(time.time() - meta.get("tripped_at", time.time()), 1)
         return meta
@@ -51,7 +62,7 @@ def trip(reason: str = REASON_OPERATOR, by: str = "operator") -> dict:
     """Trip the halt. Idempotent; records who/why/when. BUMPS THE REVOCATION
     EPOCH: every grant minted before this instant is dead (T3) — a halt is a
     revocation, not a flag."""
-    os.makedirs(os.path.dirname(HALT_FILE), exist_ok=True)
+    os.makedirs(os.path.dirname(halt_file()), exist_ok=True)
     meta = {
         "halt_id": str(uuid.uuid4()),
         "reason": reason,
@@ -59,10 +70,10 @@ def trip(reason: str = REASON_OPERATOR, by: str = "operator") -> dict:
         "tripped_at": time.time(),
         "tripped_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
     }
-    with open(HALT_META, "w", encoding="utf-8") as f:
+    with open(halt_meta_file(), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
-    # Sentinel last: existence of HALT_FILE is the switch; meta is the trail.
-    with open(HALT_FILE, "w", encoding="utf-8") as f:
+    # Sentinel last: existence of the halt file is the switch; meta is the trail.
+    with open(halt_file(), "w", encoding="utf-8") as f:
         f.write(meta["halt_id"])
     try:
         from ghost.core.revocation import bump_epoch
@@ -82,7 +93,7 @@ def resume(by: str = "operator") -> Optional[dict]:
     revocation epoch again — the post-resume world is a fresh authority
     regime; anything minted in the halted window is dead too."""
     prev = halt_state()
-    for path in (HALT_FILE, HALT_META):
+    for path in (halt_file(), halt_meta_file()):
         try:
             os.remove(path)
         except FileNotFoundError:

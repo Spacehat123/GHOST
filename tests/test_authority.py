@@ -43,6 +43,9 @@ class TestIsolationTwoProcess(unittest.TestCase):
         self.audit_db = os.path.join(TMP, f"audit-{uuid.uuid4().hex}.db")
         self.halt_file = os.path.join(TMP, f"HALTED-{uuid.uuid4().hex}")
         self.halt_meta = self.halt_file + ".json"
+        # the epoch file lives on self — the bump subprocess must write the
+        # SAME file the daemon reads (the parent env does not carry it)
+        self.epoch_file = os.path.join(TMP, f"epoch-{uuid.uuid4().hex}")
         # the DAEMON's secret — never exported to this process
         self.secret = f"authd-{uuid.uuid4().hex}"
         env = _fresh_env({
@@ -52,7 +55,7 @@ class TestIsolationTwoProcess(unittest.TestCase):
             "GHOST_AUDIT_DB_PATH": self.audit_db,
             "GHOST_HALT_FILE": self.halt_file,
             "GHOST_HALT_META": self.halt_meta,
-            "GHOST_REVOCATION_EPOCH": os.path.join(TMP, f"epoch-{uuid.uuid4().hex}"),
+            "GHOST_REVOCATION_EPOCH": self.epoch_file,
         })
         self.daemon = subprocess.Popen(
             [sys.executable, "-m", "ghost.authority.service", "--socket", self.sock],
@@ -116,12 +119,12 @@ class TestIsolationTwoProcess(unittest.TestCase):
     def test_epoch_mismatch_kills_pre_trip_tokens(self):
         tok = grants.issue("outbound_email", "e-lead", {})
         self.assertIsNotNone(tok)
-        epoch_file = os.environ.get("GHOST_REVOCATION_EPOCH") or os.path.join(TMP, "EPOCH")
-        # the daemon re-resolves its own epoch env — bump via its path
+        # bump the SAME epoch file the daemon reads (self.epoch_file, passed
+        # to the daemon's env in setUp)
         daemon_epoch = subprocess.run(
             [sys.executable, "-c",
              "from ghost.core.revocation import bump_epoch; print(bump_epoch())"],
-            env=_fresh_env({"GHOST_REVOCATION_EPOCH": epoch_file}),
+            env=_fresh_env({"GHOST_REVOCATION_EPOCH": self.epoch_file}),
             capture_output=True, text=True, cwd=REPO)
         self.assertEqual(daemon_epoch.returncode, 0, daemon_epoch.stderr)
         self.assertIsNone(grants.verify(tok, capability="outbound_email", subject="e-lead"),
@@ -163,6 +166,16 @@ class TestInProcessFallback(unittest.TestCase):
         self.assertIsNone(grants.issue("outbound_email", "nolead", {}))
         self.assertIsNone(grants.verify("gt.x.y", capability="outbound_email"))
 
+    def test_fallback_mints_nothing_while_halted(self):
+        halt_file = os.environ["GHOST_HALT_FILE"]
+        with open(halt_file, "w") as f:
+            f.write("halted")
+        try:
+            self.assertIsNone(grants.issue("outbound_email", "halt-fb", {}),
+                              "no authority may be minted during a halt — either path")
+        finally:
+            os.remove(halt_file)
+
     def test_nonce_table_o1_not_a_scan(self):
         """P5: replay protection is a table lookup — fill it beyond the old
         500-event scan window and replay STILL fails."""
@@ -195,6 +208,38 @@ class TestHandleMatrix(unittest.TestCase):
         self.assertEqual(handle({"op": "ping"})["ok"], True)
         self.assertEqual(handle({"op": "nope"})["ok"], False)
         self.assertEqual(handle({})["ok"], False)
+
+
+class TestDefaultPaths(unittest.TestCase):
+    """P0 hygiene: runtime state lives in the DATA dir, never in the source
+    tree — the nonce db and the daemon socket both used to resolve to src/."""
+
+    def setUp(self):
+        self._saved = {k: os.environ.get(k) for k in
+                       ("GHOST_DATA_DIR", "GHOST_AUTHORITY_NONCE_DB",
+                        "GHOST_GRANT_SOCKET", "GHOST_PROJECT_ROOT")}
+        os.environ["GHOST_DATA_DIR"] = os.path.join(TMP, f"d-{uuid.uuid4().hex}")
+        for k in ("GHOST_AUTHORITY_NONCE_DB", "GHOST_GRANT_SOCKET"):
+            os.environ.pop(k, None)
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        for k, v in self._saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def test_defaults_live_in_the_data_dir_not_src(self):
+        from ghost.authority import service
+        from ghost.paths import data_dir
+        self.assertEqual(protocol.nonce_db_path(),
+                         os.path.join(data_dir(), "grant_authority.db"))
+        self.assertEqual(service.socket_path(),
+                         os.path.join(data_dir(), "grantd.sock"))
+        for p in (protocol.nonce_db_path(), service.socket_path()):
+            self.assertNotIn(os.sep + "src" + os.sep, p,
+                             "runtime state must never land in the source tree")
 
 
 if __name__ == "__main__":
