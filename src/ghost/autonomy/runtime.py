@@ -90,6 +90,21 @@ class AutonomyRuntime:
             return poll_email_replies(ping=_operator_ping())
         handlers["intake.email_poll"] = intake_poll
 
+        # Operator's 11 P7: a customer-reported break → diagnose → sidecar
+        # fix → verify → STAGE for operator approval. Halt-aware (spawn gate).
+        def customer_report(payload: Dict[str, Any]) -> Any:
+            import uuid as _uuid
+            from ghost.control.fixers import FixIssue, diagnose_and_fix
+            issue = FixIssue(
+                key=str(payload.get("key") or f"issue-{_uuid.uuid4().hex[:8]}"),
+                site_slug=str(payload.get("site_slug", "")),
+                description=str(payload.get("description", ""))[:800],
+                scope_files=[str(p) for p in (payload.get("scope_files") or [])],
+                check_command=str(payload.get("check_command", "")),
+                source=str(payload.get("source", "customer_report")))
+            return diagnose_and_fix(issue)
+        handlers["fixer.customer_report"] = customer_report
+
         return handlers
 
     # ------------------------------------------------------------------- tasks

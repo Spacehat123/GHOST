@@ -107,7 +107,8 @@ async def receive_watchdog_signal(request: Request):
         urgency=body.get("urgency", "normal")
     )
     poked = False
-    if str(body.get("event_type", "")).lower() in ("reply", "reply_received", "email", "intake"):
+    et = str(body.get("event_type", "")).lower()
+    if et in ("reply", "reply_received", "email", "intake"):
         try:
             from ghost.core.jobqueue import JobQueue
             import uuid as _uuid
@@ -116,6 +117,19 @@ async def receive_watchdog_signal(request: Request):
             poked = True
         except Exception:
             pass   # no queue reachable — the scheduled poll still covers it
+    if et in ("customer_report", "site_issue"):
+        # Operator's 11 P7: a reported break becomes a fixer job (staged, never auto-applied)
+        try:
+            from ghost.core.jobqueue import JobQueue
+            import uuid as _uuid
+            payload = dict(body.get("payload") or {})
+            payload.setdefault("source", "signal")
+            payload.setdefault("key", f"issue-{_uuid.uuid4().hex[:8]}")
+            JobQueue().enqueue("fixer.customer_report", payload,
+                               idempotency_key=f"fixer:{payload['key']}")
+            poked = True
+        except Exception:
+            pass
     return {"status": "received", "event": res, "intake_poked": poked}
 
 @app.post("/api/watchdog/patrol")

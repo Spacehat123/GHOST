@@ -214,11 +214,19 @@ class SidecarManager:
     # ------------------------------------------------------------------- merge
 
     def merge(self, spec: SidecarSpec, result: SidecarResult,
-              verifier: Callable[[str], Dict[str, Any]]) -> Dict[str, Any]:
+              verifier: Optional[Callable[[str], Dict[str, Any]]] = None,
+              apply: bool = True) -> Dict[str, Any]:
+        # note: `verifier` is vestigial — the INDEPENDENT check is the spec's
+        # own check_command, re-run by THIS method on a scratch copy below.
         """Control-plane merge: the VERIFIER re-runs the check INDEPENDENTLY on
         the patched copy. Pass + in-scope → apply to the live files + audit.
         Anything else → discard (retry-once bookkeeping lives with the caller
-        via issue_counts). Halt during merge refuses."""
+        via issue_counts). Halt during merge refuses.
+
+        apply=False (Operator's 11 P7): verify WITHOUT touching the live
+        files — the customer-report fixer stages LLM patches for operator
+        approval (an LLM patch is never 'mechanical', so it never
+        auto-applies). Returns the verified patch for the staging package."""
         from ghost.core.halt import is_halted
         if result.status != "completed":
             return {"merged": False, "reason": f"sidecar not completed: {result.status}"}
@@ -253,6 +261,14 @@ class SidecarManager:
             self._discard(spec, f"verifier failed: {evidence[:150]}")
             return {"merged": False, "reason": "verifier failed — patch discarded",
                     "evidence": evidence}
+        if not apply:
+            shutil.rmtree(spec.worktree, ignore_errors=True)
+            shutil.rmtree(scratch, ignore_errors=True)
+            self.release_locks(spec)
+            audit("sidecar.verified_not_applied", subject=spec.sidecar_id,
+                  issue=spec.issue_key, evidence=evidence[:200])
+            return {"verified": True, "applied": False, "evidence": evidence,
+                    "patch": dict(result.patch)}
         # verified on the scratch copy → control applies to the live files
         try:
             for f in spec.scope_files:

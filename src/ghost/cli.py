@@ -286,6 +286,24 @@ def cmd_metrics(args) -> int:
     return 0
 
 
+def cmd_fixer(args) -> int:
+    """P7: the staged-fix approval queue — list, or approve one package."""
+    from ghost.control.fixers import approve_staged, list_staged
+    if args.action == "list":
+        rows = list_staged()
+        print(json.dumps(rows, indent=2, default=str))
+        pending = [r for r in rows if r.get("status") == "staged"]
+        print(f"\n{len(pending)} staged fix(es) awaiting your approval")
+        return 0
+    out = approve_staged(args.staged_id, by="operator")
+    print(json.dumps(out, indent=2, default=str))
+    if out.get("applied"):
+        print(f"\n✅ staged fix {out['staged_id']} applied to: {', '.join(out['files'])}")
+        return 0
+    print(f"\n❌ not applied: {out.get('reason')}")
+    return 1
+
+
 COMMANDS = {
     "halt": (cmd_halt, "freeze ALL outbound now (the throat-cut handle)"),
     "resume": (cmd_resume, "clear a halt"),
@@ -304,6 +322,7 @@ COMMANDS = {
     "sim": (cmd_sim, "T6: simulated day with fixture leads (deterministic)"),
     "darkrun": (cmd_darkrun, "T10: 30-day dark run — preflight/start/status/stop"),
     "grantd": (cmd_grantd, "P4: grant authority daemon (key isolation; run alongside supervise)"),
+    "fixer": (cmd_fixer, "P7: staged fixes — list the approval queue / approve one (--staged-id)"),
 }
 
 
@@ -336,6 +355,9 @@ def main(argv=None) -> int:
             p.add_argument("--cycles", type=int, default=5)
         if name == "grantd":
             p.add_argument("--socket", default=None, help="override the unix socket path")
+        if name == "fixer":
+            p.add_argument("--action", default="list", choices=["list", "approve"])
+            p.add_argument("--staged-id", default=None, help="staged fix id to approve")
         if name == "darkrun":
             p.add_argument("--action", required=True,
                            choices=["preflight", "start", "status", "stop"])
