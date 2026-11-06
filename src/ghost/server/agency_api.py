@@ -524,6 +524,112 @@ async def authorize_batch_deploy(batch_id: str, request: Request):
 
 
 # =============================================================================
+# 5b. Per-demo approval loop (Operator's 11 P3 — goal 5)
+# The operator opens each demo LOCALLY, one at a time; the approval click is
+# the ONLY thing that can mint that demo's deploy grant. One click = one
+# deploy (single-use grant); every existing deploy gate still applies.
+# =============================================================================
+
+def _demo_summary(slug: str) -> Dict[str, Any]:
+    """One row for the approval board: QA evidence + host state, honestly."""
+    from ghost.workers.deploy import _demos_dir
+    demo_dir = os.path.join(_demos_dir(), slug)
+    qa = {}
+    qa_path = os.path.join(demo_dir, "reports", "qa.json")
+    if os.path.exists(qa_path):
+        try:
+            qa = json.load(open(qa_path, encoding="utf-8"))
+        except (OSError, ValueError):
+            qa = {"passed": False, "error": "unreadable qa.json"}
+    lead = CRMDatabase.get_instance().get_lead(slug) or {}
+    client = CRMDatabase.get_instance().get_client(slug) or {}
+    hosted_url = lead.get("demo_url") or client.get("demo_url")
+    return {
+        "slug": slug,
+        "business": lead.get("name") or client.get("business_name") or slug,
+        "lead_status": lead.get("status"),
+        "qa_passed": bool(qa.get("passed")),
+        "qa_screenshots": qa.get("screenshots_captured", 0),
+        "hosted_url": hosted_url,
+        "local_url": f"/demos/{slug}/",
+        "deployed": bool(hosted_url),
+    }
+
+
+@agency_router.get("/demos", dependencies=[Depends(verify_auth_token)])
+async def list_demos():
+    """The operator's demo approval board: every built demo, its QA evidence
+    status and whether it is already hosted."""
+    from ghost.workers.deploy import _demos_dir
+    base = _demos_dir()
+    slugs = sorted(d for d in os.listdir(base)
+                   if os.path.isdir(os.path.join(base, d)) and not d.startswith(".")
+                   and os.path.exists(os.path.join(base, d, "index.html"))) \
+        if os.path.isdir(base) else []
+    return {"demos": [_demo_summary(s) for s in slugs]}
+
+
+@agency_router.post("/demos/{slug}/open", dependencies=[Depends(verify_auth_token)])
+async def open_demo(slug: str):
+    """Audit + return the LOCAL preview URL. The demo is served from this
+    machine (/demos/<slug>/) — nothing leaves localhost here."""
+    from ghost.core.audit import audit
+    from ghost.workers.deploy import _demos_dir
+    demo_dir = os.path.join(_demos_dir(), slug)
+    if not os.path.exists(os.path.join(demo_dir, "index.html")):
+        raise HTTPException(status_code=404, detail=f"No local demo at demos/{slug}.")
+    audit("demo.opened", subject=slug, by="operator", surface="local_preview")
+    return {"status": "ok", "slug": slug,
+            "url": f"/demos/{slug}/", "absolute": f"http://127.0.0.1:8765/demos/{slug}/",
+            "note": "local preview — hosting requires the separate approval click"}
+
+
+@agency_router.post("/demos/{slug}/authorize-host", dependencies=[Depends(verify_auth_token)])
+async def authorize_demo_host(slug: str, request: Request):
+    """THE approval click. Records the operator's authorization, mints that
+    demo's single-use deploy grant, and runs the deploy through every
+    existing gate (halt, grant, fresh snapshot, QA evidence). Refuses while
+    halted — even operator clicks do nothing while frozen."""
+    from ghost.core.audit import audit
+    from ghost.core.halt import is_halted
+    from ghost.workers.deploy import _demos_dir
+
+    demo_dir = os.path.join(_demos_dir(), slug)
+    if not os.path.exists(os.path.join(demo_dir, "index.html")):
+        raise HTTPException(status_code=404, detail=f"No local demo at demos/{slug}.")
+
+    body = await request.json()
+    if not bool(body.get("confirmed", False)):
+        audit("demo.host_denied", subject=slug, by="operator")
+        return {"status": "denied", "message": "Hosting not confirmed — nothing happened."}
+    note = str(body.get("operator_note", ""))[:200]
+
+    if is_halted():
+        audit("demo.host_refused", subject=slug, reason="halt",
+              ping="(c) unverifiable: operator hosting click during an active halt")
+        raise HTTPException(status_code=409,
+                            detail="Ghost is HALTED — no hosting while frozen. `ghost resume` first.")
+
+    # the approval click IS the evidence; the grant is its one-time key
+    audit("demo.host_authorized", subject=slug, by="operator", note=note)
+    from ghost.autonomy.outbound import issue_effect_grant
+    token = issue_effect_grant("deploy", slug)
+    if token is None:
+        raise HTTPException(status_code=409,
+                            detail="No deploy authority available (grant daemon unreachable?) — nothing hosted.")
+
+    from ghost.workers.deploy import VercelDeployer
+    result = await VercelDeployer.deploy_demo(slug, project_name=f"{slug}-concept",
+                                              grant_token=token)
+
+    if result.get("status") == "success" and result.get("url"):
+        crm = CRMDatabase.get_instance()
+        crm.update_lead(slug, demo_url=result["url"])
+        audit("demo.hosted", subject=slug, url=result["url"], by="operator_click")
+    return result
+
+
+# =============================================================================
 # 6. Outreach Drafts & Review Queue
 # =============================================================================
 

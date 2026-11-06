@@ -38,6 +38,12 @@ REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(
 GUI_DIR = os.path.abspath(os.environ.get("GHOST_GUI_DIR") or os.path.join(REPO_DIR, "gui"))
 app.mount("/static", StaticFiles(directory=os.path.join(GUI_DIR, "static")), name="static")
 
+# Local demo previews (Operator's 11 P3): demos are served to the operator's
+# browser from THIS machine only — nothing is hosted externally by this mount.
+_DEMOS_MOUNT = os.environ.get("GHOST_DEMOS_DIR") or os.path.join(REPO_DIR, "demos")
+os.makedirs(_DEMOS_MOUNT, exist_ok=True)
+app.mount("/demos", StaticFiles(directory=_DEMOS_MOUNT), name="demos")
+
 # Simon 'Ghost' Riley edge-tts neural voice settings
 GHOST_VOICE = "en-GB-RyanNeural"
 GHOST_PITCH = "-18Hz"

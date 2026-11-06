@@ -209,6 +209,7 @@
         <button class="deck-tab-btn active" data-view="kanban">Pipeline</button>
         <button class="deck-tab-btn" data-view="campaigns">Campaigns</button>
         <button class="deck-tab-btn" data-view="confirmation">Confirmation</button>
+        <button class="deck-tab-btn" data-view="demos">Demos</button>
         <button class="deck-tab-btn" data-view="templates">Templates</button>
         <button class="deck-tab-btn" data-view="suppression">Suppression</button>
         <button class="deck-tab-btn" data-view="events">Activity Log</button>
@@ -287,6 +288,16 @@
           <div class="deck-section-title">Confirmation Queue (Part 1.1 Gate)</div>
           <div class="deck-section-desc">Review ambiguous leads before demo building. Choose domain or reject.</div>
           <div id="confirmation-queue-list"></div>
+        </div>
+      </section>
+
+      <!-- 3b. Demo Approval Loop (Operator's 11 P3) -->
+      <section id="view-demos" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Demo Approval — one click per demo, one deploy per click</div>
+          <div class="deck-section-desc">Open the demo locally, look at it yourself, then approve hosting.
+            Every approval click mints ONE single-use deploy grant; QA-evidence, snapshot and halt gates still apply.</div>
+          <div id="demos-list"></div>
         </div>
       </section>
 

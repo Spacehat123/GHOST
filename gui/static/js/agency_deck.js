@@ -105,10 +105,69 @@
     if (viewId === 'kanban') loadLeads();
     if (viewId === 'campaigns') loadCampaigns();
     if (viewId === 'confirmation') loadConfirmationQueue();
+    if (viewId === 'demos') loadDemos();
     if (viewId === 'templates') loadTemplates();
     if (viewId === 'suppression') loadSuppression();
     if (viewId === 'events') loadEvents();
   }
+
+  // Demo approval loop (Operator's 11 P3): open locally → verify → approve & host
+  async function loadDemos() {
+    const res = await deckFetch('/api/demos');
+    const listEl = document.getElementById('demos-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Demo board unavailable.</div>'; return; }
+    const { demos } = await res.json();
+    if (!demos.length) {
+      listEl.innerHTML = '<div class="deck-section-desc">No built demos yet — the pipeline builds them after qualification.</div>';
+      return;
+    }
+    listEl.innerHTML = demos.map(d => `
+      <div class="deck-panel-box" style="margin-bottom:14px; background:var(--deck-card);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:600;">${d.business} <span style="opacity:0.55; font-size:0.85em;">(${d.slug})</span></div>
+            <div style="font-size:0.85em; opacity:0.75;">
+              QA: ${d.qa_passed ? `✅ passed (${d.qa_screenshots} screenshot${d.qa_screenshots === 1 ? '' : 's'})` : '⚠️ no passing QA evidence on file'}
+              &nbsp;·&nbsp; Host: ${d.deployed ? `🌐 <a href="${d.hosted_url}" target="_blank" rel="noopener">${d.hosted_url}</a>` : 'local only'}
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            ${d.deployed ? '' : `
+            <button class="deck-btn" onclick="deckOpenDemo('${d.slug}')">👁 Open locally</button>
+            <button class="deck-btn deck-btn-highlight" onclick="deckAuthorizeHost('${d.slug}')">🚀 Approve &amp; host</button>`}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function deckOpenDemo(slug) {
+    const res = await deckFetch(`/api/demos/${slug}/open`, { method: 'POST' });
+    if (!res.ok) { alert('Could not open the demo locally.'); return; }
+    const { absolute } = await res.json();
+    window.open(absolute, '_blank', 'noopener');
+    loadDemos();
+  }
+
+  async function deckAuthorizeHost(slug) {
+    if (!confirm(`Host "${slug}" to Vercel?\n\nThis approval click mints ONE single-use deploy grant.\nQA-evidence, snapshot and halt gates still apply.`)) return;
+    const res = await deckFetch(`/api/demos/${slug}/authorize-host`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmed: true, operator_note: 'approved in Command Deck' }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (res.ok && out.status === 'success' && out.url) {
+      alert(`Deployed: ${out.url}`);
+    } else if (res.ok && out.status === 'denied') {
+      alert(out.message || 'Hosting not confirmed — nothing happened.');
+    } else {
+      alert(`Deploy did not complete: ${out.message || out.detail || res.status}\nNothing is hidden — check the Activity Log for the gate that stopped it.`);
+    }
+    loadDemos();
+  }
+  window.deckOpenDemo = deckOpenDemo;
+  window.deckAuthorizeHost = deckAuthorizeHost;
 
   // Operator Info
   async function loadOperator() {
