@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, Optional
 from ghost.core import heartbeat
 from ghost.core.audit import audit
 from ghost.core.halt import is_halted
+from ghost.control.work_chooser import choose_work
 from ghost.policy.engine import PolicyEngine, StateSnapshot, load_config
 
 logger = logging.getLogger("ghost.autonomy.scheduler")
@@ -122,12 +123,31 @@ async def run_scheduler(
             audit("scheduler.stood_down", reason="halt")
             return cycles
 
-        decision = engine.decide(telemetry.snapshot())
+        snapshot = telemetry.snapshot()
+        decision = engine.decide(snapshot)
         audit("scheduler.cycle", subject=decision.decision_id,
               intent=decision.intent, grants=[g.intent for g in decision.grants])
 
+        # T6 chooser, wired (Operator's 11 P1): the deterministic work board is
+        # re-derived independently each cycle. The ENGINE stays the veto — the
+        # chooser never unlocks what the engine forbids (its hunt gate
+        # re-checks the engine's own booleans, and is STRICTER: service-first).
+        # GROW executes only when both agree; the rest of the board is audited
+        # so nothing is silently lost (its handlers ride the later phases).
+        board = choose_work(snapshot, knobs=engine.k)
+        audit("scheduler.work_board", subject=decision.decision_id,
+              kinds=[w.kind for w in board],
+              reasons=[w.reason for w in board][:5])
+        grow_granted = any(g.intent == "GROW" and g.max_new_contacts > 0
+                           for g in decision.grants)
+        chooser_hunts = any(w.kind == "hunt" for w in board)
+        if grow_granted and not chooser_hunts:
+            audit("scheduler.hunt_suppressed", subject=decision.decision_id,
+                  by="work_chooser", reason="service-first gates closed")
+
         for grant in decision.grants:
-            if grant.intent == "GROW" and grant.max_new_contacts > 0:
+            if (grant.intent == "GROW" and grant.max_new_contacts > 0
+                    and chooser_hunts):
                 # One hunting job per cycle; the hunter enqueues per-lead work
                 # bounded by the grant it reads from the payload.
                 enqueue("lead_hunt.find_leads", {

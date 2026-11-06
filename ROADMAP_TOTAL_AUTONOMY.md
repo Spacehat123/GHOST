@@ -17,6 +17,19 @@ This document replaces its *build order* and closes the gap between "modules exi
 wired" and **total autonomy**: Ghost owns outcomes end-to-end; the operator signs and
 funds, nothing else.
 
+**Rev 3 (2026-11-06 evening) — the Operator's 11.** After a full repo study, the
+operator set 11 goals and approved an 11-phase program (P0–P10, one phase per go,
+same working rules). Locked decisions: replies ingest by IMAP (email) + GUI relay
+(WhatsApp); payments are **collect-only** (money-out code deleted; real Razorpay
+Payment Links + local UPI-QR fallback — a fabricated URL in a draft is a lie and
+was removed in P1); micro-jobs come from saved Upwork searches + RSS feeds,
+draft-only (the human presses send — ToS honesty, §8). Goal → phase map:
+dossiers+photos P2 · local-preview→approve→auto-host P3 · QR collection P4 ·
+reply ingress+follow-ups P5 · event-driven reactivity+self-health P6 ·
+site-maintenance fixer integration P7 · micro-jobs copilot P8 · single-window GUI P9 ·
+ladder evidence + dark-run handover P10. P0 (grantd landing + path hygiene +
+earned sim receipt) and P1 (this doctrine sync + collect-only sweep) are DONE.
+
 ---
 
 ## 0. The contract (unchangeable)

@@ -13,12 +13,13 @@ any process). Missing file = epoch 0 (fresh system).
 """
 import os
 
-REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 
 def epoch_path() -> str:
-    """Re-resolved per call (env redirects / test isolation)."""
-    return os.environ.get("GHOST_REVOCATION_EPOCH") or os.path.join(REPO_DIR, "data", "REVOCATION_EPOCH")
+    """Re-resolved per call (env redirects / test isolation). The epoch is
+    runtime state — it lives in the repo's data dir, never in the source
+    tree (P0/P1 path hygiene, ghost.paths)."""
+    from ghost.paths import data_dir
+    return os.environ.get("GHOST_REVOCATION_EPOCH") or os.path.join(data_dir(), "REVOCATION_EPOCH")
 
 
 def current_epoch() -> int:

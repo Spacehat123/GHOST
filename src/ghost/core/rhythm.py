@@ -18,8 +18,6 @@ import os
 import time
 from typing import Any, Dict, Optional
 
-REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 DEFAULT_RHYTHM: Dict[str, Any] = {
     "events": {
         # the autonomy loop ran and decided (ANY intent — HOLD_FIRE all
@@ -32,13 +30,19 @@ DEFAULT_RHYTHM: Dict[str, Any] = {
 
 
 def rhythm_dir() -> str:
-    return os.environ.get("GHOST_RHYTHM_DIR") or os.path.join(REPO_DIR, "data", "rhythm")
+    """Runtime markers live in the data dir, never the source tree (P0/P1
+    path hygiene — the old default resolved to src/data/rhythm)."""
+    from ghost.paths import data_dir
+    return os.environ.get("GHOST_RHYTHM_DIR") or os.path.join(data_dir(), "rhythm")
 
 
 def rhythm_config() -> Dict[str, Any]:
-    """Defaults + operator knob file (configs/rhythm.json)."""
+    """Defaults + operator knob file (configs/rhythm.json). The old default
+    resolved to src/configs/rhythm.json, which does not exist — operator
+    overrides were silently ignored."""
+    from ghost.paths import repo_root
     cfg = json.loads(json.dumps(DEFAULT_RHYTHM))
-    path = os.environ.get("GHOST_RHYTHM_CONFIG") or os.path.join(REPO_DIR, "configs", "rhythm.json")
+    path = os.environ.get("GHOST_RHYTHM_CONFIG") or os.path.join(repo_root(), "configs", "rhythm.json")
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:

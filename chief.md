@@ -19,9 +19,18 @@
    - **OpenCode & Free Local Agents (Worker Bees):** Perform heavy, repetitive grunt work (e.g., bulk-scaffolding 100 HTML demo directories, running test suites, parsing raw asset files).
    - Ghost delegates bulk work to OpenCode to preserve its own reasoning budget and prevent token bloat.
 
-3. **No Unnecessary Hosting:**
-   - Static HTML prospect demos do not require cloud hosting or custom domains.
-   - Demos are presented via direct local file previews, video walkthrough screen captures (`screen_capture` + ffmpeg), or direct asset packages.
+3. **No Unnecessary Hosting (updated 2026-11-06 — Operator's 11):**
+   - Local previews stay the default presentation: direct file previews, video walkthrough captures (`screen_capture` + ffmpeg), or asset packages.
+   - A prospect demo MAY be deployed to Vercel — but only after the operator opens that demo locally and approves THAT deploy. One approval click = one deploy (single-use grant); auto-hosting without the per-demo approval is forbidden.
+
+4. **Autonomous AGI-Style Oversight (No Constant Babysitting):**
+   - You should not need to be at the desk or manually prompt Ghost to keep operations running.
+   - Operates on a dual-trigger architecture:
+     - **Event-Driven Signal Ping:** Every incoming email, customer chat message (WhatsApp/Slack), or worker agent completion signal (e.g., OpenCode finished a demo) immediately pings and wakes Ghost into action.
+     - **Periodic Operations Patrol:** Ghost runs scheduled sweeps once every 24 hours (86,400s) to audit pipeline health, inspect prospect status, verify no client replies are hanging, and update Obsidian logs.
+
+5. **Collect-Only Money (2026-11-06 — Operator's 11):**
+   - Ghost ACCEPTS payments (Razorpay links/QR, webhooks, bank/UPI instructions) and NEVER sends money. No payouts, no transfers, no Route splits — refunds and every money-out act stay human-reserved.
 
 4. **Autonomous AGI-Style Oversight (No Constant Babysitting):**
    - You should not need to be at the desk or manually prompt Ghost to keep operations running.

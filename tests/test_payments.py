@@ -134,8 +134,11 @@ class TestPayments(unittest.TestCase):
         self.assertEqual(ev3.event_id, "evt_pay_unique_99")
         self.assertEqual(ev3.status, "duplicate")
 
-    def test_razorpay_payment_link_draft_creation(self):
-        """Razorpay creates draft payment links with correct subunit scaling and never auto-sends."""
+    def test_razorpay_payment_link_is_never_fabricated(self):
+        """P1 honesty fix: the old code minted deterministic `rzp.io` URLs that
+        pointed nowhere — a lie in a draft a human might send. Until the real
+        Payment Links API is wired (Operator's 11 P4), NO link is emitted and
+        the instructions say so."""
         provider = RazorpayProvider(config={})
         inv_data = {
             "invoice_number": "INV-2026-010-DEP",
@@ -144,15 +147,19 @@ class TestPayments(unittest.TestCase):
             "lead_id": "lead_10"
         }
         link = provider.create_payment_link(inv_data)
-        self.assertIsNotNone(link)
-        self.assertTrue(link.startswith("https://rzp.io/i/"))
+        self.assertIsNone(link, "no link may be fabricated before the API is wired")
 
-        # Instructions include the draft link
-        inv_data["payment_link"] = link
+        # Instructions honestly say the link is pending, and contain no URL
         instr = provider.payment_instructions(inv_data)
-        self.assertIn(link, instr)
+        self.assertIn("PENDING", instr)
+        self.assertNotIn("https://rzp.io", instr)
         self.assertIn("MoneySaver Export Account", instr)
         self.assertIn("FPS", instr)
+
+        # A REAL link (injected, as the API integration will provide) still renders
+        inv_data["payment_link"] = "https://rzp.io/i/real-from-api"
+        instr_real = provider.payment_instructions(inv_data)
+        self.assertIn("https://rzp.io/i/real-from-api", instr_real)
 
     def test_anti_sending_static_analysis(self):
         """Security scanner: verifies zero smtplib, socket, or auto-send mechanics in Part 5 modules."""

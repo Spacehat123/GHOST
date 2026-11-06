@@ -1,5 +1,5 @@
 """Wiring-3 tests: lead sources (honest not_configured), extended monitors,
-subscription webhooks, Route payouts."""
+subscription webhooks. (Route payouts deleted in P1 — Ghost is collect-only.)"""
 import json
 import os
 import tempfile
@@ -20,7 +20,7 @@ from ghost.workers.site_monitor import (
     check_uptime_multi_region,
 )
 from ghost.workers.retainers import (
-    RetainerStore, process_subscription_webhook, route_transfer,
+    RetainerStore, process_subscription_webhook,
 )
 from ghost.workers.payments import PaymentEvent
 from decimal import Decimal
@@ -159,13 +159,9 @@ class TestSubscriptionsAndRoute(unittest.TestCase):
         r = process_subscription_webhook(provider, {}, b"body", self.store)
         self.assertEqual(r["status"], "rejected")
 
-    def test_route_without_keys_refuses(self):
-        os.environ.pop("RAZORPAY_ROUTE_KEY", None)
-        r = route_transfer(None, 20000, 60, "fund_acct_x")
-        self.assertEqual(r["status"], "not_configured")
-
-    def test_route_split_math_before_network(self):
-        # even in not_configured state, the split is computed Decimal-exactly
+    def test_revenue_split_math_stays_decimal_exact(self):
+        # the pure split math survives (tenants/agency.py); the TRANSFER that
+        # used it is gone — Ghost collects, it never pays out (P1)
         from ghost.tenants.agency import revenue_split
         s = revenue_split(20000, 60)
         self.assertEqual(s["agency_share_inr"] + s["platform_share_inr"], 20000)

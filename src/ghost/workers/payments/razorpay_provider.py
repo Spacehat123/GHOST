@@ -1,7 +1,8 @@
 """Razorpay Payment Provider for Ghost (Part 5).
 Implements the PaymentProvider protocol for Razorpay.
-Supports International Virtual Accounts (MoneySaver Export Account), payment link drafts,
-and HMAC webhook verification with event deduplication.
+Supports International Virtual Accounts (MoneySaver Export Account), honest
+payment-link handling (real links only — a fabricated URL is a lie), and HMAC
+webhook verification with event deduplication.
 Ghost only prepares links and parses incoming webhook suggestions; nothing is auto-sent or auto-charged.
 """
 from typing import Dict, Any, Optional, Set
@@ -73,36 +74,24 @@ class RazorpayProvider:
         if link_url:
             lines.append(f"**Direct Online Payment Link (Credit/Debit Card):**\n{link_url}\n")
         else:
-            lines.append("An online card payment link can be requested from the provider.\n")
+            lines.append("Online payment link: PENDING — configure Razorpay API keys "
+                         "(🛡️ Operator Control → razorpay) before a real link can be "
+                         "issued. Never send a link the provider did not create.\n")
 
         lines.append(f"- **Invoice Reference:** {inv_num}")
         return "\n".join(lines).strip()
 
     def create_payment_link(self, invoice: Dict[str, Any]) -> Optional[str]:
-        """
-        Creates a payment link draft for the invoice.
-        Converts the decimal amount to smallest currency subunits (e.g. pence/cents/paise).
-        Ghost NEVER sends this link automatically; it is presented as a draft in the UI.
-        """
-        raw_amt = invoice.get("amount") or invoice.get("total_price") or 0
-        try:
-            dec_amt = Decimal(str(raw_amt))
-            # Subunits: e.g. 500.00 GBP -> 50000 pence
-            subunits = int(dec_amt * Decimal("100"))
-        except Exception:
-            subunits = 0
-
-        inv_num = str(invoice.get("invoice_number", "INV-DRAFT"))
-        currency = str(invoice.get("currency", "GBP")).upper()
-        lead_id = invoice.get("lead_id", "")
-
-        # Generate deterministic draft payment link identifier
-        h = hashlib.sha256(f"{inv_num}:{subunits}:{currency}:{lead_id}".encode("utf-8")).hexdigest()[:12]
-        link_id = f"plink_{h}"
-        link_url = f"https://rzp.io/i/{link_id}"
-
-        logger.info(f"Generated draft Razorpay payment link {link_url} for invoice {inv_num} (never auto-sent).")
-        return link_url
+        """P1 honesty fix (Operator's 11): the old code FABRICATED a
+        deterministic `rzp.io` URL — a link that does not exist, placed in a
+        draft a human might send. That is exactly the kind of lie this
+        codebase forbids. Real link creation via the Razorpay Payment Links
+        API (plus the local UPI-QR fallback) lands in the payments phase
+        (P4). Until then: NO link — the closing pack renders the manual
+        instructions and says the link is pending configuration."""
+        logger.info("Payment link pending — Razorpay Payment Links API not wired yet "
+                    "(Operator's 11 P4); no fabricated URL is emitted.")
+        return None
 
     def verify_webhook(self, headers: Dict[str, str], body: bytes) -> bool:
         """
