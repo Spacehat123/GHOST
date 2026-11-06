@@ -92,6 +92,10 @@ async def receive_watchdog_signal(request: Request):
     """
     Webhook endpoint for external systems, sub-agents, or mail hooks to send signals.
     Payload: { event_type, source, summary, payload, urgency }
+
+    Operator's 11 P6: a reply/email/intake signal is ALSO an immediate-triage
+    trigger — the intake poll is enqueued as a queue job and the 1s worker
+    runs it, instead of waiting for the next scheduled inbox poll.
     """
     body = await request.json()
     watchdog = AutonomousWatchdog.get_instance()
@@ -102,7 +106,17 @@ async def receive_watchdog_signal(request: Request):
         payload=body.get("payload", {}),
         urgency=body.get("urgency", "normal")
     )
-    return {"status": "received", "event": res}
+    poked = False
+    if str(body.get("event_type", "")).lower() in ("reply", "reply_received", "email", "intake"):
+        try:
+            from ghost.core.jobqueue import JobQueue
+            import uuid as _uuid
+            JobQueue().enqueue("intake.email_poll", {"source": body.get("source", "signal")},
+                               idempotency_key=f"intake:{_uuid.uuid4().hex}")
+            poked = True
+        except Exception:
+            pass   # no queue reachable — the scheduled poll still covers it
+    return {"status": "received", "event": res, "intake_poked": poked}
 
 @app.post("/api/watchdog/patrol")
 async def trigger_patrol():

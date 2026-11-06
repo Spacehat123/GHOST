@@ -358,17 +358,89 @@ class AutonomousWatchdog:
         except Exception as e:
             logger.warning(f"Watchdog vercel token probe note: {e}")
 
+        # Operator's 11 P6: Ghost reads its OWN vitals — not code, its records
+        health = await self._check_system_health()
         sweep_report = {
             "timestamp": now,
             "time_str": time.strftime("%Y-%m-%d %H:%M:%S"),
             "total_clients": len(clients),
             "pipeline_value": total_pipeline_val,
             "status_breakdown": active_counts,
-            "stale_clients": stale_clients
+            "stale_clients": stale_clients,
+            "health_incidents": health,
         }
 
         self._append_sweep_to_obsidian(sweep_report)
         return sweep_report
+
+    async def _check_system_health(self) -> List[Dict[str, Any]]:
+        """P6 self-health: error bursts in the audit ledger, outbox rows stuck
+        pending (record-before-run rows nobody finished), dead-lettered jobs.
+        ALARM-ONLY — the watchdog never freezes anything (that is the
+        supervisor's tooth); it raises signals the operator sees."""
+        from ghost.core.audit import audit, AuditLedger
+        incidents: List[Dict[str, Any]] = []
+        cutoff = time.time() - 1800
+
+        # (a) error burst: >=3 failed/error events across the last 30 min
+        try:
+            led = AuditLedger.get_instance()
+            recent = led.query(limit=500)
+            burst = [r for r in recent
+                     if float(r.get("ts") or 0) >= cutoff
+                     and any(w in str(r.get("event_type", "")) for w in ("error", "failed"))]
+            if len(burst) >= 3:
+                incidents.append({
+                    "kind": "error_burst", "count": len(burst),
+                    "types": sorted({r["event_type"] for r in burst})[:6],
+                })
+        except Exception as e:
+            logger.warning("health: ledger read failed: %s", e)
+
+        # (b) outbox rows stuck pending past 30 min — an effect started and
+        # nobody confirmed it (crash, freeze, provider silence)
+        try:
+            from ghost.store.facade import ghost_db_path
+            db = ghost_db_path()   # the outbox lives in the unified store
+            if os.path.exists(db):
+                conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=5)
+                try:
+                    n = conn.execute(
+                        "SELECT COUNT(*) FROM outbox WHERE state='pending' AND created_at < ?",
+                        (cutoff,)).fetchone()[0]
+                finally:
+                    conn.close()
+                if n:
+                    incidents.append({"kind": "stale_outbox", "count": int(n)})
+        except sqlite3.OperationalError:
+            pass   # no outbox table (legacy mode) — nothing to check, honestly
+        except Exception as e:
+            logger.warning("health: outbox read failed: %s", e)
+
+        # (c) dead-lettered jobs — work nobody will ever finish
+        try:
+            from ghost.core.jobqueue import JobQueue
+            q = JobQueue()
+            dead = q.stats().get("dead", 0)
+            if dead:
+                incidents.append({"kind": "dead_letters", "count": int(dead),
+                                  "sample": [d["kind"] for d in q.dead_letters(3)]})
+        except Exception as e:
+            logger.warning("health: queue read failed: %s", e)
+
+        for inc in incidents:
+            summary = {
+                "error_burst": f"{inc['count']} errors in 30min: {', '.join(inc.get('types', []))}",
+                "stale_outbox": f"{inc['count']} outbox effect(s) stuck pending >30min",
+                "dead_letters": f"{inc['count']} dead-lettered job(s): {', '.join(inc.get('sample', []))}",
+            }.get(inc["kind"], str(inc))
+            await self.emit_signal(event_type="system_health_incident",
+                                   source="self_patrol", summary=summary,
+                                   payload=inc, urgency="critical")
+            audit("health.incident", kind=inc["kind"], count=inc.get("count", 0),
+                  detail=summary[:200],
+                  ping="(c) unverifiable: Ghost's own vitals show a problem")
+        return incidents
 
     def _append_sweep_to_obsidian(self, report: Dict[str, Any]):
         """Append patrol audit metrics cleanly to Obsidian Daily Log."""

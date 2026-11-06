@@ -82,6 +82,14 @@ class AutonomyRuntime:
             return draft_due_followups()
         handlers["followups.draft"] = draft_followups
 
+        # Operator's 11 P6: immediate triage — a signal/webhook pokes the
+        # intake ON DEMAND (the queue worker runs it in ~1s) instead of the
+        # next 300s poll. Same pipeline, just not scheduled.
+        def intake_poll(payload: Dict[str, Any]) -> Any:
+            from ghost.autonomy.intake import poll_email_replies
+            return poll_email_replies(ping=_operator_ping())
+        handlers["intake.email_poll"] = intake_poll
+
         return handlers
 
     # ------------------------------------------------------------------- tasks
