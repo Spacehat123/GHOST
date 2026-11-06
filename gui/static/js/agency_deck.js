@@ -106,11 +106,181 @@
     if (viewId === 'campaigns') loadCampaigns();
     if (viewId === 'confirmation') loadConfirmationQueue();
     if (viewId === 'demos') loadDemos();
+    if (viewId === 'dossiers') loadDossiers();
     if (viewId === 'microjobs') loadMicrojobs();
+    if (viewId === 'payments') loadPayments();
+    if (viewId === 'fixes') loadFixes();
+    if (viewId === 'autonomy') loadAutonomy();
+    if (viewId === 'notifications') loadNotifications();
     if (viewId === 'templates') loadTemplates();
     if (viewId === 'suppression') loadSuppression();
     if (viewId === 'events') loadEvents();
   }
+
+  // ---- P9: the single-window operator panels --------------------------------
+
+  async function loadDossiers() {
+    const res = await deckFetch('/api/dossiers');
+    const listEl = document.getElementById('dossiers-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Dossier shelf unavailable.</div>'; return; }
+    const { dossiers } = await res.json();
+    if (!dossiers.length) {
+      listEl.innerHTML = '<div class="deck-section-desc">No dossiers yet — they are built per qualified lead (dossier.build).</div>';
+      return;
+    }
+    listEl.innerHTML = dossiers.map(d => `
+      <div class="deck-panel-box" style="margin-bottom:10px; background:var(--deck-card); cursor:pointer;" onclick="deckOpenDossier('${d.slug}')">
+        <b>${d.business}</b> <span style="opacity:0.55; font-size:0.85em;">(${d.slug})</span>
+        <span style="font-size:0.85em; opacity:0.75;"> · 📷 ${d.photos} · site: ${d.site_verdict || '?'}</span>
+        ${d.inquire.length ? `<span style="font-size:0.8em; opacity:0.6;"> · ❓inquire: ${d.inquire.join(', ')}</span>` : ''}
+      </div>`).join('');
+  }
+
+  async function deckOpenDossier(slug) {
+    const res = await deckFetch(`/api/dossiers/${slug}`);
+    if (!res.ok) { alert('Dossier unavailable.'); return; }
+    const d = await res.json();
+    const el = document.getElementById('dossier-detail');
+    el.style.display = 'block';
+    const f = d.facts || {};
+    const idn = f.identity || {};
+    const v = k => (idn[k] || {}).value;
+    el.innerHTML = `
+      <div class="deck-panel-box" style="background:var(--deck-card); margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between;">
+          <b>${v('name') || slug}</b>
+          <button class="deck-btn" onclick="document.getElementById('dossier-detail').style.display='none'">✕ close</button>
+        </div>
+        <div style="font-size:0.9em; opacity:0.85; margin-top:6px;">
+          ${['category', 'address', 'phone', 'website', 'hours'].map(k =>
+            `<div>· <b>${k}</b>: ${v(k) ? v(k) : '<i>[Inquire for quotation]</i>'}</div>`).join('')}
+          <div>· <b>site</b>: ${((f.site || {}).verdict) || '?'} — ${((f.site || {}).evidence || '')}</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+          ${(d.photos || []).map(p => `<img src="/api/dossiers/${slug}/photo/${p}" alt="${p}" loading="lazy" style="width:110px; height:82px; object-fit:cover; border-radius:6px;">`).join('')}
+        </div>
+        ${(f.inquire || []).length ? `<div style="font-size:0.85em; opacity:0.7; margin-top:8px;">❓ Inquire: ${f.inquire.join(', ')} — never guessed</div>` : ''}
+      </div>`;
+    el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function loadPayments() {
+    const res = await deckFetch('/api/payments/overview');
+    const listEl = document.getElementById('payments-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Payments view unavailable.</div>'; return; }
+    const data = await res.json();
+    const railChips = Object.entries(data.rail || {}).map(([k, on]) =>
+      `<span class="deck-btn" style="cursor:default; opacity:${on ? 1 : 0.45};">${k}: ${on ? '✅ live' : '— not set'}</span>`).join(' ');
+    listEl.innerHTML = `<div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">${railChips}</div>` +
+      ((data.deals || []).map(d => `
+      <div class="deck-panel-box" style="margin-bottom:10px; background:var(--deck-card);">
+        <b>${d.business || d.slug}</b> <span style="opacity:0.6; font-size:0.85em;">· ${d.stage} · ₹${d.deal_value || 0}</span>
+        <div style="font-size:0.85em; opacity:0.8; margin-top:4px;">
+          ${d.documents.map(x => `📄 ${x.kind} v${x.version} (${x.status})`).join(' · ') || 'no closing documents yet'}
+        </div>
+        ${d.qr_artifacts.length ? `<div style="font-size:0.85em; opacity:0.8;">🔗 QR artifacts: ${d.qr_artifacts.join(', ')}</div>` : ''}
+      </div>`).join('') || '<div class="deck-section-desc">No deals with documents yet.</div>');
+  }
+
+  async function loadFixes() {
+    const res = await deckFetch('/api/fixer/staged');
+    const listEl = document.getElementById('fixes-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Fixes queue unavailable.</div>'; return; }
+    const { staged } = await res.json();
+    if (!staged.length) {
+      listEl.innerHTML = '<div class="deck-section-desc">No staged fixes — customer-reported breaks land here after independent verification.</div>';
+      return;
+    }
+    listEl.innerHTML = staged.map(s => `
+      <div class="deck-panel-box" style="margin-bottom:10px; background:var(--deck-card);">
+        <b>${s.site}</b> <span style="opacity:0.6; font-size:0.85em;">· ${s.staged_id} · ${s.status}</span>
+        <div style="font-size:0.85em; opacity:0.8;">${s.description}</div>
+        <div style="font-size:0.8em; opacity:0.6;">files: ${s.files.join(', ')}</div>
+        ${s.status === 'staged' ? `<button class="deck-btn deck-btn-highlight" style="margin-top:6px;" onclick="deckApproveFix('${s.staged_id}')">✅ Approve &amp; apply</button>` : ''}
+      </div>`).join('');
+  }
+
+  async function deckApproveFix(stagedId) {
+    if (!confirm(`Apply staged fix ${stagedId} to the live site?\n\nIt was independently verified, but look at the description first.`)) return;
+    const res = await deckFetch(`/api/fixer/${stagedId}/approve`, { method: 'POST' });
+    if (res.ok) { alert('Fix applied.'); } else {
+      const out = await res.json().catch(() => ({}));
+      alert(`Not applied: ${out.detail || res.status}`);
+    }
+    loadFixes();
+  }
+
+  async function loadAutonomy() {
+    const res = await deckFetch('/api/autonomy');
+    const statusEl = document.getElementById('autonomy-status');
+    const ladderEl = document.getElementById('autonomy-ladder');
+    if (!statusEl || !ladderEl) return;
+    if (!res.ok) { statusEl.innerHTML = '<div class="deck-section-desc">Autonomy bundle unavailable.</div>'; return; }
+    const b = await res.json();
+    const chip = (ok, label) => `<span class="deck-btn" style="cursor:default; ${ok ? '' : 'opacity:0.5;'}">${label}</span>`;
+    statusEl.innerHTML = `<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      ${b.halt.halted ? '<span class="deck-btn deck-btn-danger">🛑 HALTED: ' + ((b.halt.state || {}).reason || '?') + '</span>' : chip(true, '✅ halt clear')}
+      ${chip(b.runtime.running !== false, 'runtime: ' + (b.runtime.running ? 'running' : 'not started'))}
+      ${chip(b.supervisor.alive, 'supervisor: ' + (b.supervisor.alive ? `alive (${Math.round((b.supervisor.beat_age_s || 0) / 60)}m)` : 'SILENT'))}
+      ${chip(!b.rhythm.scheduler_cycle?.due, 'scheduler cycle: ' + (b.rhythm.scheduler_cycle?.due ? 'OVERDUE' : 'on rhythm'))}
+      ${chip(!b.rhythm.digest?.due, 'digest: ' + (b.rhythm.digest?.due ? 'OVERDUE' : 'on rhythm'))}
+      ${b.darkrun.active ? chip(true, `🌙 dark run day ${b.darkrun.day}/${b.darkrun.of}`) : ''}
+    </div>`;
+    ladderEl.innerHTML = Object.entries(b.ladder || {}).map(([cap, st]) => `
+      <div class="deck-panel-box" style="margin-bottom:8px; background:var(--deck-card); display:flex; justify-content:space-between; align-items:center;">
+        <div><b>${cap}</b> — L${st.level} <span style="opacity:0.6; font-size:0.85em;">(earned ceiling L${st.eligible_for}, streak ${st.success_streak})</span></div>
+        ${st.eligible_for > st.level ? `<button class="deck-btn deck-btn-highlight" onclick="deckRaiseLadder('${cap}')">⬆ Raise to L${st.level + 1}</button>` : ''}
+      </div>`).join('');
+  }
+
+  async function deckRaiseLadder(cap) {
+    if (!confirm(`Raise ${cap} one level?\n\nPromotion is the one operator-only trust act — only raise what you have SEEN perform.`)) return;
+    const res = await deckFetch('/api/ladder/raise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability: cap }) });
+    if (!res.ok) { const o = await res.json().catch(() => ({})); alert(o.detail || 'Cannot raise.'); }
+    loadAutonomy();
+  }
+
+  async function loadNotifications() {
+    const res = await deckFetch('/api/notifications');
+    const listEl = document.getElementById('notifications-list');
+    if (!listEl) return;
+    if (!res.ok) { listEl.innerHTML = '<div class="deck-section-desc">Notifications unavailable.</div>'; return; }
+    const data = await res.json();
+    const when = ts => ts ? new Date(ts * 1000).toLocaleString() : '';
+    listEl.innerHTML = `
+      <div class="deck-panel-box" style="background:var(--deck-card); margin-bottom:10px;">
+        <b>Pings</b> (${(data.pings || []).length})
+        ${(data.pings || []).map(p => `
+          <div style="font-size:0.85em; border-top:1px solid rgba(255,255,255,0.06); padding:6px 0;">
+            <span style="opacity:0.55;">${when(p.at)}</span> · <b>${p.type}</b> ${p.subject ? `· ${p.subject}` : ''}
+            ${p.ping ? `<div style="opacity:0.75;">${p.ping}</div>` : ''}
+          </div>`).join('') || '<div style="opacity:0.6; font-size:0.85em;">Nothing has pinged — quiet is not stillness (digests below).</div>'}
+      </div>
+      <div class="deck-panel-box" style="background:var(--deck-card);">
+        <b>09:00 digests</b>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+          ${(data.digests || []).map(d => `<button class="deck-btn" onclick="deckOpenDigest('${d.replace('.md', '')}')">${d.replace('.md', '')}</button>`).join('') || '<span style="opacity:0.6; font-size:0.85em;">none yet</span>'}
+        </div>
+      </div>`;
+  }
+
+  async function deckOpenDigest(day) {
+    const res = await deckFetch(`/api/notifications/digest/${day}`);
+    if (!res.ok) { alert('Digest unavailable.'); return; }
+    const { markdown } = await res.json();
+    document.getElementById('digest-view').style.display = 'block';
+    document.getElementById('digest-text').textContent = markdown;
+    document.getElementById('digest-view').scrollIntoView({ behavior: 'smooth' });
+  }
+  window.deckOpenDossier = deckOpenDossier;
+  window.deckApproveFix = deckApproveFix;
+  window.deckRaiseLadder = deckRaiseLadder;
+  window.deckOpenDigest = deckOpenDigest;
 
   // Micro-jobs copilot (Operator's 11 P8): Ghost drafts, the human sends
   async function loadMicrojobs() {
@@ -195,12 +365,26 @@
           </div>
           <div style="display:flex; gap:8px;">
             ${d.deployed ? '' : `
+            <button class="deck-btn" onclick="deckTogglePreview('${d.slug}', this)">🔍 Preview here</button>
             <button class="deck-btn" onclick="deckOpenDemo('${d.slug}')">👁 Open locally</button>
             <button class="deck-btn deck-btn-highlight" onclick="deckAuthorizeHost('${d.slug}')">🚀 Approve &amp; host</button>`}
           </div>
         </div>
+        <div id="preview-${d.slug}" style="display:none; margin-top:10px;">
+          <iframe src="/demos/${d.slug}/" title="Local preview of ${d.slug}"
+                  style="width:100%; height:420px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:#fff;"></iframe>
+          <div style="font-size:0.8em; opacity:0.6; margin-top:4px;">Served from this machine only — hosting still needs your separate approval click.</div>
+        </div>
       </div>`).join('');
   }
+
+  function deckTogglePreview(slug, btn) {
+    const el = document.getElementById(`preview-${slug}`);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    btn.textContent = el.style.display === 'none' ? '🔍 Preview here' : '🙈 Hide preview';
+  }
+  window.deckTogglePreview = deckTogglePreview;
 
   async function deckOpenDemo(slug) {
     const res = await deckFetch(`/api/demos/${slug}/open`, { method: 'POST' });
@@ -527,7 +711,19 @@
     deckFetch(`/api/drafts/${draftId}/reply`, {
       method: 'POST',
       body: JSON.stringify({ reply_text: text, is_opt_out: false })
-    }).then(() => openLeadInspector(currentLead.slug));
+    }).then(r => r.json()).then(out => {
+      // P5 contract: the pasted text went through quarantine + classification
+      const verdict = out.verdict || '';
+      if (out.status === 'quarantined') {
+        alert('⛔ Reply QUARANTINED — possible injection. Nothing moved; it stays in the log for your eyes.');
+      } else if (out.status === 'opted_out') {
+        alert('🚫 Opt-out recognized — contact suppressed.');
+      } else {
+        alert(`✅ Reply recorded (${out.status}${verdict ? ': ' + verdict.replace('Verdict.', '') : ''}). Follow-ups will be drafted per schedule.`);
+      }
+      document.getElementById('inspector-modal').classList.add('hidden');
+      loadLeads();
+    });
   }
 
   function renderLeadClosingPack(documents) {

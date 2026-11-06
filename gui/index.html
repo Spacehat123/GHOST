@@ -210,7 +210,12 @@
         <button class="deck-tab-btn" data-view="campaigns">Campaigns</button>
         <button class="deck-tab-btn" data-view="confirmation">Confirmation</button>
         <button class="deck-tab-btn" data-view="demos">Demos</button>
+        <button class="deck-tab-btn" data-view="dossiers">Dossiers</button>
         <button class="deck-tab-btn" data-view="microjobs">Micro-jobs</button>
+        <button class="deck-tab-btn" data-view="payments">Payments</button>
+        <button class="deck-tab-btn" data-view="fixes">Fixes</button>
+        <button class="deck-tab-btn" data-view="autonomy">Autonomy</button>
+        <button class="deck-tab-btn" data-view="notifications">Notifications</button>
         <button class="deck-tab-btn" data-view="templates">Templates</button>
         <button class="deck-tab-btn" data-view="suppression">Suppression</button>
         <button class="deck-tab-btn" data-view="events">Activity Log</button>
@@ -312,6 +317,56 @@
             <button class="deck-btn" onclick="deckMicrojobsSweep()">🔄 Sweep sources now</button>
           </div>
           <div id="microjobs-list"></div>
+        </div>
+      </section>
+
+      <!-- 3d. Dossiers browser (Operator's 11 P9 / P2) -->
+      <section id="view-dossiers" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Business Dossiers — everything Ghost knows, provenance-stamped</div>
+          <div class="deck-section-desc">Facts carry their source; photos carry sha256 provenance; missing facts are [Inquire for quotation] — never guessed.</div>
+          <div id="dossiers-list"></div>
+          <div id="dossier-detail" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- 3e. Payments (collect-only) -->
+      <section id="view-payments" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Payments — collect-only</div>
+          <div class="deck-section-desc">Who owes what, which rail is live, where the QR/link artifacts are. Ghost accepts money; it never sends it.</div>
+          <div id="payments-list"></div>
+        </div>
+      </section>
+
+      <!-- 3f. Staged fixes approval queue (P7) -->
+      <section id="view-fixes" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Site Fixes — verified patches awaiting YOUR approval</div>
+          <div class="deck-section-desc">Customer-reported breaks: diagnosed by a sandboxed sidecar, INDEPENDENTLY verified, staged. An LLM patch never auto-applies.</div>
+          <div id="fixes-list"></div>
+        </div>
+      </section>
+
+      <!-- 3g. Autonomy state (P9) -->
+      <section id="view-autonomy" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Autonomy — the body, the ladder, the clocks</div>
+          <div class="deck-section-desc">Ladder promotions are EARNED (streaks) and granted by YOU. Raise only what you have seen perform.</div>
+          <div id="autonomy-status"></div>
+          <div id="autonomy-ladder"></div>
+        </div>
+      </section>
+
+      <!-- 3h. Notifications center (P9) -->
+      <section id="view-notifications" class="deck-view">
+        <div class="deck-panel-box">
+          <div class="deck-section-title">Notifications — the (a)(b)(c) contract, visible</div>
+          <div class="deck-section-desc">Money, client distress, the unverifiable — everything that pinged, plus the 09:00 digest shelf.</div>
+          <div id="notifications-list"></div>
+          <div id="digest-view" style="display:none; margin-top:12px;">
+            <pre id="digest-text" style="white-space:pre-wrap; background:var(--deck-card); padding:12px; border-radius:8px; font-size:0.85em;"></pre>
+          </div>
         </div>
       </section>
 

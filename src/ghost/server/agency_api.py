@@ -697,6 +697,224 @@ async def microjob_status(job_id: str, request: Request):
 
 
 # =============================================================================
+# 5d. Single-window operator panels (Operator's 11 P9 — goal 10)
+# Everything the operator needs, read through THIS window: dossiers, the
+# autonomy state, notifications (the ping contract), staged fixes, payments.
+# =============================================================================
+
+@agency_router.get("/dossiers", dependencies=[Depends(verify_auth_token)])
+async def list_dossiers():
+    """The research dossier shelf (P2): what Ghost knows per business."""
+    from ghost.workers.dossier import dossiers_dir
+    base = dossiers_dir()
+    out = []
+    if os.path.isdir(base):
+        for slug in sorted(os.listdir(base)):
+            facts_path = os.path.join(base, slug, "facts.json")
+            if not os.path.isfile(facts_path):
+                continue
+            try:
+                facts = json.load(open(facts_path, encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            photo_dir = os.path.join(base, slug, "photos")
+            out.append({
+                "slug": slug,
+                "business": (facts.get("identity", {}).get("name", {}) or {}).get("value") or slug,
+                "inquire": facts.get("inquire", []),
+                "photos": len(os.listdir(photo_dir)) if os.path.isdir(photo_dir) else 0,
+                "site_verdict": (facts.get("site", {}) or {}).get("verdict"),
+            })
+    return {"dossiers": out}
+
+
+@agency_router.get("/dossiers/{slug}", dependencies=[Depends(verify_auth_token)])
+async def get_dossier(slug: str):
+    from ghost.workers.dossier import dossiers_dir
+    d = os.path.join(dossiers_dir(), slug)
+    if not os.path.isdir(d):
+        raise HTTPException(status_code=404, detail="No such dossier.")
+    try:
+        facts = json.load(open(os.path.join(d, "facts.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        raise HTTPException(status_code=404, detail="Dossier facts unreadable.")
+    photos = sorted(os.listdir(os.path.join(d, "photos"))) \
+        if os.path.isdir(os.path.join(d, "photos")) else []
+    md_path = os.path.join(d, "dossier.md")
+    md = open(md_path, encoding="utf-8").read() if os.path.exists(md_path) else ""
+    return {"slug": slug, "facts": facts, "photos": photos, "markdown": md}
+
+
+@agency_router.get("/dossiers/{slug}/photo/{name}", dependencies=[Depends(verify_auth_token)])
+async def dossier_photo(slug: str, name: str):
+    """Provenance-tracked photos, served authed — never a hotlink."""
+    import re as _re
+    if not _re.fullmatch(r"[\w.\-]+", name):
+        raise HTTPException(status_code=400, detail="bad filename")
+    from ghost.workers.dossier import dossiers_dir
+    path = os.path.join(dossiers_dir(), slug, "photos", name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="no such photo")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+@agency_router.get("/autonomy", dependencies=[Depends(verify_auth_token)])
+async def autonomy_bundle():
+    """One screen: is the body alive, who may do what, is anything overdue."""
+    from ghost.core import halt as halt_mod
+    from ghost.autonomy.ladder import AutonomyLadder
+    from ghost.core import rhythm
+    bundle: Dict[str, Any] = {
+        "halt": {"halted": halt_mod.is_halted(),
+                 "state": halt_mod.halt_state()},
+        "ladder": AutonomyLadder().status(),
+        "rhythm": {},
+    }
+    try:
+        from ghost.autonomy.runtime import get_runtime
+        rt = get_runtime()
+        bundle["runtime"] = rt.status if rt else {"running": False,
+                                                  "note": "runtime not started"}
+    except Exception:
+        bundle["runtime"] = {"running": False, "note": "unknown"}
+    try:
+        from ghost.supervisor.service import beat_age_s
+        age = beat_age_s()
+        bundle["supervisor"] = {"beat_age_s": None if age == float("inf") else age,
+                                "alive": age < 300.0,
+                                "note": None if age != float("inf") else "never beaten"}
+    except Exception:
+        bundle["supervisor"] = {"alive": False, "note": "no supervisor beat file"}
+    for marker in ("scheduler_cycle", "digest"):
+        try:
+            bundle["rhythm"][marker] = rhythm.due(marker)
+        except Exception:
+            bundle["rhythm"][marker] = {"due": False, "reason": "unavailable"}
+    try:
+        from ghost.control import darkrun
+        st = darkrun.status()
+        bundle["darkrun"] = {"active": st.get("active", False),
+                             "day": st.get("day"), "of": st.get("of")}
+    except Exception:
+        bundle["darkrun"] = {"active": False}
+    return bundle
+
+
+_PING_EVENT_TYPES = ("reply.complaint", "reply.bounce", "reply.call_recommended",
+                     "reply.unverifiable", "reply.quarantined", "health.incident",
+                     "fixer.staged", "fixer.unresolved", "fixer.report_received",
+                     "followup.drafted", "payment.link_api_failed",
+                     "payment.link_not_configured", "payment.upi_uri_issued",
+                     "demo.host_authorized", "demo.hosted", "intake.unmatched",
+                     "route.transfer_refused")
+
+
+@agency_router.get("/notifications", dependencies=[Depends(verify_auth_token)])
+async def list_notifications():
+    """The §10 notification contract, made visible: everything that pinged
+    (or would have) + the daily digest shelf. The operator should never have
+    to grep a ledger to find out what needed attention."""
+    from ghost.core.audit import AuditLedger
+    led = AuditLedger.get_instance()
+    pings = []
+    for et in _PING_EVENT_TYPES:
+        for row in led.query(event_type=et, limit=8):
+            payload = row.get("payload")
+            ping = ""
+            if isinstance(payload, str):
+                try:
+                    ping = str((json.loads(payload) or {}).get("ping", ""))[:200]
+                except (ValueError, TypeError):
+                    ping = ""
+            elif isinstance(payload, dict):
+                ping = str(payload.get("ping", ""))[:200]
+            pings.append({"at": row.get("ts"), "type": et,
+                          "subject": str(row.get("subject", ""))[:80],
+                          "ping": ping})
+    pings.sort(key=lambda p: p["at"] or 0, reverse=True)
+    digest_dir = os.path.join(REPO_DIR, "data", "digests")
+    digests = sorted((f for f in os.listdir(digest_dir) if f.endswith(".md")),
+                     reverse=True)[:14] if os.path.isdir(digest_dir) else []
+    return {"pings": pings[:40], "digests": digests}
+
+
+@agency_router.get("/notifications/digest/{day}", dependencies=[Depends(verify_auth_token)])
+async def get_digest(day: str):
+    import re as _re
+    if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+        raise HTTPException(status_code=400, detail="day must be YYYY-MM-DD")
+    path = os.path.join(REPO_DIR, "data", "digests", f"{day}.md")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="no digest for that day")
+    return {"day": day, "markdown": open(path, encoding="utf-8").read()}
+
+
+@agency_router.get("/fixer/staged", dependencies=[Depends(verify_auth_token)])
+async def fixer_staged_list():
+    """The staged-fix approval queue (P7): verified patches awaiting YOU."""
+    from ghost.control.fixers import list_staged
+    return {"staged": list_staged()}
+
+
+@agency_router.post("/fixer/{staged_id}/approve", dependencies=[Depends(verify_auth_token)])
+async def fixer_approve(staged_id: str):
+    """THE approval click for a verified site fix. Halt-refusing, one action
+    per package — same rules as the CLI."""
+    from ghost.control.fixers import approve_staged
+    out = approve_staged(staged_id, by="operator-deck")
+    if not out.get("applied"):
+        raise HTTPException(status_code=409, detail=out.get("reason", "not applied"))
+    return out
+
+
+@agency_router.get("/payments/overview", dependencies=[Depends(verify_auth_token)])
+async def payments_overview():
+    """Collect-only money view: who owes what, which rail is live, where the
+    QR/link artifacts are. Nothing here can move money — by design."""
+    crm = CRMDatabase.get_instance()
+    from ghost.core.secrets import get
+    from ghost.workers.payments.razorpay_provider import load_razorpay_config
+    rzp_cfg = load_razorpay_config()
+    rail = {
+        "razorpay": bool(get(rzp_cfg.get("key_id_env", "RAZORPAY_KEY_ID"))
+                         and get(rzp_cfg.get("key_secret_env", "RAZORPAY_KEY_SECRET"))),
+        "upi": bool(_payments_upi_id()),
+        "manual_bank": True,
+    }
+    deals = []
+    for client in crm.list_clients():
+        slug = client.get("slug")
+        docs = crm.get_documents_for_lead(slug)
+        docs_dir = os.path.dirname(docs[0]["path"]) if docs else None
+        qr_files = [f for f in (sorted(os.listdir(docs_dir)) if docs_dir and
+                                os.path.isdir(docs_dir) else [])
+                    if f.endswith("-qr.png")]
+        if not docs and not client.get("deal_value"):
+            continue
+        deals.append({
+            "slug": slug,
+            "business": client.get("business_name"),
+            "stage": client.get("status"),
+            "deal_value": client.get("deal_value"),
+            "documents": [{"kind": d.get("kind"), "version": d.get("version"),
+                           "status": d.get("status"), "file": os.path.basename(d.get("path", ""))}
+                          for d in docs[:8]],
+            "qr_artifacts": qr_files[:4],
+        })
+    return {"rail": rail, "deals": deals,
+            "note": "collect-only: Ghost accepts money, it never sends it"}
+
+
+def _payments_upi_id() -> Optional[str]:
+    try:
+        cfg_path = os.path.join(REPO_DIR, "configs", "payments.json")
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return (json.load(f) or {}).get("upi_id")
+    except (OSError, ValueError):
+        return None
+
+
+# =============================================================================
 # 6. Outreach Drafts & Review Queue
 # =============================================================================
 
