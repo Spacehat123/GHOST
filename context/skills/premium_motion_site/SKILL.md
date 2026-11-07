@@ -1,3 +1,10 @@
+<!-- capability
+name: premium_motion_site
+summary: High-polish non-3D flagship: restrained scroll storytelling, bespoke typography, one high-craft signature interaction — top 3-5 visual-sector leads.
+triggers: motion, flagship, polish, scroll, signature, motion site, flagship experience
+applies_to: build_demo, build_website
+-->
+
 # Premium Motion Flagship Website Skill
 
 Builds high-polish, non-3D flagship websites with restrained scroll storytelling, bespoke typography, and exactly one high-craft signature interaction.

@@ -1326,7 +1326,7 @@ class OmniRouteBrain:
         "4. Work ONE task at a time; mark done only with verified evidence. 5. If a task fails twice, mark it blocked and tell the operator.\n"
         "6. Last task is always a fresh independent audit against the original goal. 7. Report only what the evidence shows, including what is missing.\n"
         "Never invent tool results, business facts, prices, contacts, metrics or file contents. Say 'unknown' or 'tool unavailable'.\n"
-        "Skills: use list_skills/get_skill when a task matches a skill; load only what you need.\n\n"
+        "Skills: the CAPABILITY INDEX below lists your own toolbox — before planning ANY mission, match the goal against it and get_skill() every match; a plan that ignores a matched capability is an incomplete plan. mission_create also auto-attaches matched capabilities to the mission notes.\n\n"
         "NON-NEGOTIABLE HONESTY RULES:\n"
         "- Facts about businesses, prices, hours, contacts, reviews and performance come from tool results or the source ledger. If unknown, say 'unknown'.\n"
         "- Never say a step is done, a file written, a test passed or a deploy live without tool evidence from this mission.\n"
@@ -2154,6 +2154,22 @@ class OmniRouteBrain:
             tasks = arguments.get("tasks", [])
             skill = arguments.get("skill")
             notes = str(arguments.get("notes", "")).strip()
+            # Capability injection (Operator's directive): the mission CARRIES
+            # the capabilities its goal matches — the executor sees them on
+            # every task, planning can't forget the toolbox exists.
+            try:
+                from ghost.core.skills import capability_directive
+                directive = capability_directive(goal)
+                if directive:
+                    notes = f"{directive}\n\n{notes}".strip()
+                    if tasks and isinstance(tasks[0], dict):
+                        first = dict(tasks[0])
+                        first["description"] = (
+                            f"[Capabilities to apply — see mission notes]\n"
+                            f"{first.get('description', '')}").strip()
+                        tasks[0] = first
+            except Exception:
+                pass
             try:
                 mission = store.create_mission(goal=goal, tasks=tasks, skill=skill, notes=notes)
                 return {

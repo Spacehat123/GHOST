@@ -1,3 +1,10 @@
+<!-- capability
+name: aeo_answer_engines
+summary: Rank on ChatGPT/Perplexity/AI Overviews: answer-first blocks, FAQPage/LocalBusiness JSON-LD, llms.txt, NAP entity consistency, no JS-only content.
+triggers: seo, chatgpt, ai, answer, schema, llms, faq, perplexity, ranking, website, client
+applies_to: build_website, seo_audit
+-->
+
 # SKILL: AEO — Answer Engine Optimization (rank on ChatGPT, Perplexity, Gemini, AI Overviews)
 
 The operator's directive: "the website itself isn't the point — SEO optimization

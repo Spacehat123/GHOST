@@ -227,6 +227,16 @@ class GhostAgent:
         )
 
         system_content = OmniRouteBrain.SYSTEM_PROMPT + temporal_banner + episodic_banner
+        # Capability injection (Operator's directive): the model's standing map
+        # of its own toolbox — regenerated per turn from the registry, so a new
+        # skill file is in the model's hands without a restart.
+        try:
+            from ghost.core.skills import capability_index_block
+            cap_block = capability_index_block()
+            if cap_block:
+                system_content += f"\n\n{cap_block}"
+        except Exception:
+            pass
         if directives_context:
             system_content += f"\n\n{directives_context}"
 

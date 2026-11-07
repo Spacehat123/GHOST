@@ -1,3 +1,10 @@
+<!-- capability
+name: svg_decor
+summary: svg.js decorative craft (vendored at assets/vendor/svg.min.js): self-drawing line-art, hand-drawn dividers, animated underlines — max 2 per page, draw-once, reduced-motion aware.
+triggers: svg, animation, animate, draw, divider, underline, logo, line-art, decor, cool, polish, demo, website
+applies_to: build_website, build_demo
+-->
+
 # SKILL: SVG Decor — self-drawing details (svg.js, the Grasshopper touch)
 
 Operator reference: Grasshopper-class sites feel *hand-made* — a line-drawing that

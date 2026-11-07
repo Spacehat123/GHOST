@@ -1,3 +1,10 @@
+<!-- capability
+name: owasp_web_security
+summary: No-leak/no-injection rules for anything Ghost builds: CSP, output encoding, parameterized inputs, secrets never in shipped code, PII minimization, the ship-gate checklist.
+triggers: security, owasp, injection, xss, csp, form, leak, privacy, user data, website, form handling
+applies_to: build_website, build_demo, fix_site, seo_audit
+-->
+
 # SKILL: OWASP Web Security — Ghost-built sites + Ghost itself
 
 Source: OWASP CheatSheetSeries (cloned at `.skill-vendor/CheatSheetSeries/cheatsheets/`

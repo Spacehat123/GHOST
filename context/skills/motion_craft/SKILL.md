@@ -1,3 +1,10 @@
+<!-- capability
+name: motion_craft
+summary: Animation tokens + restraint (emilkowalski): 120-450ms, expo-out, transform-only, choreography, reduced-motion, where motion is banned.
+triggers: animation, animate, motion, transition, polish, feel, demo, website, scroll
+applies_to: build_website, build_demo, fix_site
+-->
+
 # SKILL: Motion Craft — animation restraint (emilkowalski distillation)
 
 Source: `.skill-vendor/skills-emilkowalski/` (animate, choreograph,

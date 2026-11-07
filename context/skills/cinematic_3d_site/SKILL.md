@@ -1,3 +1,10 @@
+<!-- capability
+name: cinematic_3d_site
+summary: Premium Three.js scroll-driven 3D hero with 5 camera stages — the gated upsell, never the default; requires a real GLB and the 3D-fit gate.
+triggers: 3d, three.js, threejs, glb, cinematic, scroll-driven, flagship, upsell
+applies_to: build_demo, build_website
+-->
+
 # SKILL: Cinematic 3D Site (Three.js scroll-driven hero)
 
 Install at `context/skills/cinematic_3d_site/SKILL.md`. Ghost loads it with the `get_skill("cinematic_3d_site")` tool ONLY after the gate in `07_3D_SITE_PLAN.md` passes. Do not paste it into the base system prompt.

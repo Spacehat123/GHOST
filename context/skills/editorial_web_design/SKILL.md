@@ -1,3 +1,10 @@
+<!-- capability
+name: editorial_web_design
+summary: The house look for every demo/client site: warm paper, serif voice, one earth accent, ghosted wordmark, real photos; hard bans (Tailwind blue, 3-card rows, AI images).
+triggers: website, web site, build a site, landing page, demo, design, look, style, redesign, hero, template
+applies_to: build_website, build_demo, fix_site, design_review
+-->
+
 # SKILL: Editorial Web Design — the Ghost house style
 
 Source standard: the Grasshopper reference (operator-approved Nov 2026) + distillations

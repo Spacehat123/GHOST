@@ -1,3 +1,10 @@
+<!-- capability
+name: local_seo_dominance
+summary: The 6 local moves: address/pin, categories = what customers type, review velocity (4.7-4.9, 1/3 to Yelp), hours = answered, local links, ANSWER THE PHONE + real photos.
+triggers: seo, local, google, ranking, rank, gbp, business profile, reviews, maps, website, client
+applies_to: build_website, onboard_client, seo_audit
+-->
+
 # SKILL: Local SEO Dominance — the 6 moves (operator's guide, distilled)
 
 Source: "The Full List: 6 Local SEO Moves (1,000 Hours, Distilled)" by Hunter Lapeyre

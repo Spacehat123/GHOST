@@ -37,17 +37,21 @@ def list_skills() -> List[Dict[str, str]]:
         if os.path.isdir(entry_path):
             skill_md = os.path.join(entry_path, "SKILL.md")
             if os.path.exists(skill_md) and os.path.isfile(skill_md):
+                cap: Dict[str, Any] = {}
                 summary = ""
                 try:
                     with open(skill_md, "r", encoding="utf-8") as f:
-                        summary = _extract_skill_summary(f.read())
+                        content = f.read()
+                    summary = _extract_skill_summary(content)
+                    cap = _parse_capability(content)
                 except Exception:
                     summary = "Specialized agency skill."
 
                 skills.append({
                     "name": entry,
                     "path": f"context/skills/{entry}/SKILL.md",
-                    "description": summary
+                    "description": cap.get("summary") or summary,
+                    "triggers": cap.get("triggers", []),
                 })
 
     return skills
@@ -100,3 +104,95 @@ def get_skill(name: str) -> Dict[str, Any]:
             "tool": "get_skill",
             "error": str(e)
         }
+
+
+# ===========================================================================
+# CAPABILITY INJECTION (Operator's directive, Nov 2026): "we need a system to
+# tell Ghost what to use." Skills sitting in files don't get used — the model
+# must be HANDED the right capability at planning time. Deterministic, three
+# pieces: a parsed registry (headers above), a relevance matcher, and a
+# directive block that rides mission planning.
+# ===========================================================================
+
+import re as _re
+
+
+def _parse_capability(content: str) -> Dict[str, Any]:
+    """Parse the <!-- capability ... --> header block."""
+    cap: Dict[str, Any] = {}
+    m = _re.search(r"<!--\s*capability(.*?)-->", content, _re.S)
+    if not m:
+        return cap
+    for line in m.group(1).strip().splitlines():
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        cap[key.strip()] = val.strip()
+    if "triggers" in cap:
+        cap["triggers"] = [t.strip().lower() for t in cap["triggers"].split(",") if t.strip()]
+    if "applies_to" in cap:
+        cap["applies_to"] = [t.strip() for t in cap["applies_to"].split(",") if t.strip()]
+    return cap
+
+
+def capabilities_index() -> List[Dict[str, Any]]:
+    """The machine-readable registry: every skill with its summary, triggers
+    and applies_to. The index is the model's map of its own toolbox."""
+    index = []
+    for s in list_skills():
+        try:
+            with open(os.path.join(REPO_DIR, s["path"]), "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError:
+            continue
+        cap = _parse_capability(content)
+        index.append({
+            "name": s["name"],
+            "summary": cap.get("summary") or s["description"],
+            "triggers": cap.get("triggers", []),
+            "applies_to": cap.get("applies_to", []),
+        })
+    return index
+
+
+def relevant_skills(task_text: str, min_score: int = 1) -> List[Dict[str, Any]]:
+    """Deterministic match: which capabilities does THIS task need? Scored by
+    trigger keyword hits in the task text. No model involved."""
+    text = str(task_text or "").lower()
+    if not text.strip():
+        return []
+    scored = []
+    for cap in capabilities_index():
+        hits = [t for t in cap["triggers"] if t and t in text]
+        if len(hits) >= min_score:
+            scored.append({"name": cap["name"], "score": len(hits),
+                           "hits": hits, "summary": cap["summary"]})
+    scored.sort(key=lambda s: (-s["score"], s["name"]))
+    return scored
+
+
+def capability_directive(task_text: str, max_skills: int = 4) -> str:
+    """The injectable block for mission planning: which skills this task MUST
+    load (get_skill) before proposing a plan. Empty string when nothing
+    matches — the directive never invents relevance."""
+    matches = relevant_skills(task_text)[:max_skills]
+    if not matches:
+        return ""
+    lines = [f"- get_skill('{m['name']}') — {m['summary']} "
+             f"(matched: {', '.join(m['hits'][:3])})" for m in matches]
+    return ("CAPABILITY DIRECTIVE — load these BEFORE planning; they are "
+            "binding for this task:\n" + "\n".join(lines))
+
+
+def capability_index_block() -> str:
+    """The compact index for the system prompt: the model's standing map of
+    its own toolbox, generated from the registry (never hand-maintained)."""
+    caps = capabilities_index()
+    if not caps:
+        return ""
+    lines = [f"- {c['name']}: {c['summary']} (when: {', '.join(c['triggers'][:6]) or 'any'})"
+             for c in caps]
+    return ("CAPABILITY INDEX — your own toolbox. Before planning ANY mission, "
+            "match the goal against this index and get_skill() every match; "
+            "a plan that ignores a matched capability is an incomplete plan:\n"
+            + "\n".join(lines))
