@@ -1,18 +1,37 @@
 {
-  "tool": "qa_3d_site",
-  "demo_dir": "demos/grasshopper",
-  "checks": {
-    "index_html_exists": true,
-    "stages_json_exists": true,
-    "model_glb_exists": true,
-    "sources_json_exists": true
-  },
-  "stages_count": 5,
-  "viewports_tested": [
-    "desktop",
-    "mobile"
-  ],
-  "webgl_environment": "CDP Headless",
   "passed": true,
-  "notice": "Visual verification complete. Software renderer active."
+  "mode": "cdp",
+  "status": "passed",
+  "screenshots_captured": 2,
+  "screenshots": [
+    "/home/pranc/projects/ghost/demos/grasshopper/desktop_1440x900.jpg",
+    "/home/pranc/projects/ghost/demos/grasshopper/mobile_390x844.jpg"
+  ],
+  "human_review": {
+    "screenshots": [
+      "/home/pranc/projects/ghost/demos/grasshopper/desktop_1440x900.jpg",
+      "/home/pranc/projects/ghost/demos/grasshopper/mobile_390x844.jpg"
+    ]
+  },
+  "checks": {
+    "layout_overflow": false,
+    "viewports_tested": [
+      "390x844 (Mobile)",
+      "1440x900 (Desktop)"
+    ],
+    "note": ""
+  },
+  "sections": [
+    "nav_floating",
+    "hero_editorial",
+    "gap_banner",
+    "story_philosophy",
+    "journey_steps",
+    "booking_module",
+    "faq_answers",
+    "hours_location",
+    "lead_capture",
+    "footer_mono"
+  ],
+  "builder": "demo_state_machine/section_kit"
 }

@@ -1,0 +1,12 @@
+<!-- VISIT & CONTACT (NAP) -->
+<section class="pt-16 pb-4 text-center relative" >
+  <div class="max-w-4xl mx-auto">
+    <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Visit &amp; Contact</p>
+    <h3 class="text-3xl md:text-4xl font-bold mb-6" style="font-family: {{ arch.font_head }};">{{ main_title }}</h3>
+    <div class="text-xs font-mono space-y-1.5 mb-8" style="color: var(--muted-color);">
+      <p>{{ location }}</p>
+      {% if hours %}<p>{{ hours }}</p>{% endif %}
+      {% if phone %}<p>Direct Telephone: <a href="tel:{{ phone }}" class="underline hover:opacity-80">{{ phone }}</a></p>{% endif %}
+    </div>
+  </div>
+</section>

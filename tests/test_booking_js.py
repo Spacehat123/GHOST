@@ -30,7 +30,7 @@ class TestBookingJS(unittest.TestCase):
 
                 html = asyncio.run(sm.run_phase3_build_sections())
                 # Check for JS business initialization
-                self.assertIn('isLandline: true', html)
+                self.assertIn('"isLandline": true', html)
                 self.assertIn('href="tel:+44 20 7946 0912"', html)
                 self.assertIn('Call Directly:', html)
                 self.assertIn('booking-service', html)
@@ -57,7 +57,7 @@ class TestBookingJS(unittest.TestCase):
                 }
 
                 html = asyncio.run(sm.run_phase3_build_sections())
-                self.assertIn('isLandline: false', html)
+                self.assertIn('"isLandline": false', html)
                 self.assertIn('https://wa.me/919845012345', html)
                 self.assertIn('Instant WhatsApp Direct', html)
                 self.assertIn('updateBookingLink', html)
@@ -83,7 +83,7 @@ class TestBookingJS(unittest.TestCase):
                 }
 
                 html = asyncio.run(sm.run_phase3_build_sections())
-                self.assertIn('hasPhone: false', html)
+                self.assertIn('"hasPhone": false', html)
                 self.assertIn('href="#contact"', html)
                 self.assertIn('[Inquire Directly]', html)
 

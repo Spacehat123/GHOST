@@ -185,7 +185,9 @@ EXECUTION_ROUTES: List[Dict[str, Any]] = [
                "system_run/cat. The machine performs Google/Maps recon and REAL "
                "photo staging (assets/photos), writes DESIGN_BRIEF.md with the "
                "house style + vendored svg.js, runs CDP visual QA at two "
-               "viewports, and gates the deploy. Hand-building skips photos, "
+               "viewports, and gates the deploy. Pages are COMPOSED from the "
+               "section kit (templates/sections — pre-validated components; "
+               "never hand-write section HTML). Hand-building skips photos, "
                "QA and deploy gates — forbidden.")},
     {"applies_to": "build_website",
      "match": ("client website", "production site", "build the website",
@@ -194,7 +196,8 @@ EXECUTION_ROUTES: List[Dict[str, Any]] = [
                "website flow — build_seo_pack (schema/llms.txt/6-move "
                "checklist), the client-photos gate (photos_received), the "
                "editorial + svg_decor + motion skills, and verify_ship_gate "
-               "before launch. Production HTML is never hand-written.")},
+               "before launch. Pages COMPOSE from the section kit "
+               "(templates/sections). Production HTML is never hand-written.")},
     {"applies_to": "fix_site",
      "match": ("fix the site", "site broken", "customer report", "broken link",
                "repair", "500", "down"),

@@ -91,6 +91,7 @@ touches client data destructively.
 | P10 | ladder evidence mapper (streaks from ledger; verified incidents demote; operator-only raise) |
 | UI | quiet-room redesign (huwprosser ref), orb corner ring, palette, badges, skeletons, amber reserved chrome, reduced-motion |
 | Nov-2026 brief | photo policy split, editorial house style, svg.js decor, local SEO + AEO + OWASP skills, SEO/AEO pack, ship-gate |
+| Section kit | component library at `templates/sections/` (13 validated sections + `_base` shell); deterministic planner with written reasons; pages COMPOSED, never hand-woven; `SECTIONS.json` component map; composed-page `reports/qa.json` evidence; leads inbox (`POST /api/leads/{slug}/contact` → quarantine → CRM → ping); svg.js divider. Authoring: `templates/sections/README.md` |
 
 ---
 
@@ -104,6 +105,7 @@ touches client data destructively.
 | `local_seo_dominance` | the 6 moves + Ghost operationalization per client |
 | `aeo_answer_engines` | answer-first blocks, FAQPage/LocalBusiness JSON-LD, llms.txt, NAP entity consistency |
 | `owasp_web_security` | no-leak/no-injection rules for built sites + Ghost; ship-gate checklist |
+| the section kit | NOT a skill — the build system: `templates/sections/` components composed by `workers/section_kit.py` (validation gates, planner, `SECTIONS.json`) |
 | plus (pre-existing) | `cinematic_3d_site`, `premium_motion_site` (3D/motion flows) |
 
 Vendor sources (gitignored): `.skill-vendor/` — OWASP CheatSheetSeries, svg.js,

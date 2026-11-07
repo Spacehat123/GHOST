@@ -1,0 +1,22 @@
+<!-- FAQ (ANSWER-FIRST) -->
+<section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity &amp; Access</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {{ arch.font_head }};">Frequently Asked Questions</h2>
+    </div>
+    <div class="space-y-4">
+      {% for faq in faqs %}
+      <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
+        <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: {{ arch.font_head }}; color: var(--text-color);">
+          <span>{{ faq[0] }}</span>
+          <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
+        </summary>
+        <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
+          {{ faq[1] }}
+        </p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,43 @@
+<!-- SOCIAL PROOF -->
+{% if reviews|length <= 2 %}
+<section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-12">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Client Feedback</p>
+      <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {{ arch.font_head }};">What customers say</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {% for rev in reviews %}
+      <div class="p-8 rounded-3xl backdrop-blur-xl" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+        <p class="text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">"{{ rev.quote }}"</p>
+        <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+          <span class="font-bold" style="color: var(--accent-color);">{{ rev.author }}</span>
+          <span>{{ rev.source }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% else %}
+<section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
+  <div class="text-center mb-12">
+    <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Client Feedback</p>
+    <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {{ arch.font_head }};">What customers say</h2>
+  </div>
+  <div class="marquee-track flex animate-marquee whitespace-nowrap">
+    {% for rev in reviews %}
+    <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl"
+         style="background: var(--surface-card); border: 1px solid var(--border-color);">
+      <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
+        "{{ rev.quote }}"
+      </p>
+      <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+        <span class="font-bold" style="color: var(--accent-color);">{{ rev.author }}</span>
+        <span>{{ rev.source }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

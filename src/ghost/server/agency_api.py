@@ -839,7 +839,7 @@ _PING_EVENT_TYPES = ("reply.complaint", "reply.bounce", "reply.call_recommended"
                      "followup.drafted", "payment.link_api_failed",
                      "payment.link_not_configured", "payment.upi_uri_issued",
                      "demo.host_authorized", "demo.hosted", "intake.unmatched",
-                     "route.transfer_refused")
+                     "route.transfer_refused", "lead.form_submission")
 
 
 @agency_router.get("/notifications", dependencies=[Depends(verify_auth_token)])

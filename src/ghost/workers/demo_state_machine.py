@@ -1213,17 +1213,10 @@ class AutonomousDemoStateMachine:
         c = b["copy"]
         assets = b["assets"]
 
-        hero_img = assets.get("hero_bg")
-        bento_img1 = assets.get("bento_img1")
-        bento_img2 = assets.get("bento_img2")
-        gallery_1 = assets.get("gallery_1")
-        gallery_2 = assets.get("gallery_2")
-        gallery_3 = assets.get("gallery_3")
-
         main_title, sub_title = split_business_name(b["business_name"])
         curr = infer_currency_symbol(b["location"])
 
-        # Determine whether services section will be rendered
+        # Services section state (verified vs labelled-sample vs omitted)
         services_list = b.get("services", [])
         is_sample_services = not b.get("services_verified", False)
         show_sample = getattr(self, "show_sample_services", None)
@@ -1231,706 +1224,79 @@ class AutonomousDemoStateMachine:
             show_sample = self.get_show_sample_services()
         has_services_section = bool(services_list) if not is_sample_services else bool(show_sample)
 
-        # Determine phone status and format
+        # Phone status + direct-contact affordances
         raw_phone = b.get("phone")
         has_phone = bool(raw_phone and raw_phone.strip())
         clean_phone_digits = re.sub(r'[^0-9]', '', raw_phone) if has_phone else ""
         is_uk_landline = bool(has_phone and re.match(r'^\+?44\s*2|^\+?44\s*1|^02|^01', raw_phone.strip()))
-
-        # Navigation
-        nav_html = f"""
-  <!-- NAVIGATION -->
-  <header class="fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300">
-    <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3 rounded-full backdrop-blur-xl" 
-         style="background: var(--surface-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-resting);">
-      <a href="#" class="font-bold tracking-tight text-sm md:text-base" style="font-family: {arch['font_head']}; color: var(--text-color);">
-        {main_title}
-      </a>
-      <div class="hidden md:flex items-center gap-8 text-xs uppercase tracking-wider font-mono" style="color: var(--muted-color);">
-        {f'<a href="#services" class="hover:text-black dark:hover:text-white transition-colors">Services</a>' if has_services_section else ''}
-        <a href="#philosophy" class="hover:text-black dark:hover:text-white transition-colors">Standards</a>
-        <a href="#gallery" class="hover:text-black dark:hover:text-white transition-colors">Facility</a>
-        <a href="#reserve" class="hover:text-black dark:hover:text-white transition-colors">Booking</a>
-      </div>
-      <div class="flex items-center gap-3">
-        <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-transform active:scale-90"
-                style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">
-          <span id="theme-icon-sun" class="hidden text-xs">☀️</span>
-          <span id="theme-icon-moon" class="block text-xs">🌙</span>
-        </button>
-        <a href="#reserve" class="px-5 py-2 rounded-full text-xs font-mono uppercase tracking-wider font-semibold transition-all hover:opacity-90"
-           style="background: var(--accent-color); color: var(--on-accent);">
-          {c['cta_primary']}
-        </a>
-      </div>
-    </div>
-  </header>
-"""
-
-        # Hero Section
-        subtitle_badge = f'<p class="reveal-el text-xs md:text-sm font-mono uppercase tracking-widest mb-4 opacity-80" style="color: var(--accent-color);">{sub_title}</p>' if sub_title else ""
-        hero_badge_text = f"Serving {self.location.split(',')[0]} • {b['rating']}★ Public Acclaim" if b.get('rating') else f"Serving {self.location.split(',')[0]} • Professional Excellence"
-
-        hero_html = f"""
-  <!-- HERO SECTION -->
-  <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 relative overflow-hidden">
-    <div class="absolute inset-0 -z-20 overflow-hidden">
-      <img src="{hero_img}" alt="{main_title} Atmosphere" 
-           class="w-full h-full object-cover object-center filter brightness-[0.94] dark:brightness-[0.40] scale-105 transition-transform duration-1000 ease-out" />
-      <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/70 to-transparent"></div>
-      <div class="absolute inset-0 bg-gradient-to-b from-[var(--bg-color)]/80 via-transparent to-[var(--bg-color)]"></div>
-    </div>
-
-    <div class="max-w-4xl mx-auto relative z-10">
-      <div class="reveal-el inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs uppercase tracking-widest font-mono mb-6 backdrop-blur-md" 
-           style="background: var(--surface-card); border: 1px solid var(--border-color); color: var(--accent-color);">
-        <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background: var(--accent-color);"></span>
-        {hero_badge_text}
-      </div>
-      {subtitle_badge}
-      <h1 class="reveal-el text-4xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-tight mb-6" style="font-family: {arch['font_head']};">
-        {main_title}
-      </h1>
-      <p class="reveal-el text-base md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style="color: var(--text-color); opacity: 0.9;">
-        {b.get('tagline', '')}
-      </p>
-      
-      <div class="reveal-el flex flex-col sm:flex-row items-center justify-center gap-5">
-        <a href="#reserve" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-transform active:scale-95 shadow-lg"
-           style="background: var(--accent-color); color: var(--on-accent);">
-          {c['cta_primary']}
-        </a>
-        {f'<a href="#services" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-all backdrop-blur-md" style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">{c["cta_secondary"]}</a>' if has_services_section else ''}
-      </div>
-    </div>
-  </section>
-"""
-
-        # Operational Banner
-        gap_banner_html = f"""
-  <!-- VALUE BANNER -->
-  <section class="py-10 px-6 md:px-16 relative" style="background: var(--surface-card); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-4 text-left">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: var(--accent-alpha15); color: var(--accent-color);">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </div>
-        <div>
-          <h3 class="text-base font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">{c['banner_headline']}</h3>
-          <p class="text-xs" style="color: var(--muted-color);">{c['banner_sub']}</p>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-3 text-xs font-mono">
-        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--accent-color); background: var(--bg-color);">Direct Coordination</span>
-        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">1-Tap Booking</span>
-        <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--muted-color); background: var(--bg-color);">Certified Standards</span>
-      </div>
-    </div>
-  </section>
-"""
-
-        # Philosophy / Story Section
-        philosophy_body_1 = c["philosophy_body_1"].format(business_name=main_title, location=self.location.split(',')[0])
-        story_html = f"""
-  <!-- PHILOSOPHY & STANDARDS -->
-  <section id="philosophy" class="py-24 px-6 md:px-16 relative">
-    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-      <div>
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">{c['philosophy_kicker']}</p>
-        <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6" style="font-family: {arch['font_head']};">
-          {c['philosophy_title']}
-        </h2>
-        <p class="text-sm md:text-base leading-relaxed mb-6" style="color: var(--text-color); opacity: 0.9;">
-          {philosophy_body_1}
-        </p>
-        <p class="text-xs md:text-sm leading-relaxed mb-8" style="color: var(--muted-color);">
-          {c['philosophy_body_2']}
-        </p>
-      </div>
-      <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
-        <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
-          <img src="{bento_img1}" alt="{main_title} Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
-          <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
-          <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
-            <p class="text-xs italic" style="color: var(--text-color);">"{c['quote_text']}"</p>
-            <p class="text-[10px] font-mono mt-1 font-bold" style="color: var(--accent-color);">— {c['quote_attribution']}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-"""
-
-        # Bento Grid Offerings
-        services_list = b.get("services", [])
-        is_sample_services = not b.get("services_verified", False)
-        show_sample = getattr(self, "show_sample_services", None)
-        if show_sample is None:
-            show_sample = self.get_show_sample_services()
-
-        if is_sample_services and not show_sample:
-            # Omit services section entirely per requirement 1.2
-            bento_html = ""
-        elif is_sample_services and show_sample:
-            # Render clearly labelled block titled "Example service layout (replace with your real services)"
-            # with generic category names and NO descriptions or prices
-            sample_items = assets.get("services", [])
-            bento_cards_html = ""
-            for it in sample_items[:4]:
-                bento_cards_html += f"""
-        <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between" 
-             style="background: var(--surface-card); border: 1px solid var(--border-color);">
-          <div>
-            <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
-              <h4 class="text-lg font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">{it['title']}</h4>
-            </div>
-          </div>
-          <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
-            <span style="color: var(--muted-color);">{it.get('category', 'Category')}</span>
-          </div>
-        </div>
-"""
-            bento_html = f"""
-  <!-- SERVICES BENTO GRID (SAMPLE) -->
-  <section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Sample Layout</p>
-        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">Example service layout (replace with your real services)</h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {bento_cards_html}
-      </div>
-    </div>
-  </section>
-"""
-        else:
-            # Verified real scraped services
-            bento_cards_html = ""
-            for idx, it in enumerate(services_list[:4]):
-                price_display = f"{curr}{it['price']}" if it.get("price") else ""
-                desc_html = f'<p class="text-xs leading-relaxed mb-6" style="color: var(--muted-color);">{it["desc"]}</p>' if it.get("desc") else ""
-                bento_cards_html += f"""
-        <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between" 
-             style="background: var(--surface-card); border: 1px solid var(--border-color);">
-          <div>
-            <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
-              <h4 class="text-lg font-bold" style="font-family: {arch['font_head']}; color: var(--text-color);">{it['title']}</h4>
-            </div>
-            {desc_html}
-          </div>
-          <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
-            <span class="font-bold" style="color: var(--accent-color);">{price_display}</span>
-            <span style="color: var(--muted-color);">{it.get('category', 'Service')}</span>
-          </div>
-        </div>
-"""
-            bento_html = f"""
-  <!-- SERVICES BENTO GRID -->
-  <section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">{c['offering_kicker']}</p>
-        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">{c['offering_title']}</h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {bento_cards_html}
-      </div>
-    </div>
-  </section>
-"""
-
-        # Customer Reviews & Social Proof (Only if scraped reviews exist; never duplicated)
-        reviews_data = b.get("reviews", [])
-        if len(reviews_data) == 0:
-            proof_html = ""
-        elif len(reviews_data) <= 2:
-            # Static cards: clean quote layout without infinite marquee repetition
-            cards_markup = "".join([
-                f"""
-            <div class="p-8 rounded-3xl backdrop-blur-xl" style="background: var(--surface-card); border: 1px solid var(--border-color);">
-              <p class="text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">"{rev['quote']}"</p>
-              <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                <span class="font-bold" style="color: var(--accent-color);">{rev['author']}</span>
-                <span>{rev['source']}</span>
-              </div>
-            </div>
-"""
-                for rev in reviews_data
-            ])
-            proof_html = f"""
-  <!-- SOCIAL PROOF (STATIC CARDS) -->
-  <section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-12">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Client Feedback</p>
-        <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {arch['font_head']};">What customers say</h2>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards_markup}
-      </div>
-    </div>
-  </section>
-"""
-        else:
-            # 3+ reviews: single marquee pass (no 6x infinite repeat of a single review)
-            marquee_cards = "".join([
-                f"""
-                <div class="flex-shrink-0 w-[320px] md:w-[380px] p-6 rounded-2xl mx-3 backdrop-blur-xl" 
-                     style="background: var(--surface-card); border: 1px solid var(--border-color);">
-                  <p class="text-xs md:text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">
-                    "{rev['quote']}"
-                  </p>
-                  <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
-                    <span class="font-bold" style="color: var(--accent-color);">{rev['author']}</span>
-                    <span>{rev['source']}</span>
-                  </div>
-                </div>
-                """
-                for rev in reviews_data
-            ])
-            proof_html = f"""
-  <!-- SOCIAL PROOF (MARQUEE) -->
-  <section class="py-24 overflow-hidden relative" style="border-top: 1px solid var(--border-color);">
-    <div class="text-center mb-12">
-      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Client Feedback</p>
-      <h2 class="text-3xl md:text-4xl font-bold" style="font-family: {arch['font_head']};">What customers say</h2>
-    </div>
-    <div class="marquee-track flex animate-marquee whitespace-nowrap">
-      {marquee_cards}
-      {marquee_cards}
-    </div>
-  </section>
-"""
-
-        # Atmosphere & Space Gallery
-        gallery_html = f"""
-  <!-- SPACE & FACILITY GALLERY -->
-  <section id="gallery" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-6xl mx-auto">
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
-        <div>
-          <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">{c['atmosphere_kicker']}</p>
-          <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">{c['atmosphere_title']}</h2>
-        </div>
-        <p class="text-xs md:text-sm font-mono mt-4 md:mt-0" style="color: var(--muted-color);">{main_title} Facility</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
-          <img src="{gallery_1}" alt="{c['gallery_1']}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">{c['gallery_1']}</span>
-        </div>
-        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
-          <img src="{gallery_2}" alt="{c['gallery_2']}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">{c['gallery_2']}</span>
-        </div>
-        <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
-          <img src="{gallery_3}" alt="{c['gallery_3']}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">{c['gallery_3']}</span>
-        </div>
-      </div>
-    </div>
-  </section>
-"""
-
-        # How It Works (3 Steps)
-        steps = c["how_it_works_steps"]
-        steps_cards = "".join([
-            f"""
-        <div class="glass-panel p-8 rounded-3xl relative">
-          <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">{s[0]}</span>
-          <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: {arch['font_head']}; color: var(--text-color);">{s[1]}</h3>
-          <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">{s[2]}</p>
-        </div>
-"""
-            for s in steps
-        ])
-
-        journey_html = f"""
-  <!-- HOW IT WORKS -->
-  <section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
-    <div class="max-w-5xl mx-auto">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Direct Engagement Protocol</p>
-        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">How It Works</h2>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {steps_cards}
-      </div>
-    </div>
-  </section>
-"""
-
-        # Interactive Booking Module with Live JavaScript Link Updates
-        booking_type = c.get("booking_fields", "general")
-        if services_list and not is_sample_services:
-            svc_opts = "".join([f"<option>{s.get('title')}</option>" for s in services_list if s.get('title')])
-            service_field_html = f"""
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Service Package</label>
-          <select id="booking-service" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);">
-            {svc_opts}
-          </select>
-        </div>"""
-        else:
-            service_field_html = """
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Service Required</label>
-          <input id="booking-service" type="text" placeholder="e.g. Service inquiry" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>"""
-
-        if booking_type == "automotive":
-            input_fields_html = f"""
-        {service_field_html}
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Vehicle Model</label>
-          <input id="booking-detail" type="text" placeholder="e.g. Vehicle make and model" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Date</label>
-          <input id="booking-date" type="date" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-"""
-        elif booking_type == "dining":
-            input_fields_html = """
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Seating / Table</label>
-          <input id="booking-service" type="text" placeholder="e.g. Standard / Counter / Private" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Party Size</label>
-          <input id="booking-detail" type="text" placeholder="e.g. 2 Guests" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Date & Time</label>
-          <input id="booking-date" type="text" placeholder="e.g. Tomorrow 19:30" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-"""
-        else:
-            input_fields_html = f"""
-        {service_field_html}
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Details / Scope</label>
-          <input id="booking-detail" type="text" placeholder="e.g. Project overview" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-        <div>
-          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Date</label>
-          <input id="booking-date" type="date" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
-        </div>
-"""
-
         initial_booking_href = f"tel:{raw_phone}" if is_uk_landline else (f"https://wa.me/{clean_phone_digits}" if has_phone else "#contact")
         initial_btn_text = f"Call Directly: {raw_phone}" if is_uk_landline else ("Instant WhatsApp Direct" if has_phone else "[Inquire Directly]")
 
-        booking_module_html = f"""
-  <!-- INTERACTIVE BOOKING MODULE -->
-  <section id="reserve" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
-    <div class="max-w-4xl mx-auto glass-panel p-8 md:p-14 rounded-3xl text-center relative overflow-hidden">
-      <div class="inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase mb-4" style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--border-color);">
-        Direct Inquiries
-      </div>
-      <h2 class="text-3xl md:text-5xl font-bold mb-4" style="font-family: {arch['font_head']};">{c['booking_title']}</h2>
-      <p class="text-xs md:text-sm max-w-lg mx-auto mb-10 leading-relaxed" style="color: var(--muted-color);">
-        {c['booking_sub']}
-      </p>
+        philosophy_body_1 = c["philosophy_body_1"].format(
+            business_name=main_title, location=self.location.split(',')[0])
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8 text-left">
-        {input_fields_html}
-      </div>
+        # The PageContext — the narrow data contract the kit composes from.
+        ctx = {
+            "slug": self.slug,
+            "business_name": b["business_name"],
+            "main_title": main_title,
+            "sub_title": sub_title,
+            "tagline": b.get("tagline", ""),
+            "location": b["location"],
+            "city": self.location.split(',')[0],
+            "rating": b.get("rating"),
+            "rating_badge": (f"Serving {self.location.split(',')[0]} • {b['rating']}★ Public Acclaim"
+                             if b.get('rating') else
+                             f"Serving {self.location.split(',')[0]} • Professional Excellence"),
+            "phone": raw_phone,
+            "clean_phone_digits": clean_phone_digits,
+            "has_phone": has_phone,
+            "is_uk_landline": is_uk_landline,
+            "initial_booking_href": initial_booking_href,
+            "initial_btn_text": initial_btn_text,
+            "currency_symbol": curr,
+            "services": services_list,
+            "has_services": bool(services_list),
+            "is_sample_services": is_sample_services,
+            "show_sample": bool(show_sample),
+            "reviews": b.get("reviews", []),
+            "hours": b.get("hours"),
+            "faqs": c.get("faqs", []),
+            "steps": c.get("how_it_works_steps", []),
+            "booking_fields": c.get("booking_fields", "general"),
+            "photos_policy": assets.get("photos_policy", ""),
+            "hero_bg": assets.get("hero_bg"),
+            "bento_img1": assets.get("bento_img1"),
+            "bento_img2": assets.get("bento_img2"),
+            "gallery_1": assets.get("gallery_1"),
+            "gallery_2": assets.get("gallery_2"),
+            "gallery_3": assets.get("gallery_3"),
+            "copy": c,
+            "arch": arch,
+            "form_path": f"/api/leads/{self.slug}/contact",
+            "philosophy_body_1": philosophy_body_1,
+        }
 
-      <a id="whatsapp-direct-btn" href="{initial_booking_href}" 
-         target="_blank" rel="noopener noreferrer"
-         class="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full font-semibold text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
-         style="background: #25D366; color: #000;">
-        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-        <span id="booking-btn-text">{initial_btn_text}</span>
-      </a>
-      <p class="text-[10px] font-mono mt-3" style="color: var(--muted-color);">Direct communication with team. Zero booking commissions.</p>
-    </div>
-  </section>
-"""
-
-        # FAQs & Footer Section
-        faq_items = c.get("faqs", [])
-        faq_cards = "".join([
-            f"""
-        <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
-          <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: {arch['font_head']}; color: var(--text-color);">
-            <span>{faq[0]}</span>
-            <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
-          </summary>
-          <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
-            {faq[1]}
-          </p>
-        </details>
-"""
-            for faq in faq_items
-        ])
-
-        hours_line = f"<p>{b['hours']}</p>" if b.get('hours') else ""
-        phone_line = f"<p>Direct Telephone: <a href='tel:{b['phone']}' class='underline hover:opacity-80'>{b['phone']}</a></p>" if b.get('phone') else ""
-
-        footer_html = f"""
-  <!-- FAQ & FOOTER -->
-  <section id="contact" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
-    <div class="max-w-4xl mx-auto mb-16">
-      <div class="text-center max-w-2xl mx-auto mb-12">
-        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity & Access</p>
-        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {arch['font_head']};">Frequently Asked Questions</h2>
-      </div>
-      <div class="space-y-4">
-        {faq_cards}
-      </div>
-    </div>
-
-    <footer class="pt-16 pb-12 text-center relative overflow-hidden" style="border-top: 1px solid var(--border-color);">
-      <div class="max-w-4xl mx-auto mb-14">
-        <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Visit & Contact</p>
-        <h3 class="text-3xl md:text-4xl font-bold mb-6" style="font-family: {arch['font_head']};">{main_title}</h3>
-        <div class="text-xs font-mono space-y-1.5 mb-8" style="color: var(--muted-color);">
-          <p>{b['location']}</p>
-          {hours_line}
-          {phone_line}
-        </div>
-      </div>
-
-      <div class="w-full text-center select-none pointer-events-none opacity-10 mb-8">
-        <div class="text-[12vw] font-bold leading-none tracking-tighter uppercase font-serif" style="color: var(--text-color);">
-          {main_title}
-        </div>
-      </div>
-
-      <div class="pt-8 text-xs font-mono flex flex-col sm:flex-row justify-between items-center gap-4" 
-           style="border-top: 1px solid var(--border-color); color: var(--muted-color);">
-        <div>Independent concept preview presented for {main_title}. All rights reserved.</div>
-        <div>Crafted with Modern Web Standards.</div>
-      </div>
-    </footer>
-  </section>
-"""
-
-        starter_kit = get_demo_starter_kit(self.archetype_id)
-
-        full_html = f"""<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{main_title} — {b.get('tagline', '')}</title>
-  {starter_kit}
-  <style>
-    :root {{
-      --canvas: {arch['bg']};
-      --surface: {arch['surface']};
-      --surface-card: {arch['surface']}ee;
-      --raised: #ffffff;
-      --ink: {arch['text']};
-      --ink-2: {arch['muted']};
-      --bg-color: {arch['bg']};
-      --surface-color: {arch['surface']};
-      --accent-color: {arch['accent']};
-      --accent-secondary: {arch['accent_secondary']};
-      --on-accent: #ffffff;
-      --text-color: {arch['text']};
-      --muted-color: {arch['muted']};
-      --border-color: {arch['border']};
-      --line: rgba(29, 27, 32, .08);
-      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .06);
-      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .10);
-      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .16);
-      --accent-alpha15: {arch['accent']}26;
-      --accent-alpha30: {arch['accent']}4d;
-    }}
-    html.dark {{
-      --canvas: {arch['dark_bg']};
-      --surface: {arch['dark_surface']};
-      --surface-card: {arch['dark_surface']}ee;
-      --raised: #2A2A2A;
-      --ink: {arch['dark_text']};
-      --ink-2: {arch['dark_muted']};
-      --bg-color: {arch['dark_bg']};
-      --surface-color: {arch['dark_surface']};
-      --accent-color: {arch['dark_accent']};
-      --accent-secondary: {arch['dark_accent_secondary']};
-      --on-accent: #1D1B20;
-      --text-color: {arch['dark_text']};
-      --muted-color: {arch['dark_muted']};
-      --border-color: {arch['dark_border']};
-      --line: rgba(255, 255, 255, .08);
-      --shadow-resting: 0 1px 2px rgba(0, 0, 0, .3);
-      --shadow-hover: 0 8px 24px rgba(0, 0, 0, .4);
-      --shadow-modal: 0 24px 64px rgba(0, 0, 0, .6);
-      --accent-alpha15: {arch['dark_accent']}26;
-      --accent-alpha30: {arch['dark_accent']}4d;
-    }}
-    .glass-panel {{
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      background: var(--surface-card);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
-    }}
-    @supports not (backdrop-filter: blur(24px)) {{
-      .glass-panel {{ background: var(--surface-color); }}
-    }}
-    body {{
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: {arch['font_body']};
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }}
-    .spring-card {{
-      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
-    }}
-    .spring-card:hover {{
-      transform: translateY(-6px) scale(1.008);
-      border-color: var(--accent-color) !important;
-      box-shadow: 0 24px 48px -18px var(--accent-alpha30);
-    }}
-    @keyframes marquee {{
-      0% {{ transform: translateX(0%); }}
-      100% {{ transform: translateX(-50%); }}
-    }}
-    .animate-marquee {{
-      display: flex;
-      width: 200%;
-      animation: marquee 28s linear infinite;
-    }}
-    .animate-marquee:hover {{
-      animation-play-state: paused;
-    }}
-  </style>
-</head>
-<body class="antialiased selection:bg-teal-500 selection:text-white relative">
-  <div class="pointer-events-none fixed inset-0 opacity-[0.03] z-50 bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
-  {nav_html}
-  {hero_html}
-  {gap_banner_html}
-  {story_html}
-  {bento_html}
-  {proof_html}
-  {gallery_html}
-  {journey_html}
-  {booking_module_html}
-  {footer_html}
-
-  <script>
-    // Theme Switcher Logic
-    const toggleBtn = document.getElementById('theme-toggle');
-    const sunIcon = document.getElementById('theme-icon-sun');
-    const moonIcon = document.getElementById('theme-icon-moon');
-
-    function applyTheme(isDark) {{
-      if (isDark) {{
-        document.documentElement.classList.add('dark');
-        if (sunIcon) sunIcon.classList.remove('hidden');
-        if (sunIcon) sunIcon.classList.add('block');
-        if (moonIcon) moonIcon.classList.remove('block');
-        if (moonIcon) moonIcon.classList.add('hidden');
-      }} else {{
-        document.documentElement.classList.remove('dark');
-        if (sunIcon) sunIcon.classList.remove('block');
-        if (sunIcon) sunIcon.classList.add('hidden');
-        if (moonIcon) moonIcon.classList.remove('hidden');
-        if (moonIcon) moonIcon.classList.add('block');
-      }}
-    }}
-
-    const savedTheme = localStorage.getItem('theme-pref');
-    applyTheme(savedTheme === 'dark');
-
-    if (toggleBtn) {{
-      toggleBtn.addEventListener('click', () => {{
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme-pref', isDark ? 'dark' : 'light');
-        applyTheme(isDark);
-      }});
-    }}
-
-    // Interactive Booking Script: Updates destination link dynamically on user input
-    (function initBookingModule() {{
-      const BUSINESS = {{
-        name: {json.dumps(main_title)},
-        phone: {json.dumps(raw_phone or "")},
-        cleanPhone: {json.dumps(clean_phone_digits)},
-        isLandline: {json.dumps(is_uk_landline)},
-        hasPhone: {json.dumps(has_phone)}
-      }};
-
-      const serviceEl = document.getElementById('booking-service');
-      const detailEl = document.getElementById('booking-detail');
-      const dateEl = document.getElementById('booking-date');
-      const bookBtn = document.getElementById('whatsapp-direct-btn');
-      const btnText = document.getElementById('booking-btn-text');
-
-      function updateBookingLink() {{
-        if (!bookBtn) return;
-        if (!BUSINESS.hasPhone) {{
-          bookBtn.href = '#contact';
-          if (btnText) btnText.innerText = 'Contact Directly';
-          return;
-        }}
-
-        const s = serviceEl ? serviceEl.value : '';
-        const d = detailEl ? detailEl.value : '';
-        const t = dateEl ? dateEl.value : '';
-
-        if (BUSINESS.isLandline) {{
-          bookBtn.href = 'tel:' + BUSINESS.phone;
-          if (btnText) btnText.innerText = 'Call Directly: ' + BUSINESS.phone;
-          return;
-        }}
-
-        let msg = 'Hello ' + BUSINESS.name + ', I would like to inquire about booking:';
-        if (s) msg += '\\n- Service: ' + s;
-        if (d) msg += '\\n- Details: ' + d;
-        if (t) msg += '\\n- Preferred Date: ' + t;
-
-        bookBtn.href = 'https://wa.me/' + BUSINESS.cleanPhone + '?text=' + encodeURIComponent(msg);
-      }}
-
-      if (serviceEl) serviceEl.addEventListener('change', updateBookingLink);
-      if (detailEl) detailEl.addEventListener('input', updateBookingLink);
-      if (dateEl) dateEl.addEventListener('change', updateBookingLink);
-      updateBookingLink();
-    }})();
-
-    document.addEventListener('DOMContentLoaded', () => {{
-      if (typeof anime !== 'undefined') {{
-        anime.timeline({{ easing: 'easeOutExpo' }})
-          .add({{
-            targets: '.reveal-el',
-            translateY: [35, 0],
-            opacity: [0, 1],
-            delay: anime.stagger(140),
-            duration: 1000
-          }})
-          .add({{
-            targets: '.spring-card',
-            translateY: [25, 0],
-            opacity: [0, 1],
-            delay: anime.stagger(90),
-            duration: 900
-          }}, '-=600');
-      }}
-    }});
-  </script>
-</body>
-</html>
-"""
+        # THE SECTION KIT — compose, never hand-weave (the Webild steal, done
+        # the Ghost way: pre-validated components, deterministic planner with
+        # written reasons, photo doctrine enforced structurally).
+        from ghost.workers.section_kit import (compose_page, ensure_vendor,
+                                               plan_sections, write_section_map)
+        plan = plan_sections(ctx)
+        omitted = [p["name"] for p in plan if not p.get("include")]
+        if omitted:
+            logger.info(f"Section planner omitted: {omitted}")
+        full_html, section_records = compose_page(
+            plan, ctx, arch, starter_kit=get_demo_starter_kit(self.archetype_id))
+        ensure_vendor(self.out_dir)
         with open(self.html_path, "w", encoding="utf-8") as f:
             f.write(full_html)
+        write_section_map(self.out_dir, section_records, ctx)
+        self.section_records = section_records
+        self.section_plan = plan
 
-        logger.info(f"Phase 3 Complete: Full sectional HTML built at {self.html_path} ({len(full_html)} bytes)")
+        logger.info(f"Phase 3 Complete: composed {len(section_records)} kit sections "
+                    f"at {self.html_path} ({len(full_html)} bytes)")
         return full_html
 
     # =========================================================================
@@ -2046,6 +1412,34 @@ class AutonomousDemoStateMachine:
             audit["note"] = f"Visual assertion completed with local fallback: {e}"
 
         self.audit_results = audit
+
+        # reports/qa.json — the composed-page QA contract. Evidence or it
+        # didn't happen: no real screenshots => passed=False, mode "none",
+        # status inconclusive (the deploy gate refuses on exactly this).
+        shots = [p for p in (audit.get("screenshots") or {}).values()
+                 if p and os.path.isfile(p)]
+        overflow = bool(audit.get("layout_overflow"))
+        qa = {
+            "passed": bool(shots) and not overflow,
+            "mode": "cdp" if shots else "none",
+            "status": ("passed" if (shots and not overflow)
+                       else ("inconclusive" if not shots else "failed")),
+            "screenshots_captured": len(shots),
+            "screenshots": shots,
+            "human_review": {"screenshots": shots},
+            "checks": {
+                "layout_overflow": overflow,
+                "viewports_tested": audit.get("viewports_tested", []),
+                "note": audit.get("note", ""),
+            },
+            "sections": [r.get("name") for r in getattr(self, "section_records", [])],
+            "builder": "demo_state_machine/section_kit",
+        }
+        reports_dir = os.path.join(self.out_dir, "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        with open(os.path.join(reports_dir, "qa.json"), "w", encoding="utf-8") as f:
+            json.dump(qa, f, indent=2)
+
         logger.info(f"Phase 4 Complete: Viewports verified. Screenshots: {audit.get('screenshots')}")
         return audit
 

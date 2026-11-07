@@ -1,0 +1,32 @@
+<!-- SPACE & FACILITY GALLERY -->
+<section id="gallery" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+      <div>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">{{ copy.atmosphere_kicker }}</p>
+        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {{ arch.font_head }};">{{ copy.atmosphere_title }}</h2>
+      </div>
+      <p class="text-xs md:text-sm font-mono mt-4 md:mt-0" style="color: var(--muted-color);">{{ main_title }} Facility</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {% for slot_name, caption in [('gallery_1', copy.gallery_1), ('gallery_2', copy.gallery_2), ('gallery_3', copy.gallery_3)] %}
+      {% set src = context.get(slot_name) %}
+      {% if src %}
+      <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+        <img src="{{ src }}" alt="{{ caption }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">{{ caption }}</span>
+      </div>
+      {% else %}
+      <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center glass-panel"
+           style="border: 1px dashed var(--border-color);">
+        <div class="text-center px-6">
+          <p class="text-xs uppercase tracking-[0.3em] font-mono mb-2" style="color: var(--accent-color);">{{ caption }}</p>
+          <p class="text-[11px] font-mono" style="color: var(--muted-color);">[Inquire for quotation: photography]</p>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>

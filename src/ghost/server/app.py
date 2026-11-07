@@ -2,6 +2,7 @@
 import asyncio
 import json
 import os
+import re
 import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
@@ -681,6 +682,73 @@ async def razorpay_webhook(request: Request):
                                      invoice_lookup, JobQueue().enqueue)
     status_code = 200 if result.get("status") in ("verified", "duplicate") else 400
     return JSONResponse(status_code=status_code, content=result)
+
+
+@app.post("/api/leads/{slug}/contact")
+async def lead_contact_form(slug: str, request: Request):
+    """The leads inbox (the Webild steal): a visitor's inquiry from a
+    Ghost-built site. Public but machine-local (verify_localhost — same rule
+    that serves the demos). The message is UNTRUSTED: it goes through the T7
+    quarantine (inside ingest_reply) before any bookkeeping, the submission is
+    deduped, and the operator is pinged on every real one."""
+    import hashlib
+    from ghost.crm.db import CRMDatabase
+    from ghost.autonomy.reply_loop import ingest_reply
+    from ghost.workers.suppression import SuppressionManager
+    from ghost.autonomy.ladder import AutonomyLadder
+    from ghost.core.audit import audit as ledger_audit
+
+    verify_localhost(request)
+    if not re.fullmatch(r"[a-z0-9-]+", slug or ""):
+        raise HTTPException(status_code=400, detail="bad slug")
+
+    form = await request.form()
+    if form.get("company_website"):
+        return {"status": "ignored"}  # honeypot: bots get 200 and nothing else
+    name = str(form.get("name", "")).strip()[:120]
+    contact = str(form.get("contact", "")).strip()[:200]
+    message = str(form.get("message", "")).strip()[:2000]
+    if not message or not (name or contact):
+        raise HTTPException(status_code=400, detail="name/contact and message are required")
+
+    crm = CRMDatabase.get_instance()
+    lead = crm.get_lead(slug)
+    if not lead:
+        raise HTTPException(status_code=404,
+                            detail=f"No lead {slug!r} — a form names its own site; never invent one.")
+
+    dedup_id = "form:" + hashlib.sha256(
+        f"{slug}|{name}|{contact}|{message}".encode("utf-8")).hexdigest()
+    if crm.has_processed_event(dedup_id):
+        return {"status": "duplicate", "slug": slug}
+    crm.record_processed_event(dedup_id, "web_form")
+
+    body_text = f"Website inquiry from {name or 'a visitor'} <{contact}>: {message}"
+    verdict_out = ingest_reply(slug, body_text,
+                               suppression=SuppressionManager(crm=crm),
+                               crm=crm, ladder=AutonomyLadder())
+    quarantined = bool(verdict_out.get("quarantined"))
+
+    # Remember the visitor's address for future matching — unless the text
+    # was quarantined (untrusted content never writes into the CRM profile).
+    if contact and "@" in contact and not quarantined:
+        try:
+            lead_data = dict(lead)
+            if not lead_data.get("email"):
+                lead_data["email"] = contact.strip()
+                crm.add_or_update_lead(lead_data)
+        except Exception:
+            pass
+
+    ledger_audit("lead.form_submission", subject=slug,
+                 name=name, contact=contact, quarantined=quarantined,
+                 ping="(c) unverifiable: new website form lead — review in Pipeline")
+    try:
+        from ghost.server.agency_api import broadcast_agency_event
+        broadcast_agency_event("lead_form_submission", {"slug": slug, "name": name})
+    except Exception:
+        pass
+    return {"status": "quarantined" if quarantined else "received", "slug": slug}
 
 
 @app.get("/api/retainers")

@@ -1,0 +1,52 @@
+<!-- SERVICES BENTO GRID -->
+{% if is_sample_services %}
+<section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Sample Layout</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {{ arch.font_head }};">Example service layout (replace with your real services)</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {% for it in services[:4] %}
+      <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between"
+           style="background: var(--surface-card); border: 1px solid var(--border-color);">
+        <div>
+          <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
+            <h4 class="text-lg font-bold" style="font-family: {{ arch.font_head }}; color: var(--text-color);">{{ it.title }}</h4>
+          </div>
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
+          <span style="color: var(--muted-color);">{{ it.category or 'Category' }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% else %}
+<section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">{{ copy.offering_kicker }}</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: {{ arch.font_head }};">{{ copy.offering_title }}</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {% for it in services[:4] %}
+      <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between"
+           style="background: var(--surface-card); border: 1px solid var(--border-color);">
+        <div>
+          <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
+            <h4 class="text-lg font-bold" style="font-family: {{ arch.font_head }}; color: var(--text-color);">{{ it.title }}</h4>
+          </div>
+          {% if it.desc %}<p class="text-xs leading-relaxed mb-6" style="color: var(--muted-color);">{{ it.desc }}</p>{% endif %}
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
+          <span class="font-bold" style="color: var(--accent-color);">{% if it.price %}{{ currency_symbol }}{{ it.price }}{% endif %}</span>
+          <span style="color: var(--muted-color);">{{ it.category or 'Service' }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}

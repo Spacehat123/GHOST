@@ -1,0 +1,38 @@
+<!-- PHILOSOPHY & STANDARDS -->
+<section id="philosophy" class="py-24 px-6 md:px-16 relative">
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+    <div>
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">{{ copy.philosophy_kicker }}</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6" style="font-family: {{ arch.font_head }};">
+        {{ copy.philosophy_title }}
+      </h2>
+      <p class="text-sm md:text-base leading-relaxed mb-6" style="color: var(--text-color); opacity: 0.9;">
+        {{ philosophy_body_1 }}
+      </p>
+      <p class="text-xs md:text-sm leading-relaxed mb-8" style="color: var(--muted-color);">
+        {{ copy.philosophy_body_2 }}
+      </p>
+    </div>
+    <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
+      {% if bento_img1 %}
+      <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
+        <img src="{{ bento_img1 }}" alt="{{ main_title }} Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
+        <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+          <p class="text-xs italic" style="color: var(--text-color);">"{{ copy.quote_text }}"</p>
+          <p class="text-[10px] font-mono mt-1 font-bold" style="color: var(--accent-color);">— {{ copy.quote_attribution }}</p>
+        </div>
+      </div>
+      {% else %}
+      <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden flex items-center justify-center"
+           style="background: var(--surface-color); border: 1px dashed var(--border-color);">
+        <div class="text-center px-8">
+          <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Photography</p>
+          <p class="text-sm md:text-base font-mono" style="color: var(--muted-color);">[Inquire for quotation: photography]</p>
+          <p class="text-[10px] font-mono mt-4" style="color: var(--muted-color); opacity: 0.7;">This concept uses only {{ main_title }}'s real photographs</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>

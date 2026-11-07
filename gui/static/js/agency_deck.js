@@ -100,6 +100,7 @@
     followup_drafted: 'kanban', reply_complaint: 'kanban',
     reply_quarantined: 'kanban', health_incident: 'autonomy',
     intake_unmatched: 'notifications', ladder_unlock_available: 'autonomy',
+    lead_form_submission: 'kanban',
   };
 
   function badgeTab(viewId, count = 1) {

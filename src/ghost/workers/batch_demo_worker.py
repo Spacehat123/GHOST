@@ -219,7 +219,7 @@ class BatchDemoWorker:
                 if mock_screenshot_provider is not None:
                     mock_screenshot_provider(sm.out_dir)
                 else:
-                    await sm.run_phase4_render_verification()
+                    await sm.run_phase4_visual_verification()
         else:
             await sm.run_phase1_recon()
             await sm.run_phase2_design_brief()
@@ -227,7 +227,7 @@ class BatchDemoWorker:
             if mock_screenshot_provider is not None:
                 mock_screenshot_provider(sm.out_dir)
             else:
-                await sm.run_phase4_render_verification()
+                await sm.run_phase4_visual_verification()
 
         # 4. Quality Gates Verification (Section 3.3)
         passed, gate_error = run_quality_gates(slug=slug, domain=domain, demo_dir=sm.out_dir)

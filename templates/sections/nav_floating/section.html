@@ -1,0 +1,27 @@
+<!-- NAVIGATION -->
+<header class="fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300">
+  <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3 rounded-full backdrop-blur-xl"
+       style="background: var(--surface-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-resting);">
+    <a href="#" class="font-bold tracking-tight text-sm md:text-base" style="font-family: {{ arch.font_head }}; color: var(--text-color);">
+      {{ main_title }}
+    </a>
+    <div class="hidden md:flex items-center gap-8 text-xs uppercase tracking-wider font-mono" style="color: var(--muted-color);">
+      {% if 'services_bento' in present_ids %}<a href="#services" class="hover:opacity-70 transition-opacity">Services</a>{% endif %}
+      <a href="#philosophy" class="hover:opacity-70 transition-opacity">Standards</a>
+      {% if 'gallery_strip' in present_ids %}<a href="#gallery" class="hover:opacity-70 transition-opacity">Facility</a>{% endif %}
+      <a href="#reserve" class="hover:opacity-70 transition-opacity">Booking</a>
+      {% if 'lead_capture' in present_ids %}<a href="#contact" class="hover:opacity-70 transition-opacity">Contact</a>{% endif %}
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-transform active:scale-90"
+              style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">
+        <span id="theme-icon-sun" class="hidden text-xs">☀️</span>
+        <span id="theme-icon-moon" class="block text-xs">🌙</span>
+      </button>
+      <a href="#reserve" class="px-5 py-2 rounded-full text-xs font-mono uppercase tracking-wider font-semibold transition-all hover:opacity-90"
+         style="background: var(--accent-color); color: var(--on-accent);">
+        {{ copy.cta_primary }}
+      </a>
+    </div>
+  </div>
+</header>
