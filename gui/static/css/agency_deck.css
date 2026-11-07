@@ -594,3 +594,90 @@
 #notifications-list > div > div {
   padding: 7px 0;
 }
+
+/* ------- stolen-good ideas from the windowed-UI brief, tab-sized ------- */
+
+/* Follow-mode tab badge: a quiet dot that counts real events */
+.deck-tab-btn { position: relative; }
+.tab-badge {
+  display: none;
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--deck-accent-primary);
+  color: #fff;
+  font: 600 9px/14px var(--deck-font-mono);
+  text-align: center;
+  padding: 0 3px;
+}
+.tab-badge.on { display: inline-block; animation: badgeIn 0.25s ease; }
+@keyframes badgeIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Command palette */
+.cmdk-card {
+  width: 92%;
+  max-width: 560px;
+  background: #0c0d12;
+  border: 1px solid var(--deck-border-strong);
+  border-radius: 12px;
+  padding: 12px;
+}
+#cmdk-input {
+  width: 100%;
+  background: var(--deck-card);
+  border: 1px solid var(--deck-border);
+  border-radius: 7px;
+  padding: 10px 14px;
+  color: var(--deck-text-main);
+  font-size: 14px;
+  outline: none;
+}
+#cmdk-input:focus { border-color: var(--deck-border-focus); }
+#cmdk-results { margin-top: 8px; max-height: 320px; overflow-y: auto; }
+.cmdk-item {
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--deck-text-muted);
+  cursor: pointer;
+}
+.cmdk-item.sel, .cmdk-item:hover {
+  background: rgba(255, 46, 99, 0.08);
+  color: var(--deck-text-main);
+}
+.cmdk-hint {
+  margin-top: 8px;
+  font: 500 10px var(--deck-font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--deck-text-faint);
+  text-align: center;
+}
+
+/* Skeletons — loading states, not spinners (brief §6) */
+.skel {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+  border-radius: 6px;
+  height: 14px;
+  margin: 8px 0;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Amber chrome for reserved acts — the one warm warning in the room */
+.auth-card.reserved, .reserved-chrome {
+  border-color: rgba(229, 181, 103, 0.55) !important;
+}
+.auth-card.reserved .auth-tag, .reserved-chrome .auth-tag {
+  color: var(--deck-accent-warning) !important;
+}
+
+/* Reduced motion: the whole deck goes still */
+@media (prefers-reduced-motion: reduce) {
+  .deck-view, .tab-badge, .deck-btn-highlight, .skel { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

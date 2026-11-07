@@ -583,3 +583,7 @@ body.clean-focus {
 /* emoji glyphs obey the monochrome language */
 .hud-btn-icon-link { filter: grayscale(1); opacity: 0.85; }
 .hud-btn-icon-link:hover { filter: grayscale(1); opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition-duration: 0.01ms !important; }
+}

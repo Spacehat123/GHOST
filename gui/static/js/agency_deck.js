@@ -84,9 +84,50 @@
     };
   }
 
+  // Follow mode (stolen from the windowed-UI brief, tab-sized): real events
+  // from the SAME WS feed badge the tab that owns them — never fake activity,
+  // never a popup, never focus theft. Clicking the tab clears its badge.
+  const EVENT_TAB_MAP = {
+    lead_hunt_completed: 'kanban', lead_replied: 'kanban',
+    campaign_created: 'campaigns', batch_started: 'campaigns',
+    batch_harvest_started: 'campaigns',
+    domain_confirmed: 'confirmation', dossier_built: 'dossiers',
+    demo_opened: 'demos', demo_host_authorized: 'demos', demo_hosted: 'demos',
+    payment_verified: 'payments', deposit_received: 'payments',
+    payment_link_created_real: 'payments', payment_upi_uri_issued: 'payments',
+    fixer_staged: 'fixes', fixer_report_received: 'fixes',
+    client_photos_received: 'payments',
+    followup_drafted: 'kanban', reply_complaint: 'kanban',
+    reply_quarantined: 'kanban', health_incident: 'autonomy',
+    intake_unmatched: 'notifications', ladder_unlock_available: 'autonomy',
+  };
+
+  function badgeTab(viewId, count = 1) {
+    const btn = document.querySelector(`.deck-tab-btn[data-view="${viewId}"]`);
+    if (!btn) return;
+    if (btn.classList.contains('active')) return;   // you're already looking
+    let dot = btn.querySelector('.tab-badge');
+    if (!dot) {
+      dot = document.createElement('span');
+      dot.className = 'tab-badge';
+      btn.appendChild(dot);
+    }
+    dot.dataset.count = String((parseInt(dot.dataset.count || '0', 10)) + count);
+    dot.classList.add('on');
+  }
+
+  function clearTabBadge(viewId) {
+    const btn = document.querySelector(`.deck-tab-btn[data-view="${viewId}"]`);
+    if (btn) {
+      const dot = btn.querySelector('.tab-badge');
+      if (dot) { dot.dataset.count = '0'; dot.classList.remove('on'); }
+    }
+  }
+
   function handleLiveEvent(evt) {
     appendActivityLog(evt);
-    // Refresh kanban or queue on relevant state changes
+    const tab = EVENT_TAB_MAP[evt.type];
+    if (tab) badgeTab(tab);
     if (['campaign_created', 'batch_started', 'lead_opted_out', 'contract_drafted', 'domain_confirmed'].includes(evt.type)) {
       loadLeads();
     }
@@ -102,19 +143,34 @@
       view.classList.toggle('active', view.id === `view-${viewId}`);
     });
 
-    if (viewId === 'kanban') loadLeads();
-    if (viewId === 'campaigns') loadCampaigns();
-    if (viewId === 'confirmation') loadConfirmationQueue();
-    if (viewId === 'demos') loadDemos();
-    if (viewId === 'dossiers') loadDossiers();
-    if (viewId === 'microjobs') loadMicrojobs();
-    if (viewId === 'payments') loadPayments();
-    if (viewId === 'fixes') loadFixes();
-    if (viewId === 'autonomy') loadAutonomy();
-    if (viewId === 'notifications') loadNotifications();
-    if (viewId === 'templates') loadTemplates();
-    if (viewId === 'suppression') loadSuppression();
-    if (viewId === 'events') loadEvents();
+    clearTabBadge(viewId);
+    safeLoad(viewId);
+  }
+
+  // per-tab crash isolation (brief §3, tab-sized): a broken panel shows the
+  // error in ITS pane and never takes down the deck
+  function safeLoad(viewId) {
+    const loaders = {
+      kanban: loadLeads, campaigns: loadCampaigns,
+      confirmation: loadConfirmationQueue, demos: loadDemos,
+      dossiers: loadDossiers, microjobs: loadMicrojobs,
+      payments: loadPayments, fixes: loadFixes, autonomy: loadAutonomy,
+      notifications: loadNotifications, templates: loadTemplates,
+      suppression: loadSuppression, events: loadEvents,
+    };
+    const fn = loaders[viewId];
+    if (!fn) return;
+    try {
+      fn();
+    } catch (e) {
+      console.error(`panel ${viewId} crashed:`, e);
+      const el = document.getElementById(`view-${viewId}`);
+      if (el) {
+        const box = el.querySelector('.deck-panel-box') || el;
+        box.insertAdjacentHTML('beforeend',
+          `<div class="deck-alert deck-alert-danger" style="margin-top:12px;">⚠ This panel crashed: ${String(e && e.message || e).slice(0, 120)}. Everything else keeps running.</div>`);
+      }
+    }
   }
 
   // ---- P9: the single-window operator panels --------------------------------
@@ -325,6 +381,91 @@
     document.getElementById('digest-text').textContent = markdown;
     document.getElementById('digest-view').scrollIntoView({ behavior: 'smooth' });
   }
+
+  function openDeck() {
+    const overlay = document.getElementById('deck-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+  }
+  window.openDeck = openDeck;
+
+  // Command palette (Ctrl+K) — brief §2, tab-sized. Opens panels + the two
+  // safety actions. No auto-clicking anything reserved: halt/resume are the
+  // operator's own keystrokes, audited as usual.
+  const CMDK_COMMANDS = [
+    { label: 'Open Pipeline', run: () => { openDeck(); switchView('kanban'); } },
+    { label: 'Open Campaigns', run: () => { openDeck(); switchView('campaigns'); } },
+    { label: 'Open Confirmation Queue', run: () => { openDeck(); switchView('confirmation'); } },
+    { label: 'Open Demos', run: () => { openDeck(); switchView('demos'); } },
+    { label: 'Open Dossiers', run: () => { openDeck(); switchView('dossiers'); } },
+    { label: 'Open Micro-jobs', run: () => { openDeck(); switchView('microjobs'); } },
+    { label: 'Open Payments', run: () => { openDeck(); switchView('payments'); } },
+    { label: 'Open Site Fixes', run: () => { openDeck(); switchView('fixes'); } },
+    { label: 'Open Autonomy', run: () => { openDeck(); switchView('autonomy'); } },
+    { label: 'Open Notifications', run: () => { openDeck(); switchView('notifications'); } },
+    { label: 'Open Templates', run: () => { openDeck(); switchView('templates'); } },
+    { label: 'Open Suppression', run: () => { openDeck(); switchView('suppression'); } },
+    { label: 'Open Activity Log', run: () => { openDeck(); switchView('events'); } },
+    { label: '🛑 HALT — freeze all outbound', run: () => { deckFetch('/api/halt', { method: 'POST', body: JSON.stringify({ reason: 'command palette' }) }).then(loadOperator); } },
+    { label: '▶ Resume after halt', run: () => { deckFetch('/api/halt/resume', { method: 'POST' }).then(loadOperator); } },
+  ];
+  let cmdkIndex = 0;
+
+  function cmdkOpen() {
+    const backdrop = document.getElementById('cmdk-backdrop');
+    if (!backdrop) return;
+    backdrop.classList.remove('hidden');
+    const input = document.getElementById('cmdk-input');
+    input.value = '';
+    cmdkIndex = 0;
+    cmdkRender('');
+    input.focus();
+  }
+
+  function cmdkClose() {
+    const backdrop = document.getElementById('cmdk-backdrop');
+    if (backdrop) backdrop.classList.add('hidden');
+  }
+
+  function cmdkRender(filter) {
+    const box = document.getElementById('cmdk-results');
+    if (!box) return;
+    const f = (filter || '').toLowerCase();
+    const items = CMDK_COMMANDS.filter(c => c.label.toLowerCase().includes(f));
+    cmdkIndex = Math.min(cmdkIndex, Math.max(0, items.length - 1));
+    box.innerHTML = items.map((c, i) =>
+      `<div class="cmdk-item${i === cmdkIndex ? ' sel' : ''}" data-i="${i}">${c.label}</div>`).join('')
+      || '<div class="cmdk-item">no matching command</div>';
+    box._items = items;
+  }
+
+  function cmdkRun() {
+    const box = document.getElementById('cmdk-results');
+    const item = box && box._items && box._items[cmdkIndex];
+    cmdkClose();
+    if (item) { try { item.run(); } catch (e) { console.error('cmdk action failed:', e); } }
+  }
+
+  (function cmdkWire() {
+    document.addEventListener('keydown', (e) => {
+      const backdrop = document.getElementById('cmdk-backdrop');
+      const open = backdrop && !backdrop.classList.contains('hidden');
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        open ? cmdkClose() : cmdkOpen();
+        return;
+      }
+      if (!open) return;
+      if (e.key === 'Escape') { e.preventDefault(); cmdkClose(); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); cmdkIndex = Math.min(cmdkIndex + 1, (document.getElementById('cmdk-results')._items || []).length - 1); cmdkRender(document.getElementById('cmdk-input').value); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); cmdkIndex = Math.max(cmdkIndex - 1, 0); cmdkRender(document.getElementById('cmdk-input').value); }
+      if (e.key === 'Enter') { e.preventDefault(); cmdkRun(); }
+    });
+    document.addEventListener('click', (e) => {
+      const item = e.target.closest('.cmdk-item');
+      if (item && item.dataset.i !== undefined) { cmdkIndex = parseInt(item.dataset.i, 10); cmdkRun(); }
+    });
+  })();
+
   window.deckOpenDossier = deckOpenDossier;
   window.deckApproveFix = deckApproveFix;
   window.deckRaiseLadder = deckRaiseLadder;

@@ -154,7 +154,7 @@
 
   <!-- Tactical Authorization Modal (Human-In-The-Loop) -->
   <div id="auth-modal" class="modal-backdrop hidden">
-    <div class="modal-card auth-card">
+    <div class="modal-card auth-card reserved">
       <div class="auth-header">
         <div class="auth-tag">⚠️ TACTICAL AUTHORIZATION REQUIRED</div>
       </div>
@@ -497,5 +497,16 @@
   <script src="/static/js/orb.js"></script>
   <script src="/static/js/app.js"></script>
   <script src="/static/js/agency_deck.js"></script>
+
+<!-- Command palette (Ctrl+K) — stolen-good idea, tab-sized -->
+<div id="cmdk-backdrop" class="modal-backdrop hidden">
+  <div class="cmdk-card">
+    <input id="cmdk-input" type="text" placeholder="Type a command — open a panel, halt, resume…"
+           autocomplete="off" spellcheck="false">
+    <div id="cmdk-results" role="listbox" aria-label="Commands"></div>
+    <div class="cmdk-hint">↑↓ to choose · Enter to run · Esc to close</div>
+  </div>
+</div>
+
 </body>
 </html>

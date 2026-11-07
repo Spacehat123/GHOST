@@ -172,8 +172,11 @@ class TestTabWiring(unittest.TestCase):
                   encoding="utf-8").read()
         views = set(re.findall(r'data-view="([a-z]+)"', html))
         self.assertTrue(views, "the deck nav must define tabs")
-        missing = [v for v in sorted(views)
-                   if not re.search(rf"viewId === '{v}'\)\s+load\w+\(\)", js)]
+        # the loaders map inside safeLoad is the single source of truth
+        map_match = re.search(r"const loaders = \{(.*?)\};", js, re.S)
+        self.assertTrue(map_match, "safeLoad's loaders map is missing")
+        loader_keys = set(re.findall(r"(\w+):\s*load\w+", map_match.group(1)))
+        missing = [v for v in sorted(views) if v not in loader_keys]
         self.assertEqual(missing, [], f"tabs without loaders: {missing}")
         # and every view section exists
         for v in views:
