@@ -881,6 +881,7 @@ async def payments_overview():
         "upi": bool(_payments_upi_id()),
         "manual_bank": True,
     }
+    from ghost.workers.seo_pack import website_ready_for_build
     deals = []
     for client in crm.list_clients():
         slug = client.get("slug")
@@ -891,6 +892,12 @@ async def payments_overview():
                     if f.endswith("-qr.png")]
         if not docs and not client.get("deal_value"):
             continue
+        gate = website_ready_for_build(slug, crm=crm)
+        seo_pack_dir = None
+        for d in docs:
+            if d.get("path", "").endswith("seo_pack"):
+                seo_pack_dir = d["path"]
+        pack_built = os.path.isdir(seo_pack_dir) if seo_pack_dir else False
         deals.append({
             "slug": slug,
             "business": client.get("business_name"),
@@ -900,9 +907,31 @@ async def payments_overview():
                            "status": d.get("status"), "file": os.path.basename(d.get("path", ""))}
                           for d in docs[:8]],
             "qr_artifacts": qr_files[:4],
+            "photos_received": gate.get("ready", False),
+            "photos_note": gate.get("reason", ""),
+            "seo_pack_built": pack_built,
         })
     return {"rail": rail, "deals": deals,
             "note": "collect-only: Ghost accepts money, it never sends it"}
+
+
+@agency_router.get("/leads/{lead_id_or_slug}/seo-pack/file/{name}",
+                   dependencies=[Depends(verify_auth_token)])
+async def seo_pack_file(lead_id_or_slug: str, name: str):
+    """Read one markdown/txt file from the lead's SEO pack (validated — the
+    pack ships checklists and ask-texts the operator reads in the deck)."""
+    if not name.endswith((".md", ".txt")):
+        name += ".md"          # the deck passes the bare stem
+    import re as _re
+    if not _re.fullmatch(r"[a-z_]+\.(md|txt)", name):
+        raise HTTPException(status_code=400, detail="bad file name")
+    from ghost.workers.seo_pack import build_seo_pack
+    # regenerate if missing (idempotent, facts-only)
+    out = build_seo_pack(lead_id_or_slug)
+    path = os.path.join(out["dir"], name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="no such file in the pack")
+    return {"name": name, "markdown": open(path, encoding="utf-8").read()}
 
 
 def _payments_upi_id() -> Optional[str]:

@@ -1101,6 +1101,36 @@ class AutonomousDemoStateMachine:
             "staged photo filled.\n\n```markdown\n"
             + content + "\n```\n")
 
+    def _svg_decor_section(self) -> str:
+        """Vendor svg.js into the build and bind the decorative-SVG rules:
+        self-drawing line art, animated underlines, hand-drawn dividers —
+        once, tasteful, reduced-motion aware, aria-hidden."""
+        import shutil
+        try:
+            from ghost.paths import repo_root
+            vendor_src = os.path.join(repo_root(), "templates", "svg", "svg.min.js")
+            vendor_dir = os.path.join(self.out_dir, "assets", "vendor")
+            os.makedirs(vendor_dir, exist_ok=True)
+            shutil.copy(vendor_src, os.path.join(vendor_dir, "svg.min.js"))
+        except Exception as e:
+            logger.warning("svg.js vendoring skipped: %s", e)
+            return ""
+        try:
+            from ghost.paths import repo_root as _rr
+            with open(os.path.join(_rr(), "context", "skills", "svg_decor",
+                                   "SKILL.md"), "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            logger.warning("svg_decor skill unreadable: %s", e)
+            content = "Max two drawn elements per page; stroke-only; draw once; reduced-motion off."
+        return (
+            "\n\n## SVG DECOR — available and bounded\n\n"
+            "`@svgdotjs/svg.js` v3.2.4 is vendored at `assets/vendor/svg.min.js` "
+            "(load it with a normal `<script src>` if the design uses it). "
+            "Allowed: ONE self-drawing line-art element, hand-drawn section "
+            "dividers, CSS underlines. Follow the rules verbatim:\n\n"
+            "```markdown\n" + content + "\n```\n")
+
     async def run_phase2_design_brief(self) -> str:
         """
         Synthesizes exact design tokens, hex codes, typography pairings,
@@ -1170,6 +1200,7 @@ class AutonomousDemoStateMachine:
 """
         with open(self.brief_path, "w", encoding="utf-8") as f:
             brief_content += self._house_style_section()
+            brief_content += self._svg_decor_section()
             f.write(brief_content)
 
         logger.info(f"Phase 2 Complete: DESIGN_BRIEF.md written to {self.brief_path}")

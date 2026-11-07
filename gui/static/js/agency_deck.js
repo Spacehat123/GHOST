@@ -181,8 +181,56 @@
           ${d.documents.map(x => `📄 ${x.kind} v${x.version} (${x.status})`).join(' · ') || 'no closing documents yet'}
         </div>
         ${d.qr_artifacts.length ? `<div style="font-size:0.85em; opacity:0.8;">🔗 QR artifacts: ${d.qr_artifacts.join(', ')}</div>` : ''}
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; font-size:0.8em;">
+          <span style="border:1px solid var(--deck-border); border-radius:5px; padding:4px 8px; ${d.photos_received ? 'color:var(--deck-accent-success);' : 'color:var(--deck-accent-warning);'}">
+            📸 client photos: ${d.photos_received ? 'received' : 'WAITING'}</span>
+          ${d.photos_received ? '' : `<button class="deck-btn" onclick="deckMarkPhotos('${d.slug}')">Mark photos received</button>`}
+          <span style="border:1px solid var(--deck-border); border-radius:5px; padding:4px 8px; ${d.seo_pack_built ? 'color:var(--deck-accent-success);' : 'opacity:0.7;'}">
+            🔎 SEO pack: ${d.seo_pack_built ? 'built' : 'not built'}</span>
+          <button class="deck-btn" onclick="deckBuildSeoPack('${d.slug}')">${d.seo_pack_built ? 'Rebuild' : 'Generate'} SEO pack</button>
+          ${d.seo_pack_built ? `<button class="deck-btn" onclick="deckViewPack('${d.slug}', 'local_seo_checklist')">View 6-move checklist</button>
+          <button class="deck-btn" onclick="deckViewPack('${d.slug}', 'security_checklist')">View security gate</button>` : ''}
+        </div>
+        ${d.photos_received ? '' : `<div style="font-size:0.78em; opacity:0.6; margin-top:6px;">${d.photos_note}</div>`}
       </div>`).join('') || '<div class="deck-section-desc">No deals with documents yet.</div>');
   }
+
+  async function deckMarkPhotos(slug) {
+    if (!confirm(`Mark the client's real photos as RECEIVED for "${slug}"?\n\nThis opens the website-build gate (demos never wait; websites do).`)) return;
+    const res = await deckFetch(`/api/leads/${slug}/mark-client-photos`, { method: 'POST' });
+    if (!res.ok) { const o = await res.json().catch(() => ({})); alert(o.detail || 'Not marked.'); }
+    loadPayments();
+  }
+
+  async function deckBuildSeoPack(slug) {
+    const res = await deckFetch(`/api/leads/${slug}/seo-pack`, { method: 'POST' });
+    if (!res.ok) { alert('SEO pack build failed.'); return; }
+    const out = await res.json();
+    loadPayments();
+  }
+
+  async function deckViewPack(slug, name) {
+    const res = await deckFetch(`/api/leads/${slug}/seo-pack/file/${name}`);
+    if (!res.ok) { alert('Pack file unavailable.'); return; }
+    const { markdown } = await res.json();
+    let el = document.getElementById('payments-detail');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'payments-detail';
+      el.style.marginTop = '12px';
+      document.getElementById('payments-list').after(el);
+    }
+    el.innerHTML = `<div class="deck-panel-box" style="background:var(--deck-card);">
+      <div style="display:flex; justify-content:space-between;">
+        <b>${name} — ${slug}</b>
+        <button class="deck-btn" onclick="this.closest('#payments-detail').style.display='none'">✕ close</button>
+      </div>
+      <pre style="white-space:pre-wrap; font-size:0.82em; line-height:1.6; margin-top:10px;">${markdown.replace(/</g, '&lt;')}</pre></div>`;
+    el.scrollIntoView({ behavior: 'smooth' });
+  }
+  window.deckMarkPhotos = deckMarkPhotos;
+  window.deckBuildSeoPack = deckBuildSeoPack;
+  window.deckViewPack = deckViewPack;
 
   async function loadFixes() {
     const res = await deckFetch('/api/fixer/staged');

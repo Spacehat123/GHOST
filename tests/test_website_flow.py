@@ -204,3 +204,28 @@ class TestShipGate(EnvPinned):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPackInUI(EnvPinned):
+
+    def test_payments_overview_carries_gate_state(self):
+        from starlette.testclient import TestClient
+        from ghost.server.app import app
+        from ghost.server.agency_api import get_or_create_session_token
+        self.crm.add_or_update_client(slug="ui-deal", business_name="UI Deal Ltd",
+                                      deal_value=900.0, status="won")
+        client = TestClient(app)
+        headers = {"X-Session-Token": get_or_create_session_token()}
+        res = client.get("/api/payments/overview", headers=headers)
+        self.assertEqual(res.status_code, 200)
+        deal = next(d for d in res.json()["deals"] if d["slug"] == "ui-deal")
+        self.assertIn("photos_received", deal)
+        self.assertFalse(deal["photos_received"])
+        # generate + read a pack file through the deck's endpoint
+        res = client.post("/api/leads/ui-deal/seo-pack", headers=headers)
+        self.assertEqual(res.status_code, 200)
+        res = client.get("/api/leads/ui-deal/seo-pack/file/local_seo_checklist", headers=headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("6 moves", res.json()["markdown"])
+        res = client.get("/api/leads/ui-deal/seo-pack/file/../secrets", headers=headers)
+        self.assertIn(res.status_code, (400, 404))
