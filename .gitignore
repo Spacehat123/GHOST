@@ -86,3 +86,4 @@ data/ghost.db*
 
 # --- Ghost secrets vault (operator-set via the UI; NEVER in git) ---
 configs/secrets.json
+.skill-vendor/
