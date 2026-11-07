@@ -27,6 +27,28 @@ from ghost.mcp.bridge import (
 logger = logging.getLogger("ghost.brain")
 
 REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
+
+DOC_FILE_EXTENSIONS = {".md", ".txt", ".pdf", ".html", ".json", ".docx",
+                       ".png", ".jpg", ".jpeg", ".webp", ".py", ".log", ".csv"}
+
+
+def resolve_local_file(raw: str):
+    """Resolve a possibly-repo-relative local path to an ABSOLUTE one.
+    The operator says 'open docs/OPERATOR_MANUAL.md' — a bare relative path
+    is not a URL and not a file any tool can open from an arbitrary CWD.
+    Returns (absolute_path_or_None, tried_list). NEVER invents a path."""
+    if not raw:
+        return None, []
+    expanded = os.path.expanduser(str(raw).strip().strip("'\""))
+    tried = []
+    for cand in (expanded,
+                 os.path.join(REPO_DIR, expanded.lstrip("/")),
+                 os.path.join(os.getcwd(), expanded.lstrip("/"))):
+        cand = os.path.abspath(cand)
+        tried.append(cand)
+        if os.path.isfile(cand):
+            return cand, tried
+    return None, tried
 CONFIGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../configs"))
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data"))
 OMNIROUTE_CONFIG_PATH = os.path.join(CONFIGS_DIR, "omniroute.json")
@@ -119,7 +141,7 @@ GHOST_TOOLS = [
                     },
                     "url": {
                         "type": "string",
-                        "description": "Destination URL for open_url"
+                        "description": "Destination URL or LOCAL FILE PATH for open_url (repo-relative paths like docs/FILE.md are resolved to file:// automatically; missing files return an honest error — never claim success without reading the result)"
                     },
                     "target": {
                         "type": "string",
@@ -1775,7 +1797,22 @@ class OmniRouteBrain:
                 else:
                     return {"error": f"Context file '{target}' not found."}
             elif act == "launch_app":
-                return await SystemAppBridge.launch_app(target, workspace=args if args else None)
+                app_cmd = str(target or "").strip()
+                file_arg = str(arguments.get("file") or "").strip()
+                if not file_arg and " " in app_cmd:
+                    parts = app_cmd.split(None, 1)
+                    app_cmd, file_arg = parts[0], parts[1].strip()
+                launch_cmd = app_cmd
+                if file_arg:
+                    resolved, tried = resolve_local_file(file_arg)
+                    if not resolved:
+                        return {"error": f"file not found: {file_arg!r} — "
+                                         f"tried {tried}. NOTHING was launched "
+                                         "(no random empty files, no lies).",
+                                "launched": False}
+                    launch_cmd = f"{app_cmd} {resolved}"
+                return await SystemAppBridge.launch_app(
+                    launch_cmd, workspace=args if args else None)
             elif act == "quickshell_ipc":
                 return await SystemAppBridge.quickshell_ipc(target)
             else:
@@ -1820,9 +1857,18 @@ class OmniRouteBrain:
             press_enter = arguments.get("press_enter", False)
 
             if tool_name == "brave_open_url" or act == "open_url":
-                dest = url or target
-                if not dest.startswith("http"):
-                    dest = f"https://{dest}"
+                dest = str(url or target or "").strip()
+                if not dest.startswith(("http://", "https://", "file://")):
+                    resolved, tried = resolve_local_file(dest)
+                    if resolved:
+                        dest = "file://" + resolved
+                    elif "/" in dest and os.path.splitext(dest)[1].lower() in DOC_FILE_EXTENSIONS:
+                        return {"error": f"local file not found for {dest!r} — "
+                                         f"tried {tried}. NOTHING was opened "
+                                         "(no guessed URLs, no lies).",
+                                "opened": False}
+                    else:
+                        dest = f"https://{dest}"
                 return await BraveCDPBridge.new_tab(dest)
             elif tool_name == "brave_list_tabs" or act == "list_tabs":
                 tabs = await BraveCDPBridge.list_tabs()
