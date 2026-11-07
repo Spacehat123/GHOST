@@ -351,3 +351,91 @@ def verify_dossier(slug: str, base_dir: Optional[str] = None) -> Dict[str, Any]:
             reasons.append(f"photo without provenance row: {fname}")
 
     return {"verified": not reasons, "reasons": reasons}
+
+
+# ------------------------------------------------------- demo photo staging
+
+def stage_photos_into_demo(photos, demo_dir: str, slug: str,
+                           max_photos: int = 9,
+                           fetch_binary=None) -> Dict[str, Any]:
+    """Stage the business's REAL photos into a demo build (Operator's brief:
+    demos get good photos from Google/Insta with zero waiting — and never
+    hotlinked). Accepts recon photo dicts ({url}|{raw_url}) or local dossier
+    file paths. Downloads/copies into <demo_dir>/assets/photos/, fills the
+    standard slots in order (hero, bento1, bento2, gallery1-3), and appends
+    provenance rows to the demo's SOURCES.json. Stock fallback stays the
+    caller's business — staged count tells it the truth."""
+    slots = ["hero_bg", "bento_img1", "bento_img2",
+             "gallery_1", "gallery_2", "gallery_3"]
+    out_dir = os.path.join(demo_dir, "assets", "photos")
+    os.makedirs(out_dir, exist_ok=True)
+    fetch = fetch_binary or _default_fetch_binary
+    staged: List[str] = []
+    rows: List[Dict[str, Any]] = []
+    from ghost.workers.recon_scout import is_venue_photo
+    for p in (photos or [])[: max_photos * 2]:
+        if len(staged) >= max_photos:
+            break
+        try:
+            if isinstance(p, dict) and (p.get("path") or p.get("file")):
+                src = p.get("path") or p.get("file")
+                if not os.path.isfile(src):
+                    continue
+                with open(src, "rb") as f:
+                    data = f.read()
+                source_url = p.get("source_url", "dossier_photo")
+            else:
+                url = (p.get("url") or p.get("raw_url") if isinstance(p, dict)
+                       else str(p)) or ""
+                url = url.strip()
+                if not url or not is_venue_photo(url):
+                    continue
+                data = fetch(url)
+                if not data:
+                    raise ValueError("empty body")
+                source_url = url
+            idx = len(staged) + 1
+            fname = f"photo-{idx:02d}.jpg"
+            with open(os.path.join(out_dir, fname), "wb") as f:
+                f.write(data)
+            rel = f"assets/photos/{fname}"
+            staged.append(rel)
+            rows.append({
+                "file": rel, "type": "business_photo",
+                "source": source_url if str(source_url).startswith("http")
+                          else "dossier_photos",
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "license_note": "business's own public listing photo — used in "
+                                "THIS business's demo only",
+                "retrieved_at": time.time(),
+            })
+        except Exception as e:
+            logger.warning("photo staging skipped (%s): %s", str(p)[:60], str(e)[:100])
+            continue
+    slots_filled = {slot: staged[i] for i, slot in enumerate(slots)
+                    if i < len(staged)}
+    if rows:
+        _append_demo_sources(demo_dir, slug, rows)
+    audit("demo.photos_staged", subject=slug, staged=len(staged),
+          slots=sorted(slots_filled.keys()))
+    return {"staged": len(staged), "paths": staged, "slots": slots_filled}
+
+
+def _append_demo_sources(demo_dir: str, slug: str, rows: List[Dict[str, Any]]) -> None:
+    """Append provenance rows to the demo's SOURCES.json (the Source-Ledger
+    rule: a photo without its row is a lie)."""
+    path = os.path.join(demo_dir, "SOURCES.json")
+    try:
+        doc = {}
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                doc = json.load(f)
+        doc.setdefault("assets", []).extend(rows)
+        doc["disclosure"] = doc.get("disclosure", "") or (
+            "All facts are observed evidence; missing facts are listed as "
+            "[Inquire for quotation].")
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(doc, f, indent=2, sort_keys=True)
+        os.replace(path + ".tmp", path)
+    except Exception as e:
+        logger.warning("SOURCES.json update failed for %s: %s", slug, e)

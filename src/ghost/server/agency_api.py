@@ -1121,6 +1121,33 @@ async def mark_contract_sent_endpoint(lead_id_or_slug: str):
     return res
 
 
+@agency_router.post("/leads/{lead_id_or_slug}/seo-pack", dependencies=[Depends(verify_auth_token)])
+async def build_seo_pack_endpoint(lead_id_or_slug: str):
+    """Generate the SEO/AEO pack (Operator's 11-addendum): schema, llms.txt,
+    the 6-move checklist, the client photo-request draft, the OWASP gate."""
+    from ghost.workers.seo_pack import build_seo_pack
+    res = build_seo_pack(lead_id_or_slug)
+    return res
+
+
+@agency_router.post("/leads/{lead_id_or_slug}/mark-client-photos", dependencies=[Depends(verify_auth_token)])
+async def mark_client_photos_endpoint(lead_id_or_slug: str):
+    """The WAIT gate: the operator confirms the client's real photos arrived.
+    Websites wait for client photos; demos don't. Until this, the website
+    build is gated."""
+    from ghost.workers.seo_pack import mark_client_photos_received
+    res = mark_client_photos_received(lead_id_or_slug)
+    if not res.get("received"):
+        raise HTTPException(status_code=404, detail=res.get("reason", "not found"))
+    return res
+
+
+@agency_router.get("/leads/{lead_id_or_slug}/website-ready", dependencies=[Depends(verify_auth_token)])
+async def website_ready_endpoint(lead_id_or_slug: str):
+    from ghost.workers.seo_pack import website_ready_for_build
+    return website_ready_for_build(lead_id_or_slug)
+
+
 @agency_router.post("/leads/{lead_id_or_slug}/deposit_received", dependencies=[Depends(verify_auth_token)])
 async def mark_deposit_received_endpoint(lead_id_or_slug: str):
     """Operator confirms receipt of deposit -> advances lead to won."""

@@ -829,6 +829,39 @@ class AutonomousDemoStateMachine:
         self.audit_results: Dict[str, Any] = {}
         self.deployed_url: Optional[str] = None
 
+
+    def stage_real_photos(self, assets: Dict[str, Any], scout_data: Dict[str, Any]) -> int:
+        """Operator photo policy (Nov 2026): DEMOS get the business's real
+        photos from Google/Insta with ZERO waiting — staged locally (never
+        hotlinked) with provenance rows in SOURCES.json. Real photos fill the
+        standard slots; curated stock only backfills slots reality didn't.
+        Sources, in order: the recon harvest, then the business's dossier
+        photos (dossiers/<slug>/photos)."""
+        from ghost.workers.dossier import stage_photos_into_demo
+        photos: List[Any] = []
+        photos.extend(scout_data.get("photos", []) or [])
+        from ghost.workers.dossier import dossiers_dir as _dossiers_dir
+        dossier_dir = os.path.join(_dossiers_dir(), self.slug, "photos")
+        if os.path.isdir(dossier_dir):
+            for fname in sorted(os.listdir(dossier_dir)):
+                if fname.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                    photos.append({"path": os.path.join(dossier_dir, fname),
+                                   "source_url": "dossier_photos"})
+        try:
+            staged = stage_photos_into_demo(photos, self.out_dir, self.slug)
+        except Exception as e:
+            logger.warning("photo staging failed for %s: %s", self.slug, e)
+            return 0
+        for slot, rel in staged["slots"].items():
+            assets[slot] = rel   # local path — no hotlink
+        if staged["staged"]:
+            logger.info("staged %d real photos for '%s' (%d stock slots remain)",
+                        staged["staged"], self.slug,
+                        sum(1 for s in ("hero_bg", "bento_img1", "bento_img2",
+                                        "gallery_1", "gallery_2", "gallery_3")
+                            if s not in staged["slots"]))
+        return staged["staged"]
+
     @classmethod
     def get_show_sample_services(cls) -> bool:
         """Returns True if sample services placeholder block should be rendered when no real services are found."""
@@ -911,18 +944,9 @@ class AutonomousDemoStateMachine:
         assets = DOMAIN_CURATED_ASSETS.get(domain, GENERAL_SERVICES_ASSETS).copy()
         copy_set = DOMAIN_COPY.get(domain, DOMAIN_COPY["general_services"])
 
-        # Inject authentic photos if verified and allowed by photos policy (3.4)
-        scraped_photos = scout_data.get("photos", [])
-        if self.use_owner_photos and len(scraped_photos) >= 3:
-            assets["hero_bg"] = scraped_photos[0]["url"] if isinstance(scraped_photos[0], dict) else scraped_photos[0]
-            assets["bento_img1"] = scraped_photos[1]["url"] if isinstance(scraped_photos[1], dict) else scraped_photos[1]
-            assets["bento_img2"] = scraped_photos[2]["url"] if isinstance(scraped_photos[2], dict) else scraped_photos[2]
-            if len(scraped_photos) > 3:
-                assets["gallery_1"] = scraped_photos[3]["url"] if isinstance(scraped_photos[3], dict) else scraped_photos[3]
-            if len(scraped_photos) > 4:
-                assets["gallery_2"] = scraped_photos[4]["url"] if isinstance(scraped_photos[4], dict) else scraped_photos[4]
-            if len(scraped_photos) > 5:
-                assets["gallery_3"] = scraped_photos[5]["url"] if isinstance(scraped_photos[5], dict) else scraped_photos[5]
+        # Operator photo policy: stage REAL photos locally (recon harvest +
+        # dossier), never hotlinks; stock backfills only unfilled slots.
+        self.stage_real_photos(assets, scout_data)
 
         # Select archetype based on domain
         if domain in ["home_trade_services", "dental_medical", "legal_accounting", "general_services"]:
@@ -998,7 +1022,7 @@ class AutonomousDemoStateMachine:
             "hours": self.ledger.get("hours"),
             "rating": self.ledger.get("rating"),
             "review_count": self.ledger.get("review_count"),
-            "scouted_photos": scraped_photos,
+            "scouted_photos": scout_data.get("photos", []),
             "audit_data": audit_data,
             "needs_confirmation": needs_conf
         }
@@ -1052,6 +1076,31 @@ class AutonomousDemoStateMachine:
     # =========================================================================
     # Phase 2: Generate DESIGN_BRIEF.md (Context Layering)
     # =========================================================================
+    def _house_style_section(self) -> str:
+        """The operator's editorial house style (Nov 2026 reference), loaded
+        from the committed skill, appended to every DESIGN_BRIEF as a BINDING
+        override — the section builder obeys it over archetype defaults."""
+        try:
+            from ghost.paths import repo_root
+            skill = os.path.join(repo_root(), "context", "skills",
+                                 "editorial_web_design", "SKILL.md")
+            with open(skill, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            logger.warning("house style skill unreadable: %s", e)
+            content = (
+                "- Warm paper palette, serif display type, ONE earthy accent, "
+                "micro-caps meta rows, generous whitespace, real photos only.")
+        return (
+            "\n\n---\n\n## HOUSE STYLE OVERRIDE — binding editorial standard\n\n"
+            "The section builder MUST apply the standard below over any "
+            "archetype default it conflicts with. Photography rule: use ONLY "
+            "the staged local paths (`assets['hero_bg']`, `bento_img1/2`, "
+            "`gallery_1..3` when they point at `assets/photos/`) — they are "
+            "THE BUSINESS'S OWN photos. Never hotlink stock for a slot a "
+            "staged photo filled.\n\n```markdown\n"
+            + content + "\n```\n")
+
     async def run_phase2_design_brief(self) -> str:
         """
         Synthesizes exact design tokens, hex codes, typography pairings,
@@ -1120,6 +1169,7 @@ class AutonomousDemoStateMachine:
 10. Conversion Footer with Removable Concept Attribution
 """
         with open(self.brief_path, "w", encoding="utf-8") as f:
+            brief_content += self._house_style_section()
             f.write(brief_content)
 
         logger.info(f"Phase 2 Complete: DESIGN_BRIEF.md written to {self.brief_path}")
@@ -2268,11 +2318,7 @@ Drag and drop the `demos/{self.slug}` folder directly into Netlify Drop.
             assets = DOMAIN_CURATED_ASSETS.get(confirmed_domain, GENERAL_SERVICES_ASSETS).copy()
             copy_set = DOMAIN_COPY.get(confirmed_domain, DOMAIN_COPY["general_services"])
 
-            scraped_photos = scout_data.get("photos", [])
-            if len(scraped_photos) >= 3:
-                assets["hero_bg"] = scraped_photos[0]["url"] if isinstance(scraped_photos[0], dict) else scraped_photos[0]
-                assets["bento_img1"] = scraped_photos[1]["url"] if isinstance(scraped_photos[1], dict) else scraped_photos[1]
-                assets["bento_img2"] = scraped_photos[2]["url"] if isinstance(scraped_photos[2], dict) else scraped_photos[2]
+            self.stage_real_photos(assets, scout_data)
 
             scraped_reviews = scout_data.get("reviews", [])
             reviews = []
@@ -2312,7 +2358,7 @@ Drag and drop the `demos/{self.slug}` folder directly into Netlify Drop.
                 "hours": sm.ledger.get("hours"),
                 "rating": sm.ledger.get("rating"),
                 "review_count": sm.ledger.get("review_count"),
-                "scouted_photos": scraped_photos,
+                "scouted_photos": scout_data.get("photos", []),
                 "audit_data": audit_data,
                 "needs_confirmation": False
             }
