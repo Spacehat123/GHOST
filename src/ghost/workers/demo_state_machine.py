@@ -830,6 +830,10 @@ class AutonomousDemoStateMachine:
             # the build goes typography-led editorial with [Inquire for
             # quotation: photography] placeholders.
             assets["photos_policy"] = "no_photos_inquire"
+            from ghost.core.audit import audit
+            audit("demo.photos_needed", subject=self.slug,
+                  ping="(c) unverifiable: no real photos for this demo — drop "
+                       "them into the Dossiers tab (drag & drop) and rebuild")
             logger.info("no real photos for '%s' — photography-free editorial "
                         "variant (stock fallback is banned)", self.slug)
         self.brand_data = self.brand_data or {}

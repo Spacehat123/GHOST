@@ -230,3 +230,49 @@ class TestPackInUI(EnvPinned):
         self.assertIn("6 moves", res.json()["markdown"])
         res = client.get("/api/leads/ui-deal/seo-pack/file/../secrets", headers=headers)
         self.assertIn(res.status_code, (400, 404))
+
+
+class TestDossierPhotoUpload(EnvPinned):
+    """Option A: the operator drops real photos onto the dossier in the deck;
+    they land in dossiers/<slug>/photos/ and the next build stages them."""
+
+    def test_upload_endpoint_saves_images_and_refuses_junk(self):
+        from starlette.testclient import TestClient
+        from ghost.server.app import app
+        from ghost.server.agency_api import get_or_create_session_token
+        client = TestClient(app)
+        headers = {"X-Session-Token": get_or_create_session_token()}
+        self._lead("upload-lead")
+        fake_jpg = b"\xff\xd8\xff\xe0 fake jpeg payload" * 10
+        res = client.post("/api/dossiers/upload-lead/photos", headers=headers,
+                          files=[("files", ("shot1.jpg", fake_jpg, "image/jpeg")),
+                                 ("files", ("notes.txt", b"not an image", "text/plain"))])
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(len(body["saved"]), 1)
+        self.assertEqual(body["refused"], ["notes.txt"], "non-images are refused")
+        from ghost.workers.dossier import dossiers_dir
+        photo_dir = os.path.join(dossiers_dir(), "upload-lead", "photos")
+        self.assertEqual(len(os.listdir(photo_dir)), 1)
+
+    def test_bad_slug_refused(self):
+        from starlette.testclient import TestClient
+        from ghost.server.app import app
+        from ghost.server.agency_api import get_or_create_session_token
+        client = TestClient(app)
+        headers = {"X-Session-Token": get_or_create_session_token()}
+        res = client.post("/api/dossiers/../secrets/photos", headers=headers,
+                          files=[("files", ("x.jpg", b"j", "image/jpeg"))])
+        self.assertIn(res.status_code, (400, 404))
+
+    def test_ghost_asks_when_a_demo_has_no_photos(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        sm = AutonomousDemoStateMachine("No Photo Cafe", slug="askpoto")
+        os.makedirs(sm.out_dir, exist_ok=True)
+        assets = {"hero_bg": "stock", "gallery_1": "stock"}
+        sm.stage_real_photos(assets, {})
+        from ghost.core.audit import AuditLedger
+        rows = AuditLedger.get_instance().query(event_type="demo.photos_needed", limit=5)
+        self.assertEqual(len(rows), 1,
+                         "Ghost must ASK for photos through the ping contract")
+        self.assertIn("Dossiers", rows[0]["payload"].get("ping", ""))

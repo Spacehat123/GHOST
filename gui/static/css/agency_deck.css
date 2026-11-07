@@ -681,3 +681,22 @@
   .deck-view, .tab-badge, .deck-btn-highlight, .skel { animation: none !important; }
   * { transition-duration: 0.01ms !important; }
 }
+
+/* photo drop zone — the one place the operator's hand feeds the machine */
+.photo-dropzone {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--deck-border-strong);
+  border-radius: 7px;
+  font-size: 11px;
+  font-family: var(--deck-font-mono);
+  letter-spacing: 0.06em;
+  color: var(--deck-text-faint);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.photo-dropzone:hover, .photo-dropzone.dragover {
+  border-color: var(--deck-border-focus);
+  color: var(--deck-text-main);
+  background: rgba(255, 46, 99, 0.05);
+}

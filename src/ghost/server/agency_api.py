@@ -16,7 +16,7 @@ import secrets
 import hmac
 import logging
 
-from fastapi import APIRouter, Request, HTTPException, Depends, Header, Query
+from fastapi import APIRouter, Request, HTTPException, Depends, Header, Query, UploadFile, File
 from fastapi.responses import FileResponse, Response, JSONResponse
 
 from ghost.crm.db import CRMDatabase
@@ -743,6 +743,39 @@ async def get_dossier(slug: str):
     md_path = os.path.join(d, "dossier.md")
     md = open(md_path, encoding="utf-8").read() if os.path.exists(md_path) else ""
     return {"slug": slug, "facts": facts, "photos": photos, "markdown": md}
+
+
+@agency_router.post("/dossiers/{slug}/photos", dependencies=[Depends(verify_auth_token)])
+async def upload_dossier_photos(slug: str, files: List[UploadFile] = File(...)):
+    """Option A (Operator's photo doctrine): the operator drops the business's
+    REAL photos onto the dossier in the deck; they land in
+    dossiers/<slug>/photos/ and the next build stages them with provenance.
+    Non-image files are refused — nothing sneaks in."""
+    import re as _re
+    if not _re.fullmatch(r"[a-z0-9-]+", slug):
+        raise HTTPException(status_code=400, detail="bad slug")
+    from ghost.workers.dossier import dossiers_dir
+    out = os.path.join(dossiers_dir(), slug, "photos")
+    os.makedirs(out, exist_ok=True)
+    saved, refused = [], []
+    stamp = int(time.time())
+    for f in files[:20]:
+        ext = os.path.splitext(f.filename or "")[1].lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+            refused.append(f.filename or "?")
+            continue
+        data = await f.read()
+        if not data or len(data) > 15 * 1024 * 1024:
+            refused.append(f.filename or "?")
+            continue
+        fname = f"dropped-{stamp}-{len(saved):02d}{ext}"
+        with open(os.path.join(out, fname), "wb") as fh:
+            fh.write(data)
+        saved.append(fname)
+    from ghost.core.audit import audit
+    audit("dossier.photos_dropped", subject=slug, saved=len(saved),
+          refused=len(refused), by="operator")
+    return {"status": "ok", "saved": saved, "refused": refused}
 
 
 @agency_router.get("/dossiers/{slug}/photo/{name}", dependencies=[Depends(verify_auth_token)])

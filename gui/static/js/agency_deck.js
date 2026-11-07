@@ -190,8 +190,46 @@
         <b>${d.business}</b> <span style="opacity:0.55; font-size:0.85em;">(${d.slug})</span>
         <span style="font-size:0.85em; opacity:0.75;"> · 📷 ${d.photos} · site: ${d.site_verdict || '?'}</span>
         ${d.inquire.length ? `<span style="font-size:0.8em; opacity:0.6;"> · ❓inquire: ${d.inquire.join(', ')}</span>` : ''}
+        <div class="photo-dropzone" data-slug="${d.slug}">＋ Drop photos here (or click) — they stage into the next build with provenance</div>
+        <input type="file" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" data-slug="${d.slug}">
       </div>`).join('');
+    listEl.querySelectorAll('.photo-dropzone').forEach(wirePhotoDropzone);
   }
+
+  // Option A (photo doctrine): the operator drops the business's REAL photos;
+  // they land in dossiers/<slug>/photos/ and the next build stages them.
+  function wirePhotoDropzone(zone) {
+    const slug = zone.dataset.slug;
+    const input = zone.parentElement.querySelector('input[type=file][data-slug="' + slug + '"]');
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) uploadDossierPhotos(slug, e.dataTransfer.files);
+    });
+    input.addEventListener('change', () => {
+      if (input.files.length) uploadDossierPhotos(slug, input.files);
+      input.value = '';
+    });
+  }
+
+  async function uploadDossierPhotos(slug, fileList) {
+    const fd = new FormData();
+    [...fileList].forEach(f => fd.append('files', f));
+    // raw fetch: multipart must NOT carry a JSON Content-Type
+    const resp = await fetch(`/api/dossiers/${slug}/photos`, {
+      method: 'POST',
+      headers: { 'X-Session-Token': sessionToken },
+      body: fd,
+    });
+    if (!resp.ok) { const o = await resp.json().catch(() => ({})); alert(o.detail || 'Upload failed.'); return; }
+    const out = await resp.json();
+    if (out.refused.length) alert(`${out.saved.length} photo(s) staged; ${out.refused.length} non-image file(s) refused.`);
+    loadDossiers();
+  }
+  window.uploadDossierPhotos = uploadDossierPhotos;
 
   async function deckOpenDossier(slug) {
     const res = await deckFetch(`/api/dossiers/${slug}`);
