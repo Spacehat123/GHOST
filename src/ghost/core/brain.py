@@ -446,7 +446,7 @@ GHOST_TOOLS = [
         "type": "function",
         "function": {
             "name": "build_luxury_demo",
-            "description": "Trigger OpenCode / DeepSeek worker to scaffold a high-ticket single-page restaurant or luxury resort HTML/Tailwind demo based on the 4 Design Archetypes (1: Michelin Dark, 2: Coastal Minimalist, 3: Heritage Luxury, 4: High-Energy Bistro). Runs smoke tests and signals Watchdog.",
+            "description": "THE route for every demo build (binding — never hand-write demo HTML via system_run). Runs the demo state machine: Maps recon + REAL photo staging with provenance, DESIGN_BRIEF with the editorial house style and vendored svg.js, sectional build, CDP visual QA at two viewports, and the gated Vercel deploy.",
             "parameters": {
                 "type": "object",
                 "properties": {

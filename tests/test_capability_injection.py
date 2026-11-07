@@ -110,3 +110,32 @@ class TestWiring(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExecutionRoutes(unittest.TestCase):
+    """The second half of the operator's directive: knowing the STYLE is not
+    enough — the Grasshopper mission hand-wrote HTML via system_run and
+    skipped recon/photos/QA/deploy gates. The route is now binding."""
+
+    def test_demo_goal_gets_the_state_machine_route(self):
+        d = capability_directive("build a demo for grasshopper diner with svg animations")
+        self.assertIn("EXECUTION ROUTE", d)
+        self.assertIn("build_luxury_demo", d)
+        self.assertIn("never hand-written HTML", d)
+
+    def test_website_goal_gets_the_website_flow_route(self):
+        d = capability_directive("build the client website for Salt")
+        self.assertIn("build_seo_pack", d)
+        self.assertIn("verify_ship_gate", d)
+
+    def test_fix_goal_gets_the_sidecar_route(self):
+        d = capability_directive("customer report: the contact page is broken, fix the site")
+        self.assertIn("sidecar", d.lower())
+        self.assertIn("stages a verified patch", d)
+
+    def test_unrouted_goal_carries_no_route(self):
+        self.assertNotIn("EXECUTION ROUTE", capability_directive("play bohemian rhapsody"))
+
+    def test_route_declaration_is_visible_to_the_model(self):
+        brain_src = open(os.path.join(REPO, "src", "ghost", "core", "brain.py")).read()
+        self.assertIn("THE route for every demo build", brain_src)

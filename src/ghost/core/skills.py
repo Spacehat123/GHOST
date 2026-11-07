@@ -171,17 +171,65 @@ def relevant_skills(task_text: str, min_score: int = 1) -> List[Dict[str, Any]]:
     return scored
 
 
+# ===========================================================================
+# EXECUTION ROUTES (the other half of the operator's directive): knowing the
+# STYLE is not enough — the model must know WHICH MACHINE builds what.
+# Hand-writing artifacts via system_run bypasses recon/photos/QA/deploy gates.
+# ===========================================================================
+
+EXECUTION_ROUTES: List[Dict[str, Any]] = [
+    {"applies_to": "build_demo",
+     "match": ("demo", "concept site", "prospect site", "pitch site"),
+     "route": ("EXECUTION ROUTE (binding): demos are built BY THE DEMO STATE "
+               "MACHINE via build_luxury_demo — never hand-written HTML through "
+               "system_run/cat. The machine performs Google/Maps recon and REAL "
+               "photo staging (assets/photos), writes DESIGN_BRIEF.md with the "
+               "house style + vendored svg.js, runs CDP visual QA at two "
+               "viewports, and gates the deploy. Hand-building skips photos, "
+               "QA and deploy gates — forbidden.")},
+    {"applies_to": "build_website",
+     "match": ("client website", "production site", "build the website",
+               "their website", "new website"),
+     "route": ("EXECUTION ROUTE (binding): client websites go through the "
+               "website flow — build_seo_pack (schema/llms.txt/6-move "
+               "checklist), the client-photos gate (photos_received), the "
+               "editorial + svg_decor + motion skills, and verify_ship_gate "
+               "before launch. Production HTML is never hand-written.")},
+    {"applies_to": "fix_site",
+     "match": ("fix the site", "site broken", "customer report", "broken link",
+               "repair", "500", "down"),
+     "route": ("EXECUTION ROUTE (binding): site repairs go through the sidecar "
+               "fixer — diagnose_and_fix stages a verified patch; the operator "
+               "applies it. Never hand-edit live client files directly.")},
+]
+
+
+def route_for(task_text: str) -> str:
+    """The binding execution route for a goal, or '' when no route matches."""
+    text = str(task_text or "").lower()
+    for r in EXECUTION_ROUTES:
+        if any(m in text for m in r["match"]):
+            return r["route"]
+    return ""
+
+
 def capability_directive(task_text: str, max_skills: int = 4) -> str:
     """The injectable block for mission planning: which skills this task MUST
     load (get_skill) before proposing a plan. Empty string when nothing
     matches — the directive never invents relevance."""
     matches = relevant_skills(task_text)[:max_skills]
-    if not matches:
+    route = route_for(task_text)
+    if not matches and not route:
         return ""
-    lines = [f"- get_skill('{m['name']}') — {m['summary']} "
-             f"(matched: {', '.join(m['hits'][:3])})" for m in matches]
-    return ("CAPABILITY DIRECTIVE — load these BEFORE planning; they are "
-            "binding for this task:\n" + "\n".join(lines))
+    parts = []
+    if matches:
+        lines = [f"- get_skill('{m['name']}') — {m['summary']} "
+                 f"(matched: {', '.join(m['hits'][:3])})" for m in matches]
+        parts.append("CAPABILITY DIRECTIVE — load these BEFORE planning; they "
+                     "are binding for this task:\n" + "\n".join(lines))
+    if route:
+        parts.append(route)
+    return "\n\n".join(parts)
 
 
 def capability_index_block() -> str:
