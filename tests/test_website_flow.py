@@ -101,7 +101,8 @@ class TestDemoPhotoStaging(EnvPinned):
         self.assertGreaterEqual(n, 1)
         self.assertTrue(assets["hero_bg"].startswith("assets/photos/"),
                         "the hero slot carries the business's OWN photo")
-        self.assertEqual(assets["gallery_1"], "stock", "unfilled slots keep stock")
+        self.assertNotIn("gallery_1", assets,
+                         "unfilled slots stay UNFILLED — stock never backfills")
 
     def test_house_style_rides_the_design_brief(self):
         from ghost.workers.demo_state_machine import AutonomousDemoStateMachine

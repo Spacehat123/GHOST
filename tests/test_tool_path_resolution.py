@@ -11,9 +11,13 @@ the model improvised). Root cause + fix, pinned by tests:
 - launch_app accepts a bundled 'app file' target and a file argument
 """
 import asyncio
+import json
 import os
 import sys
+import tempfile
+import time
 import unittest
+import uuid
 from unittest.mock import patch, AsyncMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -129,3 +133,77 @@ class TestLaunchAppFileSlot(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNoStockPhotoDoctrine(unittest.TestCase):
+    """The Grasshopper lesson v2: a cat labelled 'chocolate ganache' is a
+    fabricated fact. Zero real photos = photography-free build; stock is
+    banned from the assets entirely; stale QA cannot pass the deploy gate."""
+
+    def test_curated_assets_carry_no_stock_images(self):
+        from ghost.workers.demo_state_machine import DOMAIN_CURATED_ASSETS
+        for domain, assets in DOMAIN_CURATED_ASSETS.items():
+            for key in ("hero_bg", "bento_img1", "bento_img2",
+                        "gallery_1", "gallery_2", "gallery_3"):
+                self.assertNotIn(key, assets,
+                                 f"{domain}.{key} still carries stock imagery")
+
+    def test_stage_zero_real_photos_clears_every_stock_slot(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        sm = AutonomousDemoStateMachine("No Photo Cafe", slug="nopoto")
+        os.makedirs(sm.out_dir, exist_ok=True)
+        assets = {"hero_bg": "https://images.unsplash.com/cat",
+                  "gallery_1": "https://images.unsplash.com/food",
+                  "services": [{"title": "Tasting menu"}]}
+        n = sm.stage_real_photos(assets, {})   # recon returned nothing
+        self.assertEqual(n, 0)
+        self.assertNotIn("hero_bg", assets)
+        self.assertNotIn("gallery_1", assets)
+        self.assertEqual(assets.get("photos_policy"), "no_photos_inquire")
+        self.assertEqual(assets["services"], assets["services"])  # facts survive
+
+    def test_partial_staging_never_backfills_stock(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        sm = AutonomousDemoStateMachine("Half Photo Cafe", slug="halfpoto")
+        os.makedirs(sm.out_dir, exist_ok=True)
+        from ghost.workers.dossier import dossiers_dir as _dd
+        dd = os.path.join(_dd(), sm.slug, "photos")
+        os.makedirs(dd, exist_ok=True)
+        with open(os.path.join(dd, "photo-01.jpg"), "wb") as f:
+            f.write(b"\xff\xd8real-one")
+        assets = {"hero_bg": "stock", "bento_img1": "stock", "bento_img2": "stock"}
+        n = sm.stage_real_photos(assets, {})
+        self.assertEqual(n, 1)
+        self.assertTrue(assets["hero_bg"].startswith("assets/photos/"))
+        self.assertNotIn("bento_img1", assets, "unfilled slots stay unfilled")
+        self.assertNotIn("bento_img2", assets)
+
+    def test_stale_qa_blocks_deploy(self):
+        from ghost.workers.deploy import VercelDeployer
+        from ghost.workers.snapshots import SnapshotStore
+        slug = f"stale-{uuid.uuid4().hex[:6]}"
+        demos_root = tempfile.mkdtemp(prefix="stale-demos-", dir=tempfile.gettempdir())
+        demo_dir = os.path.join(demos_root, slug)
+        os.makedirs(demo_dir, exist_ok=True)
+        with open(os.path.join(demo_dir, "index.html"), "w") as f:
+            f.write("<html>NEW page, edited after QA</html>")
+        os.makedirs(os.path.join(demo_dir, "reports"), exist_ok=True)
+        qa_path = os.path.join(demo_dir, "reports", "qa.json")
+        with open(qa_path, "w") as f:
+            json.dump({"passed": True, "screenshots_captured": 1,
+                       "screenshots": ["qa-shot-01.png"]}, f)
+        os.utime(qa_path, (time.time() - 7200, time.time() - 7200))  # QA 2h old
+        with open(os.path.join(demo_dir, "qa-shot-01.png"), "wb") as f:
+            f.write(b"\x89PNG real-ish")
+        SnapshotStore().snapshot(slug, demo_dir)
+        os.environ["GHOST_GRANT_SECRET"] = f"stale-{uuid.uuid4().hex}"
+        os.environ["GHOST_AUTHORITY_NONCE_DB"] = os.path.join(
+            tempfile.gettempdir(), f"n-{uuid.uuid4().hex}.db")
+        from ghost.autonomy.outbound import issue_effect_grant
+        grant = issue_effect_grant("deploy", slug)
+        self.assertIsNotNone(grant, "the grant must mint — the QA gate is what we are testing")
+        with patch("ghost.workers.deploy._demos_dir", lambda: demos_root):
+            res = asyncio.run(VercelDeployer.deploy_demo(slug, grant_token=grant))
+        self.assertEqual(res["status"], "blocked_by_qa")
+        self.assertIn("stale QA evidence", res["message"],
+                      "a page edited after its QA pass cannot deploy on old evidence")

@@ -527,12 +527,6 @@ def infer_location_and_phone(business_name: str, given_location: Optional[str]) 
 
 DOMAIN_CURATED_ASSETS = {
     "home_trade_services": {
-        "hero_bg": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Surface Restoration", "category": "Surface Restoration", "price": None, "desc": None},
             {"title": "Protection Systems", "category": "Protection Systems", "price": None, "desc": None},
@@ -541,12 +535,6 @@ DOMAIN_CURATED_ASSETS = {
         ]
     },
     "dental_medical": {
-        "hero_bg": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1629909615184-74f495363b67?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Clinical Diagnostics", "category": "Clinical Diagnostics", "price": None, "desc": None},
             {"title": "Treatment Solutions", "category": "Treatment Solutions", "price": None, "desc": None},
@@ -554,12 +542,6 @@ DOMAIN_CURATED_ASSETS = {
         ]
     },
     "salons_spas": {
-        "hero_bg": "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Styling Suite", "category": "Styling Suite", "price": None, "desc": None},
             {"title": "Hair & Scalp Care", "category": "Hair & Scalp Care", "price": None, "desc": None},
@@ -567,12 +549,6 @@ DOMAIN_CURATED_ASSETS = {
         ]
     },
     "gyms_fitness": {
-        "hero_bg": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Performance Assessment", "category": "Performance Assessment", "price": None, "desc": None},
             {"title": "Coaching Programs", "category": "Coaching Programs", "price": None, "desc": None},
@@ -580,12 +556,6 @@ DOMAIN_CURATED_ASSETS = {
         ]
     },
     "general_services": {
-        "hero_bg": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Consultation", "category": "Consultation", "price": None, "desc": None},
             {"title": "Core Service Delivery", "category": "Core Service Delivery", "price": None, "desc": None},
@@ -593,12 +563,6 @@ DOMAIN_CURATED_ASSETS = {
         ]
     },
     "restaurants_cafes": {
-        "hero_bg": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=85",
-        "bento_img1": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
-        "bento_img2": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
-        "gallery_1": "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80",
-        "gallery_2": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80",
-        "gallery_3": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
         "services": [
             {"title": "Tasting Menus", "category": "Tasting Menus", "price": None, "desc": None},
             {"title": "Midday Menu", "category": "Midday Menu", "price": None, "desc": None},
@@ -838,6 +802,11 @@ class AutonomousDemoStateMachine:
         Sources, in order: the recon harvest, then the business's dossier
         photos (dossiers/<slug>/photos)."""
         from ghost.workers.dossier import stage_photos_into_demo
+        # stock dies FIRST: unfilled slots stay unfilled ([Inquire] in the
+        # brief), never silently backfilled with generic imagery
+        for slot in ("hero_bg", "bento_img1", "bento_img2",
+                     "gallery_1", "gallery_2", "gallery_3"):
+            assets.pop(slot, None)
         photos: List[Any] = []
         photos.extend(scout_data.get("photos", []) or [])
         from ghost.workers.dossier import dossiers_dir as _dossiers_dir
@@ -854,12 +823,17 @@ class AutonomousDemoStateMachine:
             return 0
         for slot, rel in staged["slots"].items():
             assets[slot] = rel   # local path — no hotlink
-        if staged["staged"]:
-            logger.info("staged %d real photos for '%s' (%d stock slots remain)",
-                        staged["staged"], self.slug,
-                        sum(1 for s in ("hero_bg", "bento_img1", "bento_img2",
-                                        "gallery_1", "gallery_2", "gallery_3")
-                            if s not in staged["slots"]))
+        if not staged["staged"]:
+            # PHOTO DOCTRINE (the Grasshopper lesson): stock photos wearing
+            # business claims are fabricated evidence — a cat labelled
+            # 'chocolate ganache' is a lie. No real photos means NO photos:
+            # the build goes typography-led editorial with [Inquire for
+            # quotation: photography] placeholders.
+            assets["photos_policy"] = "no_photos_inquire"
+            logger.info("no real photos for '%s' — photography-free editorial "
+                        "variant (stock fallback is banned)", self.slug)
+        self.brand_data = self.brand_data or {}
+        self.brand_data["photos_staged"] = staged["staged"]
         return staged["staged"]
 
     @classmethod
@@ -1091,15 +1065,29 @@ class AutonomousDemoStateMachine:
             content = (
                 "- Warm paper palette, serif display type, ONE earthy accent, "
                 "micro-caps meta rows, generous whitespace, real photos only.")
+        photos_note = ""
+        if not any(str(v).startswith("assets/photos/") for v in (self.brand_data or {}).get("assets", {}).values()):
+            photos_note = (
+                "\n\n### PHOTOGRAPHY MODE: NONE AVAILABLE (binding)\n"
+                "No real photos were staged. Build the PHOTOGRAPHY-FREE "
+                "editorial variant: typography-led (giant ghosted wordmark, "
+                "serif hierarchy, hairline rules, micro-caps meta), generous "
+                "whitespace, and where a photo would go render a bordered "
+                "slot reading `[Inquire for quotation: photography]`. "
+                "STOCK IMAGES PRESENTED AS THIS BUSINESS ARE FORBIDDEN — a "
+                "generic photo carrying a specific menu/product claim is a "
+                "fabricated fact and fails QA claims lint.\n")
         return (
             "\n\n---\n\n## HOUSE STYLE OVERRIDE — binding editorial standard\n\n"
             "The section builder MUST apply the standard below over any "
             "archetype default it conflicts with. Photography rule: use ONLY "
             "the staged local paths (`assets['hero_bg']`, `bento_img1/2`, "
             "`gallery_1..3` when they point at `assets/photos/`) — they are "
-            "THE BUSINESS'S OWN photos. Never hotlink stock for a slot a "
-            "staged photo filled.\n\n```markdown\n"
-            + content + "\n```\n")
+            "THE BUSINESS'S OWN photos. Never hotlink stock — stock images are "
+            "banned entirely. A photo slot WITHOUT a staged local path renders "
+            "as `[Inquire for quotation: photography]`, never a generic image.\n"
+            + photos_note +
+            "\n```markdown\n" + content + "\n```\n")
 
     def _svg_decor_section(self) -> str:
         """Vendor svg.js into the build and bind the decorative-SVG rules:

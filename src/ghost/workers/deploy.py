@@ -202,6 +202,22 @@ class VercelDeployer:
 
         if not qa.get("passed"):
             return refuse(f"QA passed=false — failures: {qa.get('failures')}")
+
+        # Evidence freshness (the Grasshopper lesson): a QA report OLDER than
+        # the page it certifies is stale evidence — it describes a build that
+        # no longer exists. Hand-edited demos cannot produce fresh machine QA,
+        # so this gate is what makes the state machine the only deploy route.
+        index_path = os.path.join(demo_dir, "index.html")
+        if os.path.exists(index_path):
+            qa_age = os.path.getmtime(qa_path)
+            page_age = os.path.getmtime(index_path)
+            if qa_age < page_age:
+                return refuse(
+                    f"stale QA evidence — reports/qa.json ({qa_age:.0f}) predates "
+                    f"index.html ({page_age:.0f}). The page was modified after its "
+                    "last QA pass. Rebuild via the demo state machine "
+                    "(build_luxury_demo) to produce fresh machine QA.")
+
         captured = int(qa.get("screenshots_captured", 0) or 0)
         if captured <= 0:
             return refuse("QA passed but captured zero screenshots — evidence contract violated")
