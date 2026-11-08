@@ -682,6 +682,24 @@ class MissionStore:
         # Check if any task is already in_progress
         for t in mission.tasks:
             if t.status == TaskStatus.in_progress:
+                if t.attempts >= 2:
+                    # 2026-11-08 incident: a task orphaned mid-run by a restart
+                    # was re-picked on EVERY executor start, forever — Ghost kept
+                    # working on closed work. Cap it and escalate to the operator.
+                    try:
+                        self.update_task(mission_id, t.id, status=TaskStatus.blocked,
+                                         result_summary=(f"Attempt cap reached ({t.attempts}) — "
+                                                         "orphaned mid-run by a restart. Operator review required."))
+                    except Exception:
+                        pass
+                    from ghost.core.audit import audit as _audit
+                    try:
+                        _audit("mission.task_capped", subject=mission_id, task=t.id,
+                               attempts=t.attempts,
+                               ping="(c) unverifiable: mission task hit the attempt cap — operator review required")
+                    except Exception:
+                        pass
+                    continue
                 return t
 
         done_ids = {t.id for t in mission.tasks if t.status in (TaskStatus.done, TaskStatus.skipped)}

@@ -222,6 +222,22 @@ class MotionQA:
                 "error": f"Demo directory not found: '{demo_dir}'"
             }
 
+        # A section-kit page is NOT a motion site (2026-11-08: qa_motion_site
+        # ran on a kit page, failed it for files kit pages don't have, and the
+        # mission executor looped on the failing evidence). Refuse honestly,
+        # write nothing, and point at the kit's own evidence.
+        if os.path.isfile(os.path.join(demo_dir, "SECTIONS.json")):
+            return {
+                "ok": False,
+                "status": "refused_kit_page",
+                "tool": "qa_motion_site",
+                "passed": False,
+                "error": ("This is a section-kit page (SECTIONS.json present) — qa_motion_site "
+                          "does not apply to it. The kit's QA evidence is reports/qa.json, "
+                          "written by the demo state machine's phase 4; re-run the build's "
+                          "phase 4 if that evidence is missing or stale."),
+            }
+
         reports_dir = os.path.join(demo_dir, "reports")
         os.makedirs(reports_dir, exist_ok=True)
 

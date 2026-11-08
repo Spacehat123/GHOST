@@ -9,12 +9,25 @@ Verifies all non-negotiable architectural requirements of Part 8:
 7. Simple queries bypass mission requirements.
 8. Approval tasks block automated completion without operator confirmation.
 """
+import datetime
+import inspect
 import os
 import json
 import tempfile
 import unittest
 import struct
 import zlib
+from types import SimpleNamespace
+
+# Mission fixtures drive the brain loop — keep them out of the operator's
+# live conversation transcript (2026-11-08 incident).
+os.environ["GHOST_CONVERSATION_HISTORY"] = os.path.join(
+    tempfile.mkdtemp(prefix="ghost-mission-hist-"), "conversation_history.json")
+os.environ["GHOST_AUDIT_DB_PATH"] = os.path.join(
+    tempfile.mkdtemp(prefix="ghost-mission-audit-"), "audit.db")
+os.environ["GHOST_UNIFIED_DB_PATH"] = os.path.join(
+    tempfile.mkdtemp(prefix="ghost-mission-unified-"), "ghost.db")
+
 from unittest.mock import patch, MagicMock, AsyncMock
 
 from ghost.core.mission import (
@@ -487,3 +500,61 @@ class TestPlanFirstGateAndAgent(unittest.IsolatedAsyncioTestCase):
         self.assertIn("mission", event_types)
         mission_events = [e.get("event") for e in events if e.get("type") == "mission"]
         self.assertTrue(any(ev in ["mission_started", "task_started", "task_completed"] for ev in mission_events))
+
+class TestMissionGuards(unittest.TestCase):
+    """The 2026-11-08 incident: an action-phrase hijack resurrected day-old
+    missions with attempt counters zeroed (the operator's words never reached
+    the model), and orphaned in_progress tasks were re-picked on every restart.
+    These guards pin the fixes."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "guard_missions.db")
+        self.store = MissionStore(db_path=self.db_path)
+
+    def tearDown(self):
+        self.store.close()
+        self.temp_dir.cleanup()
+
+    def _tasks(self):
+        return [{"title": "Step", "description": "D", "acceptance": ["A"],
+                 "evidence_required": ["file"]}]
+
+    def test_keyword_hijack_is_gone_from_the_agent(self):
+        import ghost.core.agent as agent_mod
+        src = inspect.getsource(agent_mod)
+        self.assertNotIn("free as a bird", src)
+        self.assertNotIn("unblock_mission", src,
+                         "chat keywords must never reset a mission's attempt counters")
+
+    def test_auto_resume_gate(self):
+        from ghost.core.agent import should_auto_resume
+        now = datetime.datetime.now(datetime.timezone.utc)
+        fresh = SimpleNamespace(status="paused", created_at=now.isoformat())
+        self.assertTrue(should_auto_resume("continue", fresh)["resume"])
+        stale = SimpleNamespace(status="paused",
+                                created_at=(now - datetime.timedelta(hours=20)).isoformat())
+        res = should_auto_resume("continue", stale)
+        self.assertFalse(res["resume"])
+        self.assertIn("stale", res["reason"])
+        running = SimpleNamespace(status="in_progress", created_at=now.isoformat())
+        self.assertFalse(should_auto_resume("continue", running)["resume"])
+        garbage = SimpleNamespace(status="paused", created_at="not a date")
+        self.assertFalse(should_auto_resume("continue", garbage)["resume"],
+                         "unparseable timestamp counts as ancient — fail closed")
+
+    def test_orphaned_task_is_capped_not_repicked_forever(self):
+        mission = self.store.create_mission(goal="Long runner", tasks=self._tasks())
+        task = mission.tasks[0]
+        self.store.update_task(mission.id, task.id, status=TaskStatus.in_progress,
+                               result_summary="started")
+        # orphan it at the attempt cap, as a restart mid-run would
+        with self.store._get_connection() as conn:
+            conn.execute("UPDATE tasks SET attempts = 2 WHERE mission_id = ?", (mission.id,))
+            conn.commit()
+        picked = self.store.next_runnable_task(mission.id)
+        self.assertIsNone(picked, "a capped orphan must not be re-picked")
+        refreshed = self.store.get_mission(mission.id)
+        self.assertEqual(refreshed.tasks[0].status, TaskStatus.blocked)
+        self.assertIn("Attempt cap", refreshed.tasks[0].result_summary)
+

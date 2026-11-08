@@ -52,7 +52,11 @@ def resolve_local_file(raw: str):
 CONFIGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../configs"))
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data"))
 OMNIROUTE_CONFIG_PATH = os.path.join(CONFIGS_DIR, "omniroute.json")
-CONVERSATION_HISTORY_PATH = os.path.join(DATA_DIR, "conversation_history.json")
+# The rolling chat transcript. Env-overridable so TESTS never write into the
+# operator's live history (the 2026-11-08 incident: test fixtures leaked into
+# data/conversation_history.json and the operator read them as Ghost's doings).
+CONVERSATION_HISTORY_PATH = os.environ.get("GHOST_CONVERSATION_HISTORY") or os.path.join(
+    DATA_DIR, "conversation_history.json")
 OBSIDIAN_SESSION_MEMORY_PATH = os.environ.get("OBSIDIAN_SESSION_MEMORY_PATH", os.path.expanduser("~/Obsidian Vault/Ghost/Session Memory.md"))
 
 GHOST_TOOLS = [

@@ -25,6 +25,7 @@ Contracts enforced here (the house rules, structurally):
 - ONE svg.js decor element (a hand-drawn divider whose static stroke ships in
   the markup — the page is complete with JS disabled)
 """
+import datetime
 import json
 import logging
 import os
@@ -337,8 +338,9 @@ def _render_base(template: str, values: Dict[str, Any], autoescape: bool) -> str
 
 
 def ensure_vendor(out_dir: str) -> str:
-    """svg.min.js rides into the demo (idempotent). The divider animates only
-    when this vendored file loads — no CDN, CSP-safe."""
+    """svg.min.js rides into the demo (idempotent), WITH its provenance row in
+    SOURCES.json — an unledgered asset is exactly the kind of thing the
+    evidence gates (and the 2026-11-08 executor loop) choke on."""
     from ghost.paths import repo_root
     vendor_dir = os.path.join(out_dir, "assets", "vendor")
     os.makedirs(vendor_dir, exist_ok=True)
@@ -346,6 +348,31 @@ def ensure_vendor(out_dir: str) -> str:
     src = os.path.join(repo_root(), "templates", "svg", "svg.min.js")
     if os.path.isfile(src) and not os.path.isfile(dst):
         shutil.copy(src, dst)
+
+    sources_path = os.path.join(out_dir, "SOURCES.json")
+    rel = "assets/vendor/svg.min.js"
+    row = {
+        "type": "vendor_library",
+        "file": rel,
+        "source_url": "https://github.com/svgdotjs/svg.js",
+        "license": "MIT (svgdotjs/svg.js v3.2.4)",
+        "scraped_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "verified": True,
+        "notes": "Vendored locally from templates/svg/ — no CDN, CSP-safe.",
+    }
+    try:
+        if os.path.isfile(sources_path):
+            with open(sources_path, "r", encoding="utf-8") as f:
+                sources = json.load(f)
+        else:
+            sources = {"assets": []}
+        assets = sources.setdefault("assets", [])
+        if not any(a.get("file") == rel and a.get("type") == "vendor_library" for a in assets):
+            assets.append(row)
+            with open(sources_path, "w", encoding="utf-8") as f:
+                json.dump(sources, f, indent=1)
+    except Exception:
+        pass  # ledger is provenance, not build-critical — never break the build
     return dst
 
 

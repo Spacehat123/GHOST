@@ -8,6 +8,14 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
 import os
 import json
+import tempfile
+
+# The brain-loop fixtures ("build a site for Test Place", "Asset Pipeline",
+# limit tests) once leaked into the operator's LIVE transcript (2026-11-08
+# incident). Pin the history file BEFORE ghost imports.
+os.environ["GHOST_CONVERSATION_HISTORY"] = os.path.join(
+    tempfile.mkdtemp(prefix="ghost-loop-hist-"), "conversation_history.json")
+
 from ghost.core.agent import GhostAgent
 from ghost.core.brain import OmniRouteBrain
 

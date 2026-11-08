@@ -15,6 +15,41 @@ from typing import AsyncGenerator, Dict, Any, Optional, List
 
 logger = logging.getLogger("ghost.core")
 
+# How old a paused/blocked mission may be and still be resumed by an explicit
+# chat word. Anything older escalates to the deck/CLI instead — no zombie
+# missions rising from the board because someone said "go".
+MISSION_RESUME_MAX_AGE_HOURS = 12
+
+
+def _mission_age_hours(created_at: Any) -> float:
+    """Mission age in hours; unparseable timestamps count as ancient (fail-closed)."""
+    try:
+        raw = str(created_at or "").replace(" UTC", "").strip()
+        created = datetime.datetime.fromisoformat(raw)
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=datetime.timezone.utc)
+        return (datetime.datetime.now(datetime.timezone.utc) - created).total_seconds() / 3600.0
+    except Exception:
+        return float("inf")
+
+
+def should_auto_resume(clean_cmd: str, mission: Any) -> Dict[str, Any]:
+    """The explicit resume gate (2026-11-08 fix). Pure, so it is testable.
+
+    An exact-phrase resume command restarts only a RECENT paused/blocked/
+    approval-waiting mission, WITHOUT resetting attempt counters (the old
+    keyword hijack zeroed attempts and re-ran day-old work). Anything else
+    falls through so the operator's words reach the model untouched."""
+    status = getattr(mission, "status", "")
+    if status not in ("paused", "blocked", "paused_for_approval"):
+        return {"resume": False, "reason": f"mission is '{status}' — nothing to resume"}
+    age = _mission_age_hours(getattr(mission, "created_at", None))
+    if age > MISSION_RESUME_MAX_AGE_HOURS:
+        return {"resume": False,
+                "reason": (f"mission is {age:.0f}h old — too stale to auto-resume; "
+                           "review it in the Command Deck (Confirmation tab) or re-issue a fresh mission")}
+    return {"resume": True, "reason": "explicit resume of a recent paused mission"}
+
 from ghost.core.brain import OmniRouteBrain, GHOST_TOOLS, CONFIGS_DIR
 from ghost.core.follow import DirectiveManager
 from ghost.core.validator import ToolArgumentValidator
@@ -279,23 +314,37 @@ class GhostAgent:
                     yield {"type": "state", "state": "IDLE"}
                     return
 
+                # Exact resume commands only — no substring matching, and none of
+                # the old attempt-reset phrases ("remove limits", "free as a
+                # bird", "unblock") exist anymore anywhere.
                 action_phrases = [
-                    "continue", "resume", "remove limits", "no limits", "free as a bird", "unblock",
-                    "restart mission", "retry", "do it", "finish", "finish the work", "finish all tasks",
-                    "make the demo", "build the demo", "make demo", "build demo", "do task", "run task",
-                    "execute task", "start task", "run mission", "execute mission", "execute",
-                    "proceed", "go", "build", "scaffold", "just make", "keep going"
+                    "continue", "resume", "restart mission", "retry",
+                    "finish the work", "finish all tasks",
+                    "run mission", "execute mission", "keep going",
                 ]
-                if any(w in clean_cmd for w in action_phrases):
-                    store.unblock_mission(active_mission.id)
-                    active_mission = store.get_mission(active_mission.id)
-                    yield {"type": "state", "state": "THINKING"}
-                    yield {"type": "token", "text": f"Resuming mission '{active_mission.goal}' free as a bird via MissionRunner, sir...\n"}
-                    runner = MissionRunner(agent=self, store=store)
-                    async for m_event in runner.run(active_mission.id):
-                        yield m_event
-                    yield {"type": "state", "state": "IDLE"}
-                    return
+                # 2026-11-08 incident: this keyword hijack substring-matched the
+                # operator's words ("build the demo" contains "build"), resurrected
+                # the most recent paused/blocked mission with attempts RESET to
+                # zero, and NEVER passed the operator's actual message to the
+                # model. That is the "ignores my prompt and does whatever it
+                # wants" report, exactly. Missions now resume ONLY explicitly
+                # (exact phrase, recent mission, no attempt reset) — every other
+                # message reaches the model as the operator's actual words.
+                if clean_cmd in action_phrases or clean_cmd in ("continue mission", "resume mission"):
+                    decision = should_auto_resume(clean_cmd, active_mission)
+                    if decision["resume"]:
+                        active_mission = store.get_mission(active_mission.id)
+                        active_mission.status = "in_progress"
+                        store.update_mission(active_mission)
+                        yield {"type": "state", "state": "THINKING"}
+                        yield {"type": "token", "text": f"Resuming mission '{active_mission.goal}' from its current state (no attempt reset), sir...\n"}
+                        runner = MissionRunner(agent=self, store=store)
+                        async for m_event in runner.run(active_mission.id):
+                            yield m_event
+                        yield {"type": "state", "state": "IDLE"}
+                        return
+                    # not resumable → the words go to the model; the reason rides along
+                    yield {"type": "token", "text": f"[{decision['reason']}]\n\n"}
 
             mission_tasks_repr = []
             for t in active_mission.tasks:
@@ -1031,6 +1080,7 @@ class MissionRunner:
 
             # Execute dedicated bounded loop with fresh budget
             task_prompt = (
+                f"[MISSION EXECUTOR — automated dispatch, not the operator]\n"
                 f"Executing Mission '{mission.goal}'\n"
                 f"You are executing Task {task.id}: '{task.title}'\n"
                 f"Description: {task.description}\n"
@@ -1078,6 +1128,7 @@ class MissionRunner:
             # If task not done, attempt exactly 1 repair retry
             if task.attempts < 2:
                 repair_prompt = (
+                    f"[MISSION EXECUTOR — automated repair request, not the operator]\n"
                     f"Task {task.id} ('{task.title}') has not been marked 'done' with verified evidence.\n"
                     f"Acceptance criteria: {task.acceptance}\n"
                     f"Required evidence types: {task.evidence_required}\n"

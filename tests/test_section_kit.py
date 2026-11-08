@@ -249,6 +249,14 @@ class TestStateMachineUsesTheKit(unittest.TestCase):
             sec_map = json.load(f)
         self.assertIn("lead_capture", [r["name"] for r in sec_map["sections"]])
         self.assertIn("svg.min.js", os.listdir(os.path.join(sm.out_dir, "assets", "vendor")))
+        # the vendor rides with its provenance row — an unledgered asset is
+        # what tripped the evidence loop on 2026-11-08
+        with open(os.path.join(sm.out_dir, "SOURCES.json")) as f:
+            sources = json.load(f)
+        vendor_rows = [a for a in sources.get("assets", []) if a.get("type") == "vendor_library"]
+        self.assertEqual(len(vendor_rows), 1)
+        self.assertEqual(vendor_rows[0]["file"], "assets/vendor/svg.min.js")
+        self.assertIn("MIT", vendor_rows[0]["license"])
 
         # phase 4 with no browser available must write HONEST inconclusive evidence
         audit = asyncio.run(sm.run_phase4_visual_verification())
@@ -402,6 +410,27 @@ class TestReferenceLibrary(unittest.TestCase):
     def test_unrelated_task_gets_no_library_directive(self):
         from ghost.core.skills import capability_directive
         self.assertNotIn("_library", capability_directive("rebuild the grasshopper demo"))
+
+
+
+
+class TestMotionQaRefusal(unittest.TestCase):
+    """qa_motion_site must refuse kit pages (2026-11-08: it failed a kit page
+    for files kit pages don't have, and the executor looped on the evidence)."""
+
+    def test_kit_page_is_refused_and_qa_json_untouched(self):
+        import asyncio
+        from ghost.workers.motion_site_builder import MotionQA
+        d = os.path.join(TMP, f"kit-refuse-{uuid.uuid4().hex[:6]}")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "SECTIONS.json"), "w") as f:
+            f.write("{}")
+        res = asyncio.run(MotionQA.run_qa(d))
+        self.assertEqual(res["status"], "refused_kit_page")
+        self.assertFalse(res["passed"])
+        self.assertIn("phase 4", res["error"])
+        self.assertFalse(os.path.exists(os.path.join(d, "reports", "qa.json")),
+                         "a refusal writes no evidence")
 
 
 if __name__ == "__main__":
