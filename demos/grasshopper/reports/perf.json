@@ -1,7 +1,9 @@
 {
-  "target_fps_desktop": 55,
-  "target_fps_mobile": 30,
-  "stages_total": 5,
-  "measured_in": "local_environment",
-  "verified": true
+  "html_bytes": 30136,
+  "css_bytes": 0,
+  "js_bytes": 0,
+  "total_bundle_kb": 29.43,
+  "js_max_kb_gzip_budget": 150,
+  "budget_status": "within_budget",
+  "measurement_mode": "actual_file_bytes"
 }

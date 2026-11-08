@@ -54,6 +54,61 @@ def sections_dir() -> str:
     return os.path.join(repo_root(), "templates", "sections")
 
 
+# ---------------------------------------------------------------------------
+# The reference library (_library) — raw sources the operator drops in
+# ---------------------------------------------------------------------------
+
+_LIBRARY_HEADER_RE = re.compile(r"<!--\s*library(.*?)-->", re.S)
+
+
+def library_dir() -> str:
+    env = os.environ.get("GHOST_LIBRARY_DIR")
+    if env:
+        return env
+    from ghost.paths import repo_root
+    return os.path.join(sections_dir(), "_library")
+
+
+def library_index() -> List[Dict[str, Any]]:
+    """Index of the reference component library (templates/sections/_library/*):
+    raw downloaded sources (React/motion components, standalone vanilla pages)
+    organized by category (heroes, auth, cards, maps, modals, effects, ...).
+    These are ADAPTATION MATERIAL, never rendered directly — the kit validates
+    vanilla HTML/CSS/JS only, so an item must be hand-adapted into a real
+    section before a build can use it."""
+    root = library_dir()
+    items: List[Dict[str, Any]] = []
+    if not os.path.isdir(root):
+        return items
+    for cat in sorted(os.listdir(root)):
+        cdir = os.path.join(root, cat)
+        if not os.path.isdir(cdir) or cat.startswith("_") or cat.startswith("."):
+            continue
+        for name in sorted(os.listdir(cdir)):
+            mpath = os.path.join(cdir, name, "MANIFEST.md")
+            if not os.path.isfile(mpath):
+                continue
+            with open(mpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            meta: Dict[str, Any] = {}
+            m = _LIBRARY_HEADER_RE.search(content)
+            if m:
+                for line in m.group(1).strip().splitlines():
+                    if ":" in line:
+                        key, _, val = line.partition(":")
+                        meta[key.strip()] = val.strip()
+            items.append({
+                "name": meta.get("name", name),
+                "category": cat,
+                "source": meta.get("source", ""),
+                "kind": meta.get("kind", ""),
+                "license": meta.get("license", ""),
+                "summary": meta.get("summary", ""),
+                "has_code": meta.get("files", "none") not in ("", "none"),
+            })
+    return items
+
+
 def parse_section_header(content: str) -> Dict[str, Any]:
     """Parse the ``<!-- section ... -->`` manifest header (capability format)."""
     cap: Dict[str, Any] = {}

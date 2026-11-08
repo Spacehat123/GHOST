@@ -1,0 +1,37 @@
+import CircularCarousel from './CircularCarousel';
+
+const items = [
+  { src: '/images/valley.jpg', alt: 'Mist drifting through a valley', title: 'Valley', subtitle: 'Landscape' },
+  { src: '/images/portrait.jpg', alt: 'A studio portrait', title: 'Portrait', subtitle: 'Studio' },
+  { src: '/images/towers.jpg', alt: 'Glass towers from street level', title: 'Towers', subtitle: 'Architecture' }
+];
+
+<div style={{ width: '100%', height: '560px', position: 'relative' }}>
+  <CircularCarousel
+    items={items}
+    preset="cylinder"
+    intro="rise"
+    cardWidth={220}
+    aspectRatio={1}
+    speed={14}
+    captions={false}
+    gap={25}
+    tilt={-5}
+    curve={1}
+    perspective={2500}
+    autoplay="drift"
+    interval={3}
+    direction="left"
+    momentum={0.6}
+    snap
+    pauseOnHover
+    focusOnClick
+    draggable
+    parallax={0.3}
+    stretch={0.5}
+    fadeColor="#000000"
+    depthFade={0.55}
+    innerShade={0.6}
+    cornerRadius={12}
+/>
+</div>

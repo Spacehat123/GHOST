@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  "The trattoria tasting menu with the courses passing on scroll" from Animorio · https://animorio.com
+  License: free on your own sites and your clients’ sites, paid work included.
+  Not for resale, redistribution, templates or code collections · https://animorio.com/en/license/
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The tasting menu of a trattoria, course by course on scroll</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans@5.3.0/wdth.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/fraunces@5.3.0/full-italic.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- the tasting menu of Osteria Brina, a made-up trattoria. Scrolling down, the stage stays still and the five
+       courses pass one at a time through the card: the real photo of the dish opens from a small circle like a plate
+       set on the table, the name and the ingredients rise line by line, the course is written in words and a thin
+       rail between the courses fills up to the one on the table -->
+  <main>
+    <section class="apertura">
+      <p class="piccolo">Osteria Brina, since 1987</p>
+      <h1 class="titolo">Five courses, <em>one long evening.</em></h1>
+      <p class="piccolo piccolo--tenue">
+        Scroll to taste the menu
+        <svg class="giu" viewBox="0 0 12 16" aria-hidden="true"><path d="M6 1v13M1.5 9.5 6 14l4.5-4.5" /></svg>
+      </p>
+    </section>
+
+    <section class="menu" data-menu>
+      <div class="palco">
+        <article class="card" data-card>
+          <i class="card__luce" data-luce aria-hidden="true"></i>
+
+          <figure class="foto" data-foto>
+            <div class="foto__vetro" data-vetro>
+              <div class="piatto" data-piatto><div class="piatto__maschera"><img src="burrata.webp" alt="Burrata with halved datterini tomatoes and a gold fork on a white plate" width="1024" height="683" decoding="async"></div></div>
+              <div class="piatto" data-piatto><div class="piatto__maschera"><img src="ravioli.webp" alt="Mushroom ravioli with chives and slices of fried porcini" width="960" height="1449" decoding="async"></div></div>
+              <div class="piatto" data-piatto><div class="piatto__maschera"><img src="risotto.webp" alt="Saffron risotto topped with a red prawn and parsley in a deep white dish" width="1024" height="683" decoding="async"></div></div>
+              <div class="piatto" data-piatto><div class="piatto__maschera"><img src="filetto.webp" alt="A beef fillet in a glossy red wine jus with a roasted tomato" width="1024" height="681" decoding="async"></div></div>
+              <div class="piatto" data-piatto><div class="piatto__maschera"><img src="tiramisu.webp" alt="A slice of tiramisu dusted with cocoa and a sprig of mint" width="1024" height="683" decoding="async"></div></div>
+              <i class="anello" data-anello aria-hidden="true"></i>
+              <p class="gettone" aria-hidden="true">
+                <span class="gettone__finestra"><span class="gettone__striscia" data-gettone>
+                  <span>Antipasto</span><span>Primo</span><span>Risotto</span><span>Secondo</span><span>Dolce</span>
+                </span></span>
+              </p>
+            </div>
+          </figure>
+
+          <div class="testo">
+            <header class="testa">
+              <p class="marchio">
+                <svg class="marchio__segno" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5h16" /><path d="M6 15.5a6 6 0 0 1 12 0" /><path d="M12 9.5V8" /><path d="M8.5 19h7" /></svg>
+                Osteria Brina
+              </p>
+              <p class="testa__nota">Tasting menu</p>
+            </header>
+
+            <p class="portata" aria-hidden="true">
+              <span>Course</span>
+              <span class="portata__finestra"><span class="portata__striscia" data-numero>
+                <span>one</span><span>two</span><span>three</span><span>four</span><span>five</span>
+              </span></span>
+              <span class="portata__di">of five</span>
+            </p>
+
+            <div class="piatti">
+              <div class="voce" data-voce>
+                <h2 class="voce__nome"><span class="nascosto">Course one. </span>Burrata &amp; datterini</h2>
+                <ul class="voce__righe"><li>Burrata from Andria, still warm</li><li>Datterini tomatoes, basil oil</li><li>Flaked salt, toasted bread</li></ul>
+                <p class="voce__vino"><svg class="calice" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 1.5h6c0 3.4-1.2 5.6-3 5.6S3 4.9 3 1.5Z" /><path d="M6 7.1v6.4M3.6 14.5h4.8" /></svg>Paired with a Fiano, Campania</p>
+                <p class="voce__nota">The burrata comes up from Puglia every Thursday, so we serve it the same night.</p>
+              </div>
+              <div class="voce" data-voce>
+                <h2 class="voce__nome"><span class="nascosto">Course two. </span>Porcini ravioli</h2>
+                <ul class="voce__righe"><li>Porcini and sheep ricotta</li><li>Brown butter, fresh chives</li><li>Crisp mushroom shavings</li></ul>
+                <p class="voce__vino"><svg class="calice" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 1.5h6c0 3.4-1.2 5.6-3 5.6S3 4.9 3 1.5Z" /><path d="M6 7.1v6.4M3.6 14.5h4.8" /></svg>Paired with a Verdicchio, Marche</p>
+                <p class="voce__nota">Rolled by hand every afternoon by Nonna Pia, who still counts them.</p>
+              </div>
+              <div class="voce" data-voce>
+                <h2 class="voce__nome"><span class="nascosto">Course three. </span>Saffron risotto</h2>
+                <ul class="voce__righe"><li>Carnaroli rice, saffron threads</li><li>A whole red prawn, seared</li><li>Parsley, a drop of lemon</li></ul>
+                <p class="voce__vino"><svg class="calice" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 1.5h6c0 3.4-1.2 5.6-3 5.6S3 4.9 3 1.5Z" /><path d="M6 7.1v6.4M3.6 14.5h4.8" /></svg>Paired with a Vermentino, Liguria</p>
+                <p class="voce__nota">Stirred for eighteen minutes, never one more, and rested off the heat.</p>
+              </div>
+              <div class="voce" data-voce>
+                <h2 class="voce__nome"><span class="nascosto">Course four. </span>Beef fillet</h2>
+                <ul class="voce__righe"><li>Fillet, rested and sliced</li><li>Red wine jus, roast tomato</li><li>Young asparagus</li></ul>
+                <p class="voce__vino"><svg class="calice" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 1.5h6c0 3.4-1.2 5.6-3 5.6S3 4.9 3 1.5Z" /><path d="M6 7.1v6.4M3.6 14.5h4.8" /></svg>Paired with a Nebbiolo, Piedmont</p>
+                <p class="voce__nota">From a farm in the Langhe hills, cooked over vine cuttings.</p>
+              </div>
+              <div class="voce" data-voce>
+                <h2 class="voce__nome"><span class="nascosto">Course five. </span>Tiramisù</h2>
+                <ul class="voce__righe"><li>Savoiardi soaked in espresso</li><li>Mascarpone, bitter cocoa</li><li>A leaf of mint</li></ul>
+                <p class="voce__vino"><svg class="calice" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 1.5h6c0 3.4-1.2 5.6-3 5.6S3 4.9 3 1.5Z" /><path d="M6 7.1v6.4M3.6 14.5h4.8" /></svg>Paired with a Passito, Pantelleria</p>
+                <p class="voce__nota">Made at noon and left alone until dinner, as it should be.</p>
+              </div>
+            </div>
+
+            <div class="binario">
+              <div class="binario__linea"><i class="binario__pieno" data-pieno></i></div>
+              <ol class="binario__tappe">
+                <li><button type="button" data-tappa aria-label="Go to course one"><i></i><span>Burrata</span></button></li>
+                <li><button type="button" data-tappa aria-label="Go to course two"><i></i><span>Ravioli</span></button></li>
+                <li><button type="button" data-tappa aria-label="Go to course three"><i></i><span>Risotto</span></button></li>
+                <li><button type="button" data-tappa aria-label="Go to course four"><i></i><span>Fillet</span></button></li>
+                <li><button type="button" data-tappa aria-label="Go to course five"><i></i><span>Tiramisù</span></button></li>
+              </ol>
+            </div>
+
+            <footer class="conto">
+              <p class="conto__prezzo"><span class="conto__cifra">€68</span> per guest</p>
+              <p class="conto__vini">Wine pairing <strong>+€36</strong></p>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="apertura apertura--fine">
+      <h2 class="titolo titolo--medio">A table for <em>the whole evening.</em></h2>
+      <a class="pulsante" href="#"><span>Reserve the tasting</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg></a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

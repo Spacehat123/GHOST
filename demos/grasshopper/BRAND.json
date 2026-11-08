@@ -1,0 +1,94 @@
+{
+  "business_name": "Grasshopper",
+  "location": "Grasshopper Area",
+  "slug": "grasshopper",
+  "domain": "general_services",
+  "category": "",
+  "assets": {
+    "services": [
+      {
+        "title": "Consultation",
+        "category": "Consultation",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Core Service Delivery",
+        "category": "Core Service Delivery",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Client Support",
+        "category": "Client Support",
+        "price": null,
+        "desc": null
+      }
+    ],
+    "photos_policy": "no_photos_inquire"
+  },
+  "copy": {
+    "tagline_template": "Professional Standards & Bespoke Service in {location}.",
+    "offering_title": "Capabilities & Offerings",
+    "offering_kicker": "Disciplined Standards",
+    "cta_primary": "Request Consultation",
+    "cta_secondary": "Explore Capabilities",
+    "banner_headline": "Direct Client Engagement \u2022 Transparent Communication",
+    "banner_sub": "Connect directly with our team with zero intermediary delays.",
+    "philosophy_kicker": "Standards & Philosophy",
+    "philosophy_title": "Uncompromising Quality & Client Trust",
+    "philosophy_body_1": "At {business_name}, every engagement is handled with personal dedication and rigor in {location}.",
+    "philosophy_body_2": "We focus on measured outcomes, clear accountability, and enduring relationships.",
+    "quote_attribution": "Principal & Client Director",
+    "quote_text": "Excellence is never accidental; it is the result of disciplined intention and consistent execution.",
+    "atmosphere_title": "Practice & Environment",
+    "atmosphere_kicker": "Our Space",
+    "gallery_1": "Client Consultation Room",
+    "gallery_2": "Work & Collaboration Space",
+    "gallery_3": "Executive Suite",
+    "how_it_works_steps": [
+      [
+        "Step 01",
+        "Select Service Scope",
+        "Identify your specific requirements from our capabilities catalog."
+      ],
+      [
+        "Step 02",
+        "Direct Coordination",
+        "Connect directly via WhatsApp or telephone to establish timelines."
+      ],
+      [
+        "Step 03",
+        "Tailored Delivery",
+        "Receive dedicated attention and transparent execution from our team."
+      ]
+    ],
+    "booking_title": "Schedule a Consultation",
+    "booking_sub": "Select your service requirements and connect directly with our team.",
+    "booking_fields": "general",
+    "faqs": [
+      [
+        "How do I receive an initial quotation?",
+        "Share your project or service scope via WhatsApp or call for a transparent, bespoke proposal."
+      ],
+      [
+        "What are your standard scheduling lead times?",
+        "We accommodate consultation requests within 24 to 48 hours of initial inquiry."
+      ]
+    ]
+  },
+  "archetype_id": 5,
+  "archetype_name": "Clean Service & Modern Precision",
+  "tagline": "Professional Standards & Bespoke Service in Grasshopper Area.",
+  "services": [],
+  "services_verified": false,
+  "reviews": [],
+  "phone": null,
+  "email": null,
+  "hours": null,
+  "rating": null,
+  "review_count": null,
+  "scouted_photos": [],
+  "audit_data": null,
+  "needs_confirmation": true
+}

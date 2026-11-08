@@ -1,0 +1,85 @@
+{
+  "assets": [
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041258.4521089,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041272.297404,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041320.6019523,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041361.441024,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041498.72544,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041655.6796894,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794041822.0593414,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794045506.302215,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794050279.6246958,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794050903.5655959,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    }
+  ],
+  "disclosure": "All facts are observed evidence; missing facts are listed as [Inquire for quotation]."
+}

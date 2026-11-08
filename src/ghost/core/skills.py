@@ -222,7 +222,8 @@ def capability_directive(task_text: str, max_skills: int = 4) -> str:
     matches — the directive never invents relevance."""
     matches = relevant_skills(task_text)[:max_skills]
     route = route_for(task_text)
-    if not matches and not route:
+    library = _library_directive(task_text)
+    if not matches and not route and not library:
         return ""
     parts = []
     if matches:
@@ -232,7 +233,52 @@ def capability_directive(task_text: str, max_skills: int = 4) -> str:
                      "are binding for this task:\n" + "\n".join(lines))
     if route:
         parts.append(route)
+    if library:
+        parts.append(library)
     return "\n\n".join(parts)
+
+
+# The reference component library (templates/sections/_library): raw sources
+# the operator downloaded. Ghost must CHECK this before building anything in
+# these categories — adapting an existing polished component beats inventing.
+_LIBRARY_KEYWORDS = {
+    "auth": ("login", "signup", "sign up", "sign in", "auth", "register"),
+    "heroes": ("globe", "hero", "container scroll"),
+    "cards": ("expandable", "expanding card"),
+    "maps": ("world map", "map arcs", "coverage map"),
+    "modals": ("modal", "dialog"),
+    "effects": ("liquid glass", "ink", "melt", "melting", "tasting menu",
+                "reveal animation", "scroll effect"),
+}
+
+
+def _library_directive(task_text: str, max_items: int = 4) -> str:
+    text = str(task_text or "").lower()
+    try:
+        from ghost.workers.section_kit import library_index
+        items = library_index()
+    except Exception:
+        return ""
+    if not items:
+        return ""
+    hits = []
+    for it in items:
+        kws = _LIBRARY_KEYWORDS.get(it["category"], ()) + (it["name"].replace("-", " "),)
+        if any(k in text for k in kws):
+            hits.append(it)
+    if not hits:
+        return ""
+    lines = []
+    for it in hits[:max_items]:
+        marker = ("[source gated — ask the operator to drop the file into "
+                  f"_library/{it['category']}/{it['name']}/]" if not it.get("has_code")
+                  else f"[{it['kind']}]")
+        lines.append(f"- _library/{it['category']}/{it['name']} — {it['summary']} {marker}")
+    return ("COMPONENT LIBRARY — polished sources for this already exist in "
+            "templates/sections/_library. Check them BEFORE inventing a design; "
+            "they are raw material (not kit sections): adapt to vanilla "
+            "HTML/CSS/JS per templates/sections/README.md rules, then register "
+            "as a real section:\n" + "\n".join(lines))
 
 
 def capability_index_block() -> str:

@@ -1,0 +1,189 @@
+.uvq15-shr {
+  --c1: #1f2937;
+  --c2: #84cc16;
+  --s: 16px;
+  /* tamaño */
+  --k: 1;
+  /* velocidad */
+  --fg: #1d1d1f;
+  /* texto */
+  --bg: #f5f5f7;
+  /* fondo */
+}
+
+.uvq15-shr {
+  font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+  font-size: var(--s);
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  display: grid;
+  justify-items: center;
+  width: 15em;
+  padding-top: 5.6em;
+}
+
+.uvq15-shr .fan {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.uvq15-shr .mn {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 3.6em;
+  height: 3.6em;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--c1);
+  box-shadow: 0 .8em 1.6em -.8em rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.15);
+  transition: transform calc(0.45s / var(--k)) cubic-bezier(.34,1.56,.64,1);
+}
+
+.uvq15-shr .mn:hover {
+  transform: scale(1.05);
+}
+
+.uvq15-shr .mn:active {
+  transform: scale(.94);
+}
+
+.uvq15-shr .mn:focus-visible,.uvq15-shr .it:focus-visible {
+  outline: 2px solid var(--c1);
+  outline-offset: 3px;
+}
+
+.uvq15-shr .mn>span {
+  grid-area: 1/1;
+  display: grid;
+  transition: transform calc(0.4s / var(--k)) cubic-bezier(.22,1,.36,1),opacity calc(0.25s / var(--k)) cubic-bezier(.25,.1,.25,1);
+}
+
+.uvq15-shr .mn svg {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.uvq15-shr .x {
+  opacity: 0;
+  transform: rotate(-90deg) scale(.5);
+}
+
+.uvq15-shr.open .o {
+  opacity: 0;
+  transform: rotate(90deg) scale(.5);
+}
+
+.uvq15-shr.open .x {
+  opacity: 1;
+  transform: none;
+}
+
+.uvq15-shr.open .mn {
+  background: var(--c2);
+  color: #1a2e05;
+}
+
+.uvq15-shr .it {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 2.9em;
+  height: 2.9em;
+  margin: -1.45em 0 0 -1.45em;
+  border-radius: 50%;
+  color: var(--fg);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb,var(--fg) 10%,transparent),0 .6em 1.2em -.6em rgba(0,0,0,.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.3);
+  transition: transform calc(0.3s / var(--k)) cubic-bezier(.25,.1,.25,1),opacity calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1),visibility 0s calc(0.3s / var(--k)),background calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1),color calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1);
+}
+
+.uvq15-shr .it svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.uvq15-shr.open .it {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(var(--x),var(--y));
+  transition: transform calc(0.55s / var(--k)) cubic-bezier(.34,1.56,.64,1) calc(var(--i) * calc(0.05s / var(--k))),opacity calc(0.25s / var(--k)) cubic-bezier(.25,.1,.25,1) calc(var(--i) * calc(0.05s / var(--k))),visibility 0s,background calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1),color calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1);
+}
+
+.uvq15-shr.open .it:hover,.uvq15-shr.open .it:focus-visible {
+  color: #1a2e05;
+  background: var(--c2);
+  transform: translate(var(--x),var(--y)) scale(1.12);
+}
+
+.uvq15-shr .it::after {
+  content: attr(aria-label);
+  position: absolute;
+  bottom: calc(100% + .5em);
+  left: 50%;
+  padding: .3em .6em;
+  border-radius: .5em;
+  font-size: .68em;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--bg);
+  background: var(--fg);
+  translate: -50% .3em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1),translate calc(0.2s / var(--k)) cubic-bezier(.25,.1,.25,1);
+}
+
+.uvq15-shr .it:hover::after,.uvq15-shr .it:focus-visible::after {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.uvq15-shr .it:hover,.uvq15-shr .it:focus-visible {
+  z-index: 3;
+}
+
+.uvq15-shr .tt {
+  height: 1.4em;
+  margin: .9em 0 0;
+  font-size: .8em;
+  font-weight: 700;
+  color: color-mix(in srgb,var(--fg) 55%,transparent);
+  opacity: 0;
+  transform: translateY(.4em);
+  transition: opacity calc(0.25s / var(--k)) cubic-bezier(.25,.1,.25,1),transform calc(0.35s / var(--k)) cubic-bezier(.22,1,.36,1);
+}
+
+.uvq15-shr .tt.on {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .uvq15-shr,.uvq15-shr *,.uvq15-shr *::before,.uvq15-shr *::after {
+    animation-duration: .01ms!important;
+    animation-iteration-count: 1!important;
+    transition-duration: .01ms!important;
+  }
+}

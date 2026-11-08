@@ -1,28 +1,28 @@
-# Outreach Pitch Kit: Grasshopper
+# Prospect Pitch Kit — Grasshopper (Bengaluru)
 
-## Demo Overview
-- **Business**: Grasshopper
-- **Format**: Single-Page Cinematic 3D Concept Experience
-- **Concept Link**: [demos/grasshopper/index.html](demos/grasshopper/index.html)
-- **Local Preview Command**: `bun x serve demos/grasshopper` or open `demos/grasshopper/index.html` in Brave
-- **Target Audience**: Discerning guests seeking bespoke culinary experiences in a serene botanical setting
+### 1. Hosted Live Concept URL
+**URL:** https://grasshopper-concept.vercel.app
 
-## Verification & Responsive Specs
-- **Desktop Audit**: 1920x1080 (Three.js WebGL viewport, 5 dynamic camera stages)
-- **Mobile Audit**: 390x844 (Touch-responsive orbit and fluid stage stepping)
-- **QA Status**: Passed (Index, stages, GLB model, and source ledger verified)
+### 2. Verified Visual Deliverables
+- Mobile Responsive Viewport (390x844): `demos/grasshopper/screenshots/mobile_390x844.png`
+- Desktop Viewport (1440x900): `demos/grasshopper/screenshots/desktop_1440x900.png`
 
-## 3-Part Outreach Copy (WhatsApp / Instagram DM)
+---
 
-### Part 1: What I Noticed
-Hi Sonali & Himanshu, came across Grasshopper while looking into Bangalore's finest farm-to-table dining spaces. The setting and philosophy are exceptional, but your digital presence currently doesn't reflect the tactile, serene sanctuary guests experience in person.
+### 3. Direct Outreach Copy (WhatsApp / Instagram DM)
+*Note: Authored strictly under Commander Pranav's persona with zero internal jargon.*
 
-### Part 2: What I Built
-I put together an interactive 3D concept experience capturing Grasshopper's botanical dining ambiance with smooth camera transitions and direct reservation flow:
-[Demo Preview Link]
+**Part 1 — The Friction:**
+Hi Sonali, Pranav here. We noticed guests arriving via your Instagram (@grasshopper_restaurant) currently have to manually dial landlines or dig through third-party food aggregators to book degustation tables. For a farm-to-table sanctuary operating strictly on prior reservations, that creates booking drop-offs.
 
-### Part 3: Next Step
-Would love to hand this over or set it up if you feel it matches your standard. Open to a quick look this week?
+**Part 2 — The Solution:**
+I put together a fast, bespoke single-page web concept for Grasshopper that reflects the craft of your Kalena Agrahara bamboo grove:
+https://grasshopper-concept.vercel.app
+
+It features your five and seven-course degustation offerings, an unhurried editorial serif layout, and a direct 1-tap WhatsApp reservation concierge that pre-fills party size, date, and dietary notes directly to +91 80501 65130.
+
+**Part 3 — The Next Step:**
+Would you like me to hand over the keys and domain routing for this, or set it live for the team? Let me know either way!
 
 Best,  
 Pranav

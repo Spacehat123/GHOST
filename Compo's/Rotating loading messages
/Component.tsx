@@ -1,0 +1,108 @@
+import type { CSSProperties } from "react";
+
+const css = `
+.uv-lsw {
+  font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+  font-size: var(--s);
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: .7em;
+  padding: .7em 1.1em .7em .8em;
+  border-radius: 2em;
+  background: color-mix(in srgb,var(--fg) 4%,var(--bg));
+  box-shadow: 0 0 0 1px color-mix(in srgb,var(--fg) 8%,transparent),0 .8em 1.6em -1em rgba(0,0,0,.4);
+}
+
+.uv-lsw .sp {
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 50%;
+  border: .18em solid var(--c2);
+  border-top-color: var(--c1);
+  animation: uv-lsw-s calc(0.8s / var(--k)) linear infinite;
+}
+
+.uv-lsw .wd {
+  display: grid;
+  height: 1.4em;
+  overflow: hidden;
+  font-weight: 600;
+}
+
+.uv-lsw .wd span {
+  grid-area: 1/1;
+  line-height: 1.4em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(100%);
+  animation: uv-lsw calc(6s / var(--k)) cubic-bezier(.25,.1,.25,1) infinite;
+}
+
+.uv-lsw .wd span:nth-child(2) {
+  animation-delay: calc(1.5s / var(--k));
+}
+
+.uv-lsw .wd span:nth-child(3) {
+  animation-delay: calc(3s / var(--k));
+}
+
+.uv-lsw .wd span:nth-child(4) {
+  animation-delay: calc(4.5s / var(--k));
+}
+
+@keyframes uv-lsw {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  5%,22% {
+    opacity: 1;
+    transform: none;
+  }
+  27%,100% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes uv-lsw-s {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .uv-lsw .wd span {
+    animation: none;
+  }
+  .uv-lsw .wd span:last-child {
+    opacity: 1;
+    transform: none;
+  }
+  .uv-lsw .sp {
+    animation-duration: calc(2.4s / var(--k));
+  }
+}
+`;
+
+export default function LdStatusWords() {
+  return (
+    <>
+      <style>{css}</style>
+      <div
+        style={{
+          "--c1": "#2563eb",
+          "--c2": "#bfdbfe",
+          "--s": "16px",
+          "--k": "1",
+          "--fg": "#1d1d1f",
+          "--bg": "#f5f5f7",
+        } as CSSProperties}
+      >
+        <div className="uv-lsw" role="status"><span className="sp" aria-hidden="true"></span><span className="wd"><span>Connecting</span><span>Loading your data</span><span>Preparing the dashboard</span><span>Almost done</span></span></div>
+      </div>
+    </>
+  );
+}

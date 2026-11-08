@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  "The melting sheet" from Animorio · https://animorio.com
+  License: free on your own sites and your clients’ sites, paid work included.
+  Not for resale, redistribution, templates or code collections · https://animorio.com/en/license/
+-->
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La carta che si scioglie</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/instrument-serif@5.3.0/index.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans@5.3.0/standard.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <!-- la scena: più alta dello schermo, il palco resta fermo mentre il foglio si scioglie -->
+    <section class="scena" data-scena>
+      <div class="palco" data-palco>
+        <!-- sotto: il fotogramma del film, una foto vera, e una frase -->
+        <div class="fotogramma">
+          <img class="fotogramma__foto" src="faro-al-tramonto.webp" width="1024" height="518" alt="Un faro su uno scoglio al tramonto, col sole che si riflette nel mare">
+          <p class="frase" aria-hidden="true"><span>Non è il mare</span><span>che ci separa</span></p>
+        </div>
+        <!-- sopra: il foglio, tagliato da un clip-path che lo script ricalcola a ogni fotogramma -->
+        <div class="foglio" data-foglio>
+          <p class="nota" data-nota>Scorri: il foglio grigio si scioglie a chiazze sull’immagine che c’è sotto. Col mouse puoi morderne il bordo.</p>
+          <h1 class="foglio__titolo">Il faro</h1>
+          <dl class="crediti">
+            <div><dt>Regia</dt><dd>Nora Valli</dd></div>
+            <div><dt>Anno</dt><dd>2019</dd></div>
+            <div><dt>Con</dt><dd>Livio Sarti, Ada Moretti</dd></div>
+          </dl>
+          <p class="foglio__azioni">
+            <a class="foglio__tasto" href="#">Guarda il film</a>
+            <a class="foglio__tasto" href="#">Il programma</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="dopo">
+      <p class="dopo__testo">Un guardiano del faro e una ragazza che arriva col traghetto dell’ultima corsa. Tre settimane di mareggiate, e una lettera che nessuno dei due vuole spedire.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

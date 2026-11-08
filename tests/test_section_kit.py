@@ -28,8 +28,9 @@ os.environ["GHOST_HALT_META"] = os.environ["GHOST_HALT_FILE"] + ".json"
 
 from ghost.workers.section_kit import (GLOBAL_CONTEXT_KEYS, INQUIRE_PHOTOGRAPHY,
                                        SectionLibrary, SectionValidationError,
-                                       compose_page, parse_section_header,
-                                       plan_sections, write_section_map)
+                                       compose_page, library_index,
+                                       parse_section_header, plan_sections,
+                                       write_section_map)
 
 
 def _arch():
@@ -361,6 +362,46 @@ class TestLeadsInbox(EnvPinned):
         res = self._post("../escape")
         self.assertIn(res.status_code, (400, 404),
                       "path traversal in the slug is refused one way or another")
+
+
+class TestReferenceLibrary(unittest.TestCase):
+    """The operator's collected sources (templates/sections/_library): indexed
+    for Ghost's awareness, NEVER leaked into kit section discovery."""
+
+    def test_library_index_lists_every_entry_with_state(self):
+        items = library_index()
+        names = {i["name"] for i in items}
+        for expected in ("liquid-glass", "3d-globe", "expandable-card", "world-map",
+                         "animated-modal", "container-scroll", "melting-sheet",
+                         "trattoria-tasting-menu", "ink-that-reveals",
+                         "login-signup-minimal", "premium-auth-split"):
+            self.assertIn(expected, names)
+        self.assertEqual(len(items), 15)
+        self.assertEqual(len({i["category"] for i in items}), 6)  # auth cards effects heroes maps modals
+        with_code = [i for i in items if i["has_code"]]
+        self.assertEqual(len(with_code), 9, "9 downloaded, 6 auth entries gated")
+
+    def test_library_never_leaks_into_section_discovery(self):
+        section_names = SectionLibrary().names()
+        self.assertNotIn("liquid-glass", section_names)
+        self.assertNotIn("melting-sheet", section_names)
+        self.assertEqual(len(section_names), 13,
+                         "the kit builds its 13 vanilla sections, not library raws")
+
+    def test_auth_task_directive_points_at_library_and_asks_for_gated_source(self):
+        from ghost.core.skills import capability_directive
+        d = capability_directive("build a login page with signup for the client")
+        self.assertIn("_library/auth/", d)
+        self.assertIn("drop the file", d, "gated entries make Ghost ASK, not invent")
+
+    def test_globe_task_directive_names_the_component(self):
+        from ghost.core.skills import capability_directive
+        d = capability_directive("demo hero with a 3d globe")
+        self.assertIn("3d-globe", d)
+
+    def test_unrelated_task_gets_no_library_directive(self):
+        from ghost.core.skills import capability_directive
+        self.assertNotIn("_library", capability_directive("rebuild the grasshopper demo"))
 
 
 if __name__ == "__main__":
