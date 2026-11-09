@@ -267,6 +267,25 @@ class KokoroSpeechEngine:
     def get_active_provider(self) -> str:
         return self._active_provider
 
+    def get_installed_voices(self) -> List[str]:
+        """Return the list of installed voices restricted to English (af, am, bf, bm) and Hindi (hf, hm)."""
+        voices = []
+        if self._kokoro and hasattr(self._kokoro, "get_voices"):
+            try:
+                voices = sorted(list(self._kokoro.get_voices()))
+            except Exception:
+                pass
+        if not voices:
+            voices = [
+                "af_nicole", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore", "af_nova", "af_river", "af_sarah", "af_sky", "af_alloy",
+                "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck", "am_santa",
+                "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
+                "bm_daniel", "bm_fable", "bm_george", "bm_lewis",
+                "hf_alpha", "hf_beta", "hm_omega", "hm_psi"
+            ]
+        allowed_prefixes = ("af_", "am_", "bf_", "bm_", "hf_", "hm_")
+        return [v for v in voices if any(v.startswith(p) for p in allowed_prefixes)]
+
     def synthesize_clause_sync(self, clause: str, voice: Optional[str] = None, speed: float = 1.05) -> Tuple[Optional[bytes], str]:
         """Synchronously synthesize a single clause into WAV bytes."""
         import soundfile as sf

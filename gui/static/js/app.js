@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnInterrupt = document.getElementById('btn-interrupt');
   const tokenStatsText = document.getElementById('token-stats-text');
 
+  // Active Speech Voice State
+  let currentVoice = localStorage.getItem('ghost_voice') || 'af_nicole';
+  let installedVoices = [];
+
   // Tactical Authorization Modal Elements
   const authModal = document.getElementById('auth-modal');
   const authDescription = document.getElementById('auth-description');
@@ -312,7 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const clause = clauseAudioQueue.shift();
 
     try {
-      const url = `/api/tts?text=${encodeURIComponent(clause)}`;
+      const activeVoice = localStorage.getItem('ghost_voice') || currentVoice || 'af_nicole';
+      const url = `/api/tts?text=${encodeURIComponent(clause)}&voice=${encodeURIComponent(activeVoice)}`;
       const audio = new Audio(url);
       audio.crossOrigin = 'anonymous';
       ttsAudioElement = audio;
@@ -464,7 +469,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // Completed tool
     } else if (event.type === 'token_stats') {
       if (tokenStatsText) {
-        tokenStatsText.textContent = `LAST: ${event.last || 0} | TODAY: ${event.today || 0}`;
+        const last = event.last || 0;
+        const cached = event.cached_tokens || 0;
+        const today = event.today || 0;
+        const todayCached = event.today_cached || 0;
+
+        const fmt = (n) => {
+          if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+          if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+          return n.toString();
+        };
+
+        if (cached > 0) {
+          tokenStatsText.textContent = `LAST: ${fmt(last)} (${fmt(cached)} CACHED) | TODAY: ${fmt(today)}`;
+          tokenStatsText.title = `Last Run: ${last.toLocaleString()} total tokens (${cached.toLocaleString()} cached, ${(last - cached).toLocaleString()} new)\nToday: ${today.toLocaleString()} total (${todayCached.toLocaleString()} cached)`;
+        } else {
+          tokenStatsText.textContent = `LAST: ${fmt(last)} | TODAY: ${fmt(today)}`;
+          tokenStatsText.title = `Last Run: ${last.toLocaleString()} total tokens\nToday: ${today.toLocaleString()} tokens`;
+        }
       }
     } else if (event.type === 'auth_request') {
       currentAuthId = event.auth_id;
@@ -670,10 +692,66 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Tactical Pill HUD Buttons (Reference Video)
+  const selectHudVoice = document.getElementById('select-hud-voice') || document.getElementById('btn-hud-voice');
   const btnHudHistory = document.getElementById('btn-hud-history');
   const btnHudLogs = document.getElementById('btn-hud-logs');
   const btnHudDev = document.getElementById('btn-hud-dev');
   const btnHudClear = document.getElementById('btn-hud-clear');
+
+  async function selectVoice(voice) {
+    if (!voice) return;
+    currentVoice = voice;
+    localStorage.setItem('ghost_voice', voice);
+
+    if (selectHudVoice) {
+      selectHudVoice.value = voice;
+      selectHudVoice.classList.add('active');
+      setTimeout(() => selectHudVoice.classList.remove('active'), 400);
+    }
+
+    try {
+      await fetch('/api/tts/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice })
+      });
+    } catch (e) {
+      console.warn('Could not sync active voice to server:', e);
+    }
+
+    setSubtitle('SYSTEM', `Voice switched: ${voice}`);
+  }
+
+  // Handle voice dropdown change
+  if (selectHudVoice) {
+    selectHudVoice.addEventListener('change', (e) => {
+      selectVoice(e.target.value);
+    });
+  }
+
+  async function loadInstalledVoices() {
+    try {
+      const res = await fetch('/api/tts/voices');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.voices && Array.isArray(data.voices)) {
+          installedVoices = data.voices;
+        }
+        const saved = localStorage.getItem('ghost_voice');
+        if (saved && (installedVoices.length === 0 || installedVoices.includes(saved))) {
+          currentVoice = saved;
+        } else if (data.current) {
+          currentVoice = data.current;
+        }
+        if (selectHudVoice) {
+          selectHudVoice.value = currentVoice;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch installed voices:', err);
+    }
+  }
+  loadInstalledVoices();
 
   if (btnHudClear) {
     btnHudClear.addEventListener('click', () => {
@@ -693,9 +771,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && document.body.classList.contains('clean-focus')) {
-      document.body.classList.remove('clean-focus');
-      if (btnHudClear) btnHudClear.classList.remove('active');
+    if (e.key === 'Escape') {
+      if (voicePopover && !voicePopover.classList.contains('hidden')) {
+        closeVoicePopover();
+      }
+      if (document.body.classList.contains('clean-focus')) {
+        document.body.classList.remove('clean-focus');
+        if (btnHudClear) btnHudClear.classList.remove('active');
+      }
     }
   });
 

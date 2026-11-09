@@ -30,6 +30,7 @@ MODEL_PRICING = {
 class TaskTokenTracker:
     task_id: str
     prompt_tokens: int = 0
+    cached_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
     model_calls: int = 0
@@ -48,11 +49,13 @@ class TaskTokenTracker:
         self,
         prompt_tokens: int,
         completion_tokens: int,
-        total_tokens: Optional[int] = None
+        total_tokens: Optional[int] = None,
+        cached_tokens: int = 0
     ) -> None:
-        """Accumulates usage from a single model call round."""
+        """Accumulates usage from a single model call round, tracking cached tokens."""
         self.model_calls += 1
         self.prompt_tokens += max(0, prompt_tokens)
+        self.cached_tokens += max(0, cached_tokens)
         self.completion_tokens += max(0, completion_tokens)
         calc_total = prompt_tokens + completion_tokens
         if total_tokens is not None and total_tokens > calc_total:
@@ -71,9 +74,12 @@ class TaskTokenTracker:
         self.breakdown[category] = self.breakdown.get(category, 0) + count
 
     def compute_cost(self) -> float:
-        """Compute estimated USD cost based on model pricing table."""
+        """Compute estimated USD cost based on model pricing table, applying provider cache discount."""
         pricing = MODEL_PRICING.get(self.model, MODEL_PRICING["default"])
-        prompt_cost = (self.prompt_tokens / 1_000_000.0) * pricing["prompt"]
+        uncached_prompt = max(0, self.prompt_tokens - self.cached_tokens)
+        # Provider-side cached prompt tokens are billed at 25% or free depending on model
+        cached_rate = pricing["prompt"] * 0.25
+        prompt_cost = ((uncached_prompt * pricing["prompt"] + self.cached_tokens * cached_rate) / 1_000_000.0)
         completion_cost = (self.completion_tokens / 1_000_000.0) * pricing["completion"]
         self.cost_usd = round(prompt_cost + completion_cost, 6)
         return self.cost_usd
@@ -83,6 +89,7 @@ class TaskTokenTracker:
         return {
             "task_id": self.task_id,
             "prompt_tokens": self.prompt_tokens,
+            "cached_tokens": self.cached_tokens,
             "completion_tokens": self.completion_tokens,
             "total_tokens": self.total_tokens,
             "model_calls": self.model_calls,
@@ -99,8 +106,10 @@ class TaskTokenTracker:
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         stats = {
             "last": self.total_tokens,
+            "last_cached": self.cached_tokens,
             "last_cost": self.cost_usd,
             "today": self.total_tokens,
+            "today_cached": self.cached_tokens,
             "today_cost": self.cost_usd,
             "history": []
         }
@@ -109,6 +118,7 @@ class TaskTokenTracker:
                 with open(target_path, "r", encoding="utf-8") as f:
                     existing = json.load(f)
                     stats["today"] = existing.get("today", 0) + self.total_tokens
+                    stats["today_cached"] = existing.get("today_cached", 0) + self.cached_tokens
                     stats["today_cost"] = round(existing.get("today_cost", 0.0) + self.cost_usd, 6)
                     stats["history"] = existing.get("history", [])
             except Exception as e:

@@ -1,0 +1,34 @@
+{
+  "passed": false,
+  "mode": "none",
+  "status": "inconclusive",
+  "screenshots_captured": 0,
+  "screenshots": [],
+  "human_review": {
+    "screenshots": []
+  },
+  "checks": {
+    "layout_overflow": false,
+    "viewports_tested": [
+      "390x844 (Mobile)",
+      "1440x900 (Desktop)"
+    ],
+    "note": "Visual assertion completed with local fallback: no close frame received or sent"
+  },
+  "sections": [
+    "nav_floating",
+    "hero_editorial",
+    "gap_banner",
+    "story_philosophy",
+    "services_bento",
+    "proof_reviews",
+    "gallery_strip",
+    "journey_steps",
+    "booking_module",
+    "faq_answers",
+    "hours_location",
+    "lead_capture",
+    "footer_mono"
+  ],
+  "builder": "demo_state_machine/section_kit"
+}

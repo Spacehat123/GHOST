@@ -712,18 +712,29 @@ class MissionStore:
 
         return None
 
-    def active_mission(self) -> Optional[Mission]:
-        """Return the latest active in_progress mission, or recent resumable mission."""
+    def active_mission(self, max_age_hours: float = 12.0) -> Optional[Mission]:
+        """Return the latest active in_progress mission, or recent resumable mission within max_age_hours."""
         with self._get_connection() as conn:
-            row = conn.execute(
-                "SELECT id FROM missions WHERE status = 'in_progress' ORDER BY rowid DESC LIMIT 1;"
-            ).fetchone()
-            if not row:
-                row = conn.execute(
-                    "SELECT id FROM missions WHERE status IN ('paused', 'paused_for_approval', 'blocked') ORDER BY rowid DESC LIMIT 1;"
-                ).fetchone()
-            if row:
-                return self.get_mission(row["id"])
+            rows = conn.execute(
+                "SELECT id, created_at FROM missions WHERE status = 'in_progress' ORDER BY rowid DESC;"
+            ).fetchall()
+            if not rows:
+                rows = conn.execute(
+                    "SELECT id, created_at FROM missions WHERE status IN ('paused', 'paused_for_approval', 'blocked') ORDER BY rowid DESC;"
+                ).fetchall()
+            for row in rows:
+                mid = row["id"]
+                raw_created = row["created_at"]
+                try:
+                    raw = str(raw_created or "").replace(" UTC", "").strip()
+                    created = datetime.fromisoformat(raw)
+                    if created.tzinfo is None:
+                        created = created.replace(tzinfo=timezone.utc)
+                    age_h = (datetime.now(timezone.utc) - created).total_seconds() / 3600.0
+                except Exception:
+                    age_h = float("inf")
+                if age_h <= max_age_hours:
+                    return self.get_mission(mid)
         return None
 
     def unblock_mission(self, mission_id: str) -> Optional[Mission]:

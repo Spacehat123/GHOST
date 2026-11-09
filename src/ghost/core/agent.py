@@ -50,7 +50,7 @@ def should_auto_resume(clean_cmd: str, mission: Any) -> Dict[str, Any]:
                            "review it in the Command Deck (Confirmation tab) or re-issue a fresh mission")}
     return {"resume": True, "reason": "explicit resume of a recent paused mission"}
 
-from ghost.core.brain import OmniRouteBrain, GHOST_TOOLS, CONFIGS_DIR
+from ghost.core.brain import OmniRouteBrain, GHOST_TOOLS, get_ghost_tools, CONFIGS_DIR
 from ghost.core.follow import DirectiveManager
 from ghost.core.validator import ToolArgumentValidator
 from ghost.core.token_tracker import TaskTokenTracker, TOKEN_STATS_PATH
@@ -149,20 +149,58 @@ def _compute_relative_time(last_ts_str: Optional[str]) -> str:
         pass
     return f"Last seen at {last_ts_str}"
 
-def _update_token_stats(turn_tokens: int) -> Dict[str, int]:
+def _extract_cached_tokens(usage: Any) -> int:
+    """Safely extract provider-side cached tokens from API usage payload."""
+    if not usage:
+        return 0
+    pt_details = getattr(usage, "prompt_tokens_details", None)
+    if pt_details is None and isinstance(usage, dict):
+        pt_details = usage.get("prompt_tokens_details")
+
+    if pt_details:
+        if isinstance(pt_details, dict):
+            c = pt_details.get("cached_tokens") or pt_details.get("cache_read_tokens")
+            if c is not None:
+                return int(c)
+        else:
+            c = getattr(pt_details, "cached_tokens", None) or getattr(pt_details, "cache_read_tokens", None)
+            if c is not None:
+                return int(c)
+
+    if isinstance(usage, dict):
+        c = usage.get("cache_read_input_tokens") or usage.get("cached_tokens")
+        if c is not None:
+            return int(c)
+    else:
+        c = getattr(usage, "cache_read_input_tokens", None) or getattr(usage, "cached_tokens", None)
+        if c is not None:
+            return int(c)
+
+    return 0
+
+def _update_token_stats(turn_tokens: int, cached_tokens: int = 0) -> Dict[str, Any]:
     """Track last and total tokens consumed in configs/token_stats.json."""
     os.makedirs(CONFIGS_DIR, exist_ok=True)
     today_tokens = 0
+    today_cached = 0
     if os.path.exists(TOKEN_STATS_PATH):
         try:
             with open(TOKEN_STATS_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 today_tokens = data.get("today", 0)
+                today_cached = data.get("today_cached", 0)
         except Exception:
             today_tokens = 0
+            today_cached = 0
 
     today_tokens += turn_tokens
-    stats = {"last": turn_tokens, "today": today_tokens}
+    today_cached += cached_tokens
+    stats = {
+        "last": turn_tokens,
+        "last_cached": cached_tokens,
+        "today": today_tokens,
+        "today_cached": today_cached
+    }
     try:
         with open(TOKEN_STATS_PATH, "w", encoding="utf-8") as f:
             json.dump(stats, f, indent=2)
@@ -261,7 +299,8 @@ class GhostAgent:
             f"- State: Resumed active mission from persistent memory ledger ({len(OmniRouteBrain._history)} turns recorded)\n"
         )
 
-        system_content = OmniRouteBrain.SYSTEM_PROMPT + temporal_banner + episodic_banner
+        # Static system prompt prefix: Keeping messages[0] 100% frozen enables provider-side prompt caching (80%+ hit rate)
+        system_content = OmniRouteBrain.SYSTEM_PROMPT
         # Capability injection (Operator's directive): the model's standing map
         # of its own toolbox — regenerated per turn from the registry, so a new
         # skill file is in the model's hands without a restart.
@@ -275,14 +314,6 @@ class GhostAgent:
         if directives_context:
             system_content += f"\n\n{directives_context}"
 
-        # Token categorization breakdown attribution
-        task_tracker.record_category_tokens("memory", max(1, len(directives_context + episodic_banner) // 4))
-        task_tracker.record_category_tokens("tool_definitions", max(1, len(json.dumps(GHOST_TOOLS)) // 4))
-
-        messages: List[Dict[str, Any]] = [
-            {"role": "system", "content": system_content}
-        ]
-
         # Context Loading: Active Mission context takes precedence over rolling chat history
         active_mission = None
         try:
@@ -290,6 +321,17 @@ class GhostAgent:
             active_mission = store.active_mission()
         except Exception:
             pass
+
+        # Tool Selection: Lean CORE_TOOLS for interactive user chat; full GHOST_TOOLS for MissionRunner or domain tasks
+        effective_tools = get_ghost_tools(user_text=user_text, has_active_mission=bool(task_context))
+
+        # Token categorization breakdown attribution
+        task_tracker.record_category_tokens("memory", max(1, len(directives_context + episodic_banner) // 4))
+        task_tracker.record_category_tokens("tool_definitions", max(1, len(json.dumps(effective_tools)) // 4))
+
+        messages: List[Dict[str, Any]] = [
+            {"role": "system", "content": system_content}
+        ]
 
         if active_mission:
             # Handle operator approval response or resume commands when active mission exists
@@ -360,12 +402,22 @@ class GhostAgent:
                 f"Work strictly on the current runnable task. Mark done with verified evidence."
             )
             messages.append({"role": "system", "content": mission_banner})
-            messages.append({"role": "user", "content": user_text})
-        else:
-            # Append rolling conversational history (last 8 turns, extracting standard role & content)
-            for h in OmniRouteBrain._history[-8:]:
-                messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
-            messages.append({"role": "user", "content": user_text})
+
+        # Attach dynamic per-turn context (temporal clock, episodic memory) at the user turn
+        # so the static 12k tool + system prompt prefix is never mutated by the minute clock
+        dynamic_turn_parts = []
+        if temporal_banner:
+            dynamic_turn_parts.append(temporal_banner.strip())
+        if episodic_banner:
+            dynamic_turn_parts.append(episodic_banner.strip())
+        dynamic_turn_str = "\n\n".join(dynamic_turn_parts)
+        user_turn_payload = f"{dynamic_turn_str}\n\n[OPERATOR INSTRUCTION]\n{user_text}".strip() if dynamic_turn_str else user_text
+
+        # Append rolling conversational history (last 8 turns, extracting standard role & content)
+        # MUST ALWAYS BE PRESERVED across all turns to prevent conversational amnesia
+        for h in OmniRouteBrain._history[-8:]:
+            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+        messages.append({"role": "user", "content": user_turn_payload})
 
         # Loop to handle function calling and multi-step tool execution
         total_model_rounds = 0
@@ -398,7 +450,7 @@ class GhostAgent:
                 stream = await client.chat.completions.create(
                     model=model,
                     messages=messages,
-                    tools=GHOST_TOOLS,
+                    tools=effective_tools,
                     tool_choice="auto",
                     stream=True,
                     stream_options={"include_usage": True}
@@ -408,6 +460,7 @@ class GhostAgent:
                 content_accumulator = []
                 is_speaking = False
                 round_prompt_tokens = 0
+                round_cached_tokens = 0
                 round_completion_tokens = 0
                 round_total_tokens = 0
 
@@ -420,6 +473,7 @@ class GhostAgent:
                         round_prompt_tokens = getattr(chunk.usage, "prompt_tokens", 0) or 0
                         round_completion_tokens = getattr(chunk.usage, "completion_tokens", 0) or 0
                         round_total_tokens = getattr(chunk.usage, "total_tokens", 0) or 0
+                        round_cached_tokens = _extract_cached_tokens(chunk.usage)
 
                     if not chunk.choices:
                         continue
@@ -460,7 +514,7 @@ class GhostAgent:
                     round_completion_tokens = len("".join(content_accumulator)) // 4
                     round_total_tokens = max(1, round_prompt_tokens + round_completion_tokens)
 
-                task_tracker.add_turn_usage(round_prompt_tokens, round_completion_tokens, round_total_tokens)
+                task_tracker.add_turn_usage(round_prompt_tokens, round_completion_tokens, round_total_tokens, cached_tokens=round_cached_tokens)
 
                 # Check if model requested tool execution
                 if tool_calls_accumulator:
@@ -859,7 +913,11 @@ class GhostAgent:
                     yield {
                         "type": "token_stats",
                         "last": task_tracker.total_tokens,
+                        "prompt_tokens": task_tracker.prompt_tokens,
+                        "cached_tokens": task_tracker.cached_tokens,
+                        "completion_tokens": task_tracker.completion_tokens,
                         "today": global_stats["today"],
+                        "today_cached": global_stats.get("today_cached", 0),
                         "cost_usd": task_tracker.cost_usd,
                         "tracker": task_tracker.to_dict()
                     }
@@ -900,6 +958,7 @@ class GhostAgent:
             content_accumulator = []
             is_speaking = False
             syn_prompt = 0
+            syn_cached = 0
             syn_comp = 0
             syn_total = 0
 
@@ -912,6 +971,7 @@ class GhostAgent:
                     syn_prompt = getattr(chunk.usage, "prompt_tokens", 0) or 0
                     syn_comp = getattr(chunk.usage, "completion_tokens", 0) or 0
                     syn_total = getattr(chunk.usage, "total_tokens", 0) or 0
+                    syn_cached = _extract_cached_tokens(chunk.usage)
 
                 if not chunk.choices:
                     continue
@@ -945,14 +1005,18 @@ class GhostAgent:
                 syn_comp = len(assistant_text) // 4
                 syn_total = max(1, syn_prompt + syn_comp)
 
-            task_tracker.add_turn_usage(syn_prompt, syn_comp, syn_total)
+            task_tracker.add_turn_usage(syn_prompt, syn_comp, syn_total, cached_tokens=syn_cached)
             task_tracker.record_category_tokens("final_synthesis", syn_total)
 
             global_stats = task_tracker.save_to_disk()
             yield {
                 "type": "token_stats",
                 "last": task_tracker.total_tokens,
+                "prompt_tokens": task_tracker.prompt_tokens,
+                "cached_tokens": task_tracker.cached_tokens,
+                "completion_tokens": task_tracker.completion_tokens,
                 "today": global_stats["today"],
+                "today_cached": global_stats.get("today_cached", 0),
                 "cost_usd": task_tracker.cost_usd,
                 "tracker": task_tracker.to_dict()
             }

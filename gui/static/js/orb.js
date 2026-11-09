@@ -400,7 +400,6 @@ class GhostOrb {
     this.rotSegmentedTrack = 0;
     this.rotInnerDashes = 0;
     this.rotGearCore = 0;
-    this.rotOctagon = 0;
 
     // Scanline & glitch state
     this.glitchTimer = 0;
@@ -969,7 +968,6 @@ class GhostOrb {
     this.rotSegmentedTrack += -0.009 * speed;
     this.rotInnerDashes += 0.018 * speed;
     this.rotGearCore += -0.025 * speed;
-    this.rotOctagon += 0.0012 * speed;      // very slow drift; keeps the octagon calm
 
     // 1. Ambient Background Bloom (Audio-Reactive Halo)
     const auraRadius = baseRadius * (2.1 + this.amplitude * 0.4);
@@ -1160,74 +1158,6 @@ class GhostOrb {
     ctx.arc(0, 0, rTrackB, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.restore();
-
-    // -------------------------------------------------------------
-    // D. AUDIO-REACTIVE OCTAGON (R ~ 0.98x)
-    // A true regular octagon: straight edges, softly rounded corners. Audio no
-    // longer makes the outline lumpy; it nudges each corner outward a little,
-    // brightens the glow and stretches the edge-centre ticks.
-    // -------------------------------------------------------------
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(this.rotOctagon || 0);
-
-    const oR = baseRadius * 0.98;               // circumradius (centre → corner)
-    const amp = this.amplitude;
-    const corner = [];
-    for (let k = 0; k < 8; k++) {
-      const ang = Math.PI / 8 + k * (Math.PI / 4);   // flat edges at top/bottom/left/right
-      const bin = this.audioBins[k % 6] || 0.1;
-      const rr = oR * (1 + bin * amp * 0.07);
-      corner.push({ x: Math.cos(ang) * rr, y: Math.sin(ang) * rr, ang });
-    }
-
-    // Outline with rounded corners (arcTo between midpoints keeps edges perfectly straight)
-    const cornerRound = baseRadius * 0.07;
-    ctx.beginPath();
-    for (let k = 0; k < 8; k++) {
-      const p0 = corner[k], p1 = corner[(k + 1) % 8];
-      const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
-      if (k === 0) {
-        const pm = { x: (corner[7].x + p0.x) / 2, y: (corner[7].y + p0.y) / 2 };
-        ctx.moveTo(pm.x, pm.y);
-      }
-      ctx.arcTo(p0.x, p0.y, mid.x, mid.y, cornerRound);
-    }
-    ctx.closePath();
-
-    // glow pass + crisp pass
-    ctx.strokeStyle = palette.ringSecondary;
-    ctx.lineWidth = 4;
-    ctx.shadowColor = palette.coreGlow;
-    ctx.shadowBlur = 14 + amp * 18;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = palette.neonAccent;
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    // Corner nodes (small squares) and edge-centre ticks
-    for (let k = 0; k < 8; k++) {
-      const c = corner[k];
-      ctx.save();
-      ctx.translate(c.x, c.y);
-      ctx.rotate(c.ang);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-1.8, -1.8, 3.6, 3.6);
-      ctx.restore();
-
-      const mAng = k * (Math.PI / 4);             // edge-centre direction
-      const apothem = oR * Math.cos(Math.PI / 8);
-      const bin = this.audioBins[k % 6] || 0.1;
-      const tickLen = 5 + bin * 14 * (amp * 1.5 + 0.3);
-      ctx.beginPath();
-      ctx.strokeStyle = palette.neonAccent;
-      ctx.lineWidth = 1.6;
-      ctx.moveTo(Math.cos(mAng) * apothem, Math.sin(mAng) * apothem);
-      ctx.lineTo(Math.cos(mAng) * (apothem + tickLen), Math.sin(mAng) * (apothem + tickLen));
-      ctx.stroke();
-    }
     ctx.restore();
 
     // -------------------------------------------------------------

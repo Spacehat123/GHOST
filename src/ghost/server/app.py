@@ -4,11 +4,13 @@ import json
 import os
 import re
 import logging
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response, JSONResponse, HTMLResponse
 from ghost.core.agent import GhostAgent
 from ghost.core.brain import OmniRouteBrain
+from ghost.core.token_tracker import TOKEN_STATS_PATH
 from ghost.voice.duplex import DuplexCoordinator, VoiceState
 from ghost.voice.kokoro import KokoroSpeechEngine, split_clauses
 from ghost.watchdog.service import AutonomousWatchdog
@@ -333,6 +335,29 @@ async def save_settings(request: Request):
         logger.error(f"Error saving settings: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/tts/voices")
+async def get_tts_voices():
+    """List available installed Kokoro voices and current active voice."""
+    kokoro = KokoroSpeechEngine.get_instance()
+    voices = kokoro.get_installed_voices()
+    current_voice = os.environ.get("KOKORO_VOICE", getattr(kokoro, "voice", "af_nicole"))
+    return {
+        "current": current_voice,
+        "voices": voices
+    }
+
+@app.post("/api/tts/voice")
+async def set_tts_voice(request: Request):
+    """Set the active Kokoro voice persona."""
+    data = await request.json()
+    new_voice = data.get("voice", "").strip()
+    if not new_voice:
+        raise HTTPException(status_code=400, detail="Voice name required")
+    os.environ["KOKORO_VOICE"] = new_voice
+    kokoro = KokoroSpeechEngine.get_instance()
+    kokoro.voice = new_voice
+    return {"status": "success", "voice": new_voice}
+
 @app.get("/api/tts/clauses")
 async def get_tts_clauses(text: str = Query(..., description="Text to split into clauses")):
     """Split text into conversational clauses for pipelined audio synthesis."""
@@ -469,6 +494,20 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         await websocket.send_json({"type": "state", "state": duplex.state.value})
+
+        if os.path.exists(TOKEN_STATS_PATH):
+            try:
+                with open(TOKEN_STATS_PATH, "r", encoding="utf-8") as f:
+                    t_data = json.load(f)
+                    await websocket.send_json({
+                        "type": "token_stats",
+                        "last": t_data.get("last", 0),
+                        "cached_tokens": t_data.get("last_cached", 0),
+                        "today": t_data.get("today", 0),
+                        "today_cached": t_data.get("today_cached", 0)
+                    })
+            except Exception:
+                pass
 
         while True:
             data = await websocket.receive_text()

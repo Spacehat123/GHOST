@@ -168,7 +168,7 @@ GHOST_TOOLS = [
         "type": "function",
         "function": {
             "name": "capture_screen",
-            "description": "Fast visual reconnaissance snapshot of the desktop screen or active window using grim (< 40ms). Ingests image for multimodal visual inspection.",
+            "description": "Takes a static screenshot image of the desktop screen. ONLY use this when the user explicitly requests to take, save, or inspect a screenshot file. DO NOT use this for locating UI elements, clicking, pointing, drawing, or reading web pages (use screen_draw or browser_action instead).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -260,6 +260,83 @@ GHOST_TOOLS = [
                     }
                 },
                 "required": ["title", "message"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "screen_draw",
+            "description": "Wayland transparent desktop overlay drawing primitive (Arch Linux + Hyprland). Draws vector shapes, arrows, highlights, text callouts, or mathematical solution cards directly over the desktop with 100% click-through event transparency. Automatically resolves window and web DOM coordinates.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["draw", "clear", "undo", "redo", "erase", "list", "target_and_draw"],
+                        "description": "Overlay action to perform."
+                    },
+                    "target": {
+                        "type": "object",
+                        "description": "Optional precision target to locate before drawing (uses Hyprland window geometry, Brave DOM CDP, or cursor).",
+                        "properties": {
+                            "type": {"type": "string", "enum": ["active_window", "window_class", "brave_dom", "cursor", "absolute"]},
+                            "query": {"type": "string", "description": "Window class name, title substring, or DOM CSS selector"}
+                        }
+                    },
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string", "enum": ["circle", "ellipse", "rect", "arrow", "line", "freehand", "highlight", "text", "math_card", "graph_plot"]},
+                                "coords": {"type": "array", "items": {"type": "number"}, "description": "[x, y] or [x1, y1, x2, y2] or [x, y, w, h] (normalized 0-1 or pixel)"},
+                                "color": {"type": "string", "description": "Hex or rgba color e.g. '#00FF66' or 'rgba(0, 255, 100, 0.8)'"},
+                                "fill": {"type": "string", "description": "Optional fill color string"},
+                                "width": {"type": "number", "description": "Stroke line width in pixels"},
+                                "text": {"type": "string", "description": "Text annotation content or card title"},
+                                "font_size": {"type": "number", "description": "Font size for text annotations"},
+                                "duration": {"type": "number", "description": "Auto-fade duration in seconds (0 for persistent until cleared)"}
+                            },
+                            "required": ["type"]
+                        }
+                    }
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "math_solve",
+            "description": "Local mathematics engine with safe AST parsing (zero eval) and independent verification. Solves equations, simplifies radicals/fractions, computes derivatives and integrals, and plots function curves with step-by-step reasoning and optional screen projection.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Mathematical expression or equation (e.g. 'sqrt(25 + 144)', 'x**2 - 5*x + 6 = 0', 'diff(sin(x)*exp(x), x)', 'integrate(x**2, x)')."
+                    },
+                    "operation": {
+                        "type": "string",
+                        "enum": ["solve", "evaluate", "simplify", "differentiate", "integrate", "factor", "expand", "plot"],
+                        "description": "Mathematical operation to perform. Defaults to evaluate or solve."
+                    },
+                    "variable": {
+                        "type": "string",
+                        "description": "Variable of interest (default 'x')."
+                    },
+                    "draw_on_screen": {
+                        "type": "boolean",
+                        "description": "If true, projects the verified solution or function curve directly onto the user's desktop screen overlay."
+                    },
+                    "duration": {
+                        "type": "number",
+                        "description": "Auto-fade duration in seconds for on-screen projection (default 6.0)."
+                    }
+                },
+                "required": ["expression"]
             }
         }
     },
@@ -1316,6 +1393,51 @@ GHOST_TOOLS = [
     }
 ]
 
+CORE_TOOL_NAMES = {
+    "desktop_control",
+    "media_control",
+    "browser_action",
+    "clipboard_action",
+    "input_simulation",
+    "desktop_notify",
+    "screen_draw",
+    "math_solve",
+    "web_search",
+    "system_run",
+}
+
+CORE_TOOLS = [t for t in GHOST_TOOLS if t["function"]["name"] in CORE_TOOL_NAMES]
+
+
+def get_ghost_tools(mode: str = "core", user_text: str = "", has_active_mission: bool = False) -> List[Dict[str, Any]]:
+    """
+    Returns lean, cache-optimized CORE_TOOLS set (~2,000 tokens) for general chat,
+    math, desktop actions, and screen drawing, or the full 49-tool GHOST_TOOLS suite
+    when executing active missions or specialized agency workflows.
+    """
+    if os.environ.get("GHOST_TOOL_TIERING", "true").lower() in ("false", "0", "no"):
+        return GHOST_TOOLS
+
+    if has_active_mission:
+        return GHOST_TOOLS
+
+    clean_q = user_text.lower() if user_text else ""
+    agency_keywords = ("crm", "client", "lead", "venue", "scout", "email", "inbox", "pitch", "outreach", "dossier")
+    creative_keywords = ("3d", "motion", "website", "demo", "figma", "framer", "glb", "model", "render", "archetype")
+    mission_keywords = ("mission", "git", "github", "rea", "reverse engineer", "database", "sql")
+    screenshot_keywords = ("screenshot", "screen capture", "capture screen", "snapshot", "take a pic", "photo of screen")
+
+    if any(k in clean_q for k in agency_keywords) or any(k in clean_q for k in creative_keywords) or any(k in clean_q for k in mission_keywords):
+        return GHOST_TOOLS
+
+    if any(k in clean_q for k in screenshot_keywords):
+        # Only inject capture_screen when explicitly requested by user
+        scr_tool = [t for t in GHOST_TOOLS if t["function"]["name"] == "capture_screen"]
+        return CORE_TOOLS + scr_tool
+
+    return CORE_TOOLS
+
+
 class OmniRouteBrain:
     """
     High-speed streaming model brain using AsyncOpenAI against OmniRoute.
@@ -1342,86 +1464,28 @@ class OmniRouteBrain:
         "1. Local Neural Speech Engine: Kokoro-82M INT8 British military voice ('bm_george') running locally with zero latency (24kHz PCM).\n"
         "2. Email Operations Engine: Read-only inbox monitoring via IMAP SSL (email_check_inbox). HARD RULE: Ghost NEVER sends emails over SMTP. Ghost prepares grounded outreach drafts in the CRM review queue; only Commander Pranav verifies and manually dispatches them.\n"
         "3. Anti-Hallucination CRM & Obsidian Sync: Local SQLite database at data/crm.db bi-directionally synchronized with Obsidian Vault ('Ghost/Clients/<slug>.md' under $OBSIDIAN_VAULT_PATH or ~/Obsidian Vault). Use crm_get_client, crm_update_client, and crm_list_pipeline. ZERO-HALLUCINATION RULE: Never quote speculative pricing, invent client details, or guess deals without checking the CRM.\n"
-        "4. High-Ticket Venue Qualification Engine (ZERO FALSE POSITIVES): Discovers and verifies expensive restaurants (>= ₹2,500/guest or degustation format) lacking official websites. Distinguishes aggregators (Zomato, Swiggy, Tripadvisor, Instagram) from official domains, verifies pricing proof, guarantees zero false positives, and writes verified dossiers to ~/Desktop/Good_Finds/{Establishment}/intel.md.\n"
-        "4. Web Production & Demo Builder Swarm: Multi-flow website production across Standard OpenCode Luxury Archetypes, Motion Flagships, and Cinematic 3D Sites. Features automated Brave CDP responsive smoke tests at 390px mobile and 1920px desktop. MANDATORY THEME RULE: Demos MUST be LIGHT MODE by default (clean editorial palette #fcfbf9 / #faf7f2 / #faf8f5 / #f9f9fb) and include a full DARK MODE with a functional theme switcher toggle button in navigation (classList.toggle('dark') + localStorage).\n"
-        "5. Autonomous Watchdog & Event Bus: Background patrol sweeps running once every 24 hours (86400s), auditing idle leads, logging sweeps to Obsidian Daily Log.md, validating Vercel token status, and receiving instant signal pings via /api/watchdog/signal.\n"
-        "6. Desktop, Browser & REA Control: Universal Hyprland desktop management (desktop_control), Brave CDP browser automation on port 9222 (browser_action), media/Spotify control (media_control), and REA binary reverse engineering (rea_action). All destructive system modifications or outbound client communications MUST prompt the operator via the Tactical Authorization Modal (#auth-modal).\n"
-        "7. Native OS Accessibility Engine (agent-desktop): When interacting with native Linux GUI applications (Obsidian, Figma, Discord, system dialogs), use agent_desktop_command. Captures structured UI snapshots with @ref IDs and executes clicks/typing with zero vision token bloat.\n"
+        "4. High-Ticket Venue Qualification Engine (ZERO FALSE POSITIVES): Discovers and verifies expensive restaurants (>= ₹2,500/guest or degustation format) lacking official websites. Distinguishes aggregators from official domains, verifies pricing proof, and writes verified dossiers to ~/Desktop/Good_Finds/{Establishment}/intel.md.\n"
+        "5. Autonomous Screen Drawing Engine: Wayland native transparent desktop overlay (Arch Linux + Hyprland) using GtkLayerShell and Cairo (screen_draw). Always-on-top, 100% click-through input pass-through, vector circles/rectangles/arrows/text/plots. Prioritize exact window bounds (hyprctl) and web DOM geometry (Brave CDP 9222) over raw screen capture vision.\n"
+        "   HARD ZERO-SCREENSHOT RULE: NEVER call capture_screen when asked to draw, circle, highlight, point at, or locate buttons/elements on the screen. ALWAYS call screen_draw directly with target={'query': '...'}. The drawing engine resolves exact pixel bounding boxes via Hyprland window manager IPC and Brave CDP DOM inspection without capturing any screenshots.\n"
+        "6. Local Mathematics Engine: Hardened AST parser (zero eval) backed by SymPy symbolic mathematics and independent back-substitution / calculus verification (math_solve). Solves radicals, fractions, algebra, calculus, and plots curves with optional screen overlay projection.\n"
+        "7. Desktop, Browser & REA Control: Universal Hyprland desktop management (desktop_control), Brave CDP browser automation on port 9222 (browser_action), media/Spotify control (media_control), and REA binary reverse engineering (rea_action). All destructive modifications require authorization via desktop_control(action='request_authorization').\n"
         "8. REAL-TIME MEDIA & AUDIO PLAYBACK RULES:\n"
-        "   - Spotify Music: When asked to play a song/artist (e.g. 'play interstellar', 'play cars 3 soundtrack'), ALWAYS call media_control(action='spotify_action', query='<song or album name>') or media_control(action='play'). The system uses instant track URI resolution and DBus OpenUri on native Wayland (zero X11/xdotool lag). If spotify is on another workspace, use desktop_control(action='switch_workspace', workspace='4') or desktop_control(action='move_to_workspace', target='Spotify', args='4'). Never claim music is playing unless verified via playerctl status.\n"
-        "   - Video / Streaming (JioHotstar / YouTube / Web): When asked to resume or play a movie or show in the browser (e.g. 'resume cars 3 in jiohotstar kids profile'), use browser_action(action='focus_tab', target='Cars 3') or browser_action(action='brave_click_and_type', target='video', val='play') or browser_action(action='open_url'). If asked to move the mouse or click on a specific element, use input_simulation(sim_type='click', x=X, y=Y) or browser_action.\n"
+        "   - Spotify Music: ALWAYS call media_control(action='spotify_action', query='<song or album name>') or media_control(action='play'). Instant track URI resolution and DBus OpenUri on native Wayland.\n"
+        "   - Web Video / Streaming: Use browser_action(action='focus_tab') or browser_action(action='open_url'). For Hotstar 'Who is watching?' profile selection, auto-select 'Pranav'.\n"
         "9. MANDATORY TASK-TO-TOOL INTENT MATRIX (ZERO EXPLORATORY WANDERING):\n"
-        "   - Git Operations (push, commit, status, remote): MUST call git_action. Credentials and SSH passphrases are resolved strictly from protected configuration. Never wander into bash commands for Git.\n"
+        "   - Screen Drawing / Visual Annotations / Pointing at UI: MUST call screen_draw directly. NEVER call capture_screen.\n"
+        "   - Math Calculations / Equations / Derivatives: MUST call math_solve.\n"
+        "   - Git Operations: MUST call git_action.\n"
         "   - Spotify / Music: MUST call media_control(action='spotify_action', query='...').\n"
-        "   - Web Video / Streaming: MUST call browser_action.\n"
-        "   - Desktop GUI Apps (Obsidian, Figma, Discord, system dialogs): MUST call agent_desktop_command.\n"
-        "   - STATED TRUTH RULE: NEVER claim a command or push succeeded without executing the tool and inspecting its return code.\n\n"
+        "   - Web Browsing: MUST call browser_action.\n"
+        "   - Desktop GUI Apps: MUST call agent_desktop_command or desktop_control.\n\n"
         "OPERATIONAL PROTOCOLS:\n"
-        "- When the user asks for an action (close tab, open URL, WhatsApp, media, move/rename files, apps, CRM, email, demo build), ALWAYS call the corresponding tool first.\n"
-        "- DEMO GENERATION & CLIENT ACQUISITION FLOW (MANDATORY DEMO PROTOCOL & HARD RULES):\n"
-        "  When commanded to build, scaffold, or pitch a demo for any local business, Ghost MUST STRICTLY FOLLOW these HARD RULES:\n"
-        "  Rule 1 (Zero-Food Bias): Never assign a food/drink template unless Google category or verified signals explicitly indicate food/drink. Map prospect domain accurately across the 14 catalog industries via classify_business.\n"
-        "  Rule 2 (Fail Closed): If the business category is unknown or ambiguous, fail closed to 'general_services' neutral template and request confirmation. Never guess or default to fine_dining.\n"
-        "  Rule 3 (Strict Source Ledger): Every fact on the page (services, prices, hours, phone, address, rating, reviews) MUST originate from scraped data and be recorded in SOURCES.json via SourceLedger. Missing facts remain null and render marked placeholders ('[Inquire for quotation]') or are omitted entirely. Never invent plausible defaults or placeholder menus.\n"
-        "  Rule 4 (Zero Fabricated Metrics): No artificial benchmark scores ('99/100', '0.38s'), speed claims, or unverified 'Verified' stamps are ever placed on client demos.\n"
-        "  Rule 5 (Persona Firewall on Outbound Pitch): All client-facing outbound copy (email, DM, WhatsApp, PITCH_KIT) is authored and signed personally as Pranav. Zero internal persona words (Ghost, Task Force 141, Chief of Staff, Deep-Strike, Commander, sir/mate/boss), zero local file:// links, and zero local laptop paths.\n"
-        "  Rule 6 (Hosted Delivery Prerequisite): No outreach pitch is produced without a real hosted https URL deployed via Vercel ({slug}-concept). If unhosted, halt at status 'needs_deploy'.\n"
-        "  Step 3: Enforce ONE Primary Conversion Action: The whole demo funnels to ONE action (WhatsApp Concierge for table booking/appointment, direct call, or 1-tap reserve).\n"
-        "  Step 4: 8 to 12 Contextual Editorial Sections (Never scope down to just 4 sections; choose what fits each brand):\n"
-        "    1. Contextual Navigation (Ghost dynamically selects the appropriate navigation style for the archetype: Minimalist Solid for fine dining, Floating Pill for resorts, Classic Heritage for traditional hotels, Liquid Glass for bistros/lounges — NOT every business needs a glass nav; Ghost decides what fits best)\n"
-        "    2. Hero Section (Real high-res photography backdrop, gap callout badge, staggered reveals, dual CTAs)\n"
-        "    3. Operational Gap & Value Prop Banner (Highlights the resolved friction, e.g. 'Instant 1-Tap Table Concierge')\n"
-        "    4. Story & Craft Philosophy (Brand ethos and culinary/hospitality narrative extracted from real bio/listing)\n"
-        "    5. Bento Grid Offerings (Signature highlight dish/service, secondary highlights, exact pricing, filterable categories)\n"
-        "    6. Quality Proof & Accreditations (ONLY rendered if verified metrics or awards exist; if unverified, OMIT entirely — zero fake scores)\n"
-        "    7. Ambiance & Space Gallery (Multi-photo mosaic of real interior, dining room, and atmosphere)\n"
-        "    8. Verified Social Proof (ONLY rendered if real Google Reviews exist: infinite marquee with actual star ratings and real quotes; if none found, OMIT entirely — zero fake reviews)\n"
-        "    9. Performance & Conversion Delta Card (Side-by-side audit benchmark: their 8s page vs our sub-second demo)\n"
-        "    10. Curated Journey / How It Works (3 clear steps from reservation to table)\n"
-        "    11. Interactive VIP WhatsApp Booking Card (Party size & date quick-selector -> prefilled WhatsApp chat)\n"
-        "    12. Location, Hours, Contact & Conversion Footer (Interactive hours/address card, oversized brand typography, 'Concept design presented by Ghost' credit)\n"
-        "  Step 5: Restrained Luxury Design & Color Hierarchy Guide (Reference 'context/COLOR_HIERARCHY_GUIDE.md'):\n"
-        "    - Depth Layers: Never use one flat color for canvas and surface. Light Mode uses Canvas #F2F2F7, Surface #FFFFFF, Raised #FFFFFF (with deeper shadow). Dark Mode uses Canvas #121212, Surface #1E1E1E, Raised #2A2A2A.\n"
-        "    - Elevation & Shadows: In light mode, let soft layered shadows do the lifting (resting 0 1px 2px rgba(0,0,0,.06), hover 0 8px 24px rgba(0,0,0,.10)). In dark mode, step up surface lightness; add 1px border at 8% white if edges blur. Hairline border only where same-color surfaces touch (6-8% ink).\n"
-        "    - Text / Ink: Soften black; pure #000 on white vibrates. Use Primary Ink #1D1B20 (17:1) and Secondary Ink #49454F (9:1) for labels/helper text. Dark mode uses Primary #E6E1E5, Secondary #CAC4D0. Never invent a third gray or use disabled gray for readable text.\n"
-        "    - The Accent (10% Rule): Exactly ONE accent pair (deepened on light >=4.5:1, lightened on dark). 60% canvas, 30% surface/text, 10% accent. Tint don't shout: use 8-12% accent tint for secondary accent cards.\n"
-        "    - Status Colors: Used only for state/meaning, never beside accent as decoration. Light success #1B7F4B, warning #A15C00, danger #BA1A1A.\n"
-        "    - Semantic Tokens Only: No raw hex in components. All elements must reference CSS custom properties (--canvas, --surface, --raised, --ink, --ink-2, --accent, --line, --shadow-resting, --shadow-hover).\n"
-        "  Step 6: Mobile-First Verification: Headless Brave CDP smoke test at 390x844 mobile first (owners open pitches on phones!), then 1440x900 desktop, verifying 0 layout overflow and 0 console errors.\n"
-        "  Step 7: Mandatory Pitch Kit Output (RULE B):\n"
-        "    Ghost must NEVER just hand over a standalone HTML file. Ghost MUST output a complete Pitch Kit containing:\n"
-        "    a. Hosted preview link / local file preview link\n"
-        "    b. 2-3 verified screenshots (mobile 390x844 and desktop 1440x900)\n"
-        "    c. 3-Part Outreach Copy formatted specifically for WhatsApp / Instagram DM:\n"
-        "       Part 1: What you noticed (The Gap: e.g. 'Your customers can\'t book directly from Instagram / your site takes 7 seconds to load')\n"
-        "       Part 2: What you built ('Built a sub-second interactive mobile concept for you: [Link]')\n"
-        "       Part 3: One easy next step ('Want me to set this up or hand over the keys?')\n"
-        "    d. Follow up once after 2-3 days, then move on.\n"
-        "- INDUSTRY TEMPLATE ARCHITECTURE & SELECTION DIRECTIVE:\n"
-        "  Ghost has access to the comprehensive Industry Templates Catalog at 'context/templates/INDUSTRY_TEMPLATES_CATALOG.md' covering 14 local business sectors (Restaurants, Spas/Salons, Gyms, Dental/Medical Clinics, Boutiques/Fashion, Real Estate, Photography, Hotels/Homestays, Bakeries, Home Services/Auto, Coaches, Legal/Advisors, Weddings/Florists, and Academies/Tutors).\n"
-        "  TEMPLATE SELECTION PROTOCOL (HOW GHOST DECIDES THE BEST TEMPLATE PER PROSPECT):\n"
-        "  When targeting any business, Ghost MUST dynamically evaluate 3 concrete criteria to pick the optimal template archetype reference rather than guessing:\n"
-        "  1. Ticket Size & Customer Engagement Depth:\n"
-        "     - High-ticket / luxury ($100+ per visit or $1,000+ engagements): Select editorial, multi-course / bespoke consultation structures (e.g. LuxDin for fine dining, Solanki Atelier for bridal/salons, Habité for luxury villas, LuxHotel for 5-star hospitality, CoachFlow for consultants).\n"
-        "     - High-velocity / local convenience ($10-$50): Select conversion-first item grids with fast ordering (e.g. Cuisine / Pepper for cafés/pizzas, PureGlamy for neighborhood hair studios, QuickFix for emergency trades, SweetCrumb for bakeries).\n"
-        "  2. Primary Operational Bleed / Gap Resolved:\n"
-        "     - Lost booking due to telephone waiting or Instagram friction -> Pick 1-tap WhatsApp Concierge architectures (LUXÉ for retail, SacredStays to bypass Airbnb's 15% fees, Solena for skincare).\n"
-        "     - Scheduling/timetable confusion -> Pick live schedule & slot-picker architectures (Drivox for gyms, Private Tutor for education).\n"
-        "     - Emergency service dispatch -> Pick immediate prominent phone callout (QuickFix / Plumbex).\n"
-        "  3. Visual Material & Navigation Match:\n"
-        "     - Dark/Cinematic (Bramble, Captura, CoachVerse, Gymnastic X)\n"
-        "     - Minimalist Solid Editorial (LuxDin, LINÉA, ZahrahPhoto)\n"
-        "     - Floating Pill Coastal (SOLENE, Solena, Brightside)\n"
-        "     - Classic Institutional (Harlow & Partners, Lawli, Houses&Flats)\n"
-        "  OPERATIONAL RULE: Templates provide layout structure, section ordering, and conversion mechanics ONLY. Ghost MUST rebuild them using the prospect's real assets (real photos, real menu, real reviews or none, WhatsApp concierge link). Never copy lorem ipsum or fake template placeholder data.\n"
-        "- FIGMA & FRAMER USAGE RULE: Use figma_inspect_file/figma_extract_tokens and framer_sync_cms/framer_generate_code_component for design token extraction and CMS component synthesis.\n"
-        "- VERCEL TOKEN HEALTH PROTOCOL: Whenever performing deployment or asked about Vercel status, or during routine health checks, verify if the Vercel token is valid or expired using vercel_check_token. If the token is expired or unauthorized (401/403), immediately alert Commander Pranav that his 30-day PAT has expired and needs renewal at https://vercel.com/account/tokens .\n"
-        "- STREAMING & BROWSING DIRECTIVE: When opening or navigating JioHotstar/Hotstar (hotstar.com), if the 'Who's watching?' or profile selection screen appears, automatically select the 'Pranav' profile using browser_action(action='click_and_type', target='Pranav'). Do not leave the user stuck on the profile picker. If user asks for netmirror, always use this link: https://net77.cc/home .\n"
-        "- UNLIMITED OPERATIONAL DISCIPLINE & SPEED: You have unlimited operational turns and steps to execute missions thoroughly from start to finish. Do not stop midway, do not cut corners, and do not halt complex multi-step workflows until the entire objective is achieved. Maintain tactical focus: execute tools decisively, avoid redundant loops, and deliver a crisp closing tactical report upon complete mission victory.\n"
-        "- ASYNC EVENT-DRIVEN RECON & AUDIT SPEED: The reconnaissance (ReconScout) and performance audit engines (PerformanceAuditor) operate on non-blocking async CDP with direct lifecycle event buffering. Scrapes and performance delta audits resolve in sub-seconds with zero artificial sleep delays. Fast sites audit immediately upon Page.loadEventFired.\n"
-        "- FAILURE CIRCUIT BREAKER & ADAPTIVE PROTOCOL: Ghost is equipped with an automated loop deduplication and failure circuit breaker. If any tool call is repeated 3 consecutive times with identical arguments yielding errors or identical output, the breaker intercepts with diagnostic guidance; 4 attempts will halt the spinning loop. OPERATIONAL RULE: When a tool fails or the circuit breaker trips, NEVER retry the exact same failing tool call with identical parameters. Adapt your tactical plan immediately: try alternative arguments, switch to another tool primitive, inspect system state, or report the obstacle concisely to Commander Pranav.\n"
-        "- AUTHORIZATION PROTOCOL: Gated destructive or critical system actions still require authorization via desktop_control(action='request_authorization', target='...'). NEVER merely speak or text 'Requesting tactical authorization' without executing the tool so the interactive modal appears on the operator HUD.\n"
-        "- You have modular system references at 'context/' (all_available_apps/, all_tools/, user/). Only read specific context files via desktop_control(action='read_context', target='...') when strictly required to save tokens.\n"
+        "- ZERO SCREENSHOT POLICY: Only call capture_screen if Commander Pranav explicitly orders 'take a screenshot' or 'capture my screen to file'. Never capture screenshots to read text, locate buttons, or answer UI questions (use browser_action or screen_draw).\n"
+        "- When the user asks for an action, ALWAYS call the corresponding tool first.\n"
+        "- LUXURY DEMOS & WEB PRODUCTION: Modular design tokens, 14 industry templates, and pitching protocols are stored in context/skills/luxury_demo_builder.md and context/skills/editorial_web_design. Retrieve via get_skill() for demo tasks.\n"
+        "- UNLIMITED OPERATIONAL DISCIPLINE & SPEED: Unlimited turns to execute missions thoroughly. Maintain tactical focus, avoid redundant loops, and deliver crisp reports.\n"
+        "- FAILURE CIRCUIT BREAKER: Never retry identical failing tool calls 3 times; adapt plan immediately.\n"
+        "- AUTHORIZATION PROTOCOL: Gated destructive actions require desktop_control(action='request_authorization').\n"
         "- Reply in 1-2 short spoken sentences max. Stoic British military tone. Address Commander Pranav as 'sir' or 'boss'. Never output markdown asterisks or backticks in spoken dialogue."
     )
 
@@ -1921,6 +1985,113 @@ class OmniRouteBrain:
             urg = arguments.get("urgency", "normal")
             return await SystemAppBridge.desktop_notify(title=title, message=msg, urgency=urg)
 
+        # 4b. Autonomous Screen Drawing Subsystem
+        elif tool_name == "screen_draw":
+            from ghost.screen.client import ScreenOverlayClient
+            from ghost.screen.targeting import TargetingEngine
+
+            act = arguments.get("action", "draw")
+            target_spec = arguments.get("target")
+            elements = arguments.get("elements", [])
+
+            if act == "clear":
+                return await ScreenOverlayClient.clear()
+            elif act == "undo":
+                return await ScreenOverlayClient.undo()
+            elif act == "redo":
+                return await ScreenOverlayClient.redo()
+            elif act == "erase":
+                eid = arguments.get("id", "")
+                return await ScreenOverlayClient.erase(eid)
+            elif act == "list":
+                return await ScreenOverlayClient.list_elements()
+            elif act in ["draw", "target_and_draw"]:
+                resolved_target = None
+                if target_spec:
+                    if isinstance(target_spec, str):
+                        target_spec = {"query": target_spec}
+                    elif isinstance(target_spec, dict) and "query" not in target_spec:
+                        target_spec["query"] = target_spec.get("name") or target_spec.get("selector") or str(target_spec)
+
+                    resolved_target = await TargetingEngine.resolve_target(target_spec)
+                    if resolved_target:
+                        tx, ty = resolved_target.get("x", 0), resolved_target.get("y", 0)
+                        tw, th = resolved_target.get("w", 0), resolved_target.get("h", 0)
+                        dur = float(arguments.get("duration", 5.0))
+                        if not elements:
+                            elements = [
+                                {
+                                    "type": "rect",
+                                    "coords": [tx - 4, ty - 4, max(40, tw + 8), max(30, th + 8)],
+                                    "color": "#00FF66",
+                                    "width": 3.0,
+                                    "duration": dur
+                                },
+                                {
+                                    "type": "arrow",
+                                    "coords": [max(0, tx - 50), ty + th // 2, max(0, tx - 6), ty + th // 2],
+                                    "color": "#00E5FF",
+                                    "width": 3.0,
+                                    "duration": dur
+                                }
+                            ]
+                        else:
+                            for elem in elements:
+                                if not elem.get("coords"):
+                                    etype = elem.get("type", "rect")
+                                    if etype in ["circle", "ellipse"]:
+                                        elem["coords"] = [tx + tw // 2, ty + th // 2, max(tw, th) // 2 + 10]
+                                    elif etype == "arrow":
+                                        elem["coords"] = [max(0, tx - 50), ty + th // 2, max(0, tx - 6), ty + th // 2]
+                                    else:
+                                        elem["coords"] = [tx - 4, ty - 4, max(40, tw + 8), max(30, th + 8)]
+                                if "duration" not in elem:
+                                    elem["duration"] = dur
+                res = await ScreenOverlayClient.draw(elements)
+                if resolved_target:
+                    res["target_resolved"] = resolved_target
+                return res
+            return {"status": "error", "message": f"Unknown screen_draw action: {act}"}
+
+        # 4c. Local Mathematics Engine Subsystem
+        elif tool_name == "math_solve":
+            from ghost.math.engine import MathEngine
+            from ghost.screen.client import ScreenOverlayClient
+
+            expr = arguments.get("expression", "")
+            op = arguments.get("operation", "evaluate")
+            var = arguments.get("variable", "x")
+            draw_screen = bool(arguments.get("draw_on_screen", False))
+            duration = float(arguments.get("duration", 6.0))
+
+            math_res = MathEngine.solve(expr, operation=op, variable_str=var)
+            res_dict = math_res.to_dict()
+
+            if draw_screen:
+                if op == "plot" and math_res.plot_data:
+                    pts = math_res.plot_data.get("points", [])
+                    overlay_res = await ScreenOverlayClient.draw([{
+                        "type": "graph_plot",
+                        "coords": [960, 540],
+                        "points": pts,
+                        "color": "#00FF66",
+                        "width": 3.0,
+                        "duration": duration
+                    }])
+                    res_dict["screen_overlay"] = overlay_res
+                else:
+                    overlay_res = await ScreenOverlayClient.draw([{
+                        "type": "math_card",
+                        "title": f"MATH: {op.upper()}",
+                        "expression": expr,
+                        "solution": math_res.exact_result,
+                        "steps": math_res.steps,
+                        "duration": duration
+                    }])
+                    res_dict["screen_overlay"] = overlay_res
+
+            return res_dict
+
         # 5. REA Reverse Engineering MCP Bridge
         elif tool_name == "rea_action":
             cmd = arguments.get("command", "doctor")
@@ -2373,7 +2544,6 @@ class OmniRouteBrain:
             lslug = str(arguments.get("lead_slug", "")).strip()
             op_req = bool(arguments.get("operator_requested", False))
             # Retrieve CRM client data if exists
-            from ghost.crm.db import CRMDatabase
             crm = CRMDatabase.get_instance()
             client_data = crm.get_client(lslug) or {}
             return Fit3DAssessor.assess(lead_slug=lslug, lead_data=client_data, operator_requested=op_req)
@@ -2403,7 +2573,6 @@ class OmniRouteBrain:
         # 23. Flow Router & Motion Flagship Engine
         elif tool_name == "choose_flow":
             from ghost.workers.flow_router import FlowRouter
-            from ghost.crm.db import CRMDatabase
             lslug = str(arguments.get("lead_slug", "")).strip()
             op_ch = arguments.get("operator_choice")
             crm = CRMDatabase.get_instance()
