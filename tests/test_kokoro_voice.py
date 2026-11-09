@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 from starlette.testclient import TestClient
 from ghost.server.app import app
-from ghost.voice.kokoro import KokoroSpeechEngine, split_clauses
+from ghost.voice.kokoro import KokoroSpeechEngine, split_clauses, normalize_speech_text
 
 
 class TestKokoroVoice(unittest.TestCase):
@@ -17,6 +17,34 @@ class TestKokoroVoice(unittest.TestCase):
 
     def tearDown(self):
         KokoroSpeechEngine._instance = None
+
+    def test_default_voice_is_af_nicole(self):
+        """Default Kokoro voice persona is af_nicole."""
+        engine = KokoroSpeechEngine()
+        self.assertEqual(engine.voice, "af_nicole")
+
+    def test_number_and_currency_normalization(self):
+        """Dots in decimals (2.2) and currencies ($23.32) are normalized to spoken text."""
+        self.assertEqual(
+            normalize_speech_text("I made $23.32 tonight, sir."),
+            "I made 23 dollars and 32 cents tonight, sir."
+        )
+        self.assertEqual(
+            normalize_speech_text("Version 2.2 is out."),
+            "Version 2 point 2 is out."
+        )
+        self.assertEqual(
+            normalize_speech_text("It costs $1.00."),
+            "It costs 1 dollar."
+        )
+        self.assertEqual(
+            normalize_speech_text("It costs $0.50."),
+            "It costs 50 cents."
+        )
+        self.assertEqual(
+            normalize_speech_text("Revenue was ₹45,000."),
+            "Revenue was 45000 rupees."
+        )
 
     def test_import_ghost_server_app(self):
         """Ensure ghost.server.app imports cleanly without NameError or missing dependency errors."""

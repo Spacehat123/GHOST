@@ -343,16 +343,19 @@ async def get_tts_clauses(text: str = Query(..., description="Text to split into
 
 @app.get("/api/tts")
 async def get_tts(
-    text: str = Query(..., description="Text or clause to synthesize with Simon Riley neural voice"),
-    first_clause: bool = Query(False, description="Whether to optimize for time-to-first-sound by synthesizing the first clause only")
+    text: str = Query(..., description="Text or clause to synthesize"),
+    first_clause: bool = Query(False, description="Whether to optimize for time-to-first-sound by synthesizing the first clause only"),
+    voice: Optional[str] = Query(None, description="Kokoro voice identifier (e.g. af_aoede, bm_george)")
 ):
     """
-    Synthesize text into audio using local Kokoro-82M INT8 ONNX (bm_george British voice),
-    with clause streaming and automatic seamless fallback to Edge-TTS (en-GB-RyanNeural).
+    Synthesize text into audio using local Kokoro-82M ONNX (default af_aoede),
+    with clause streaming and automatic seamless fallback to Edge-TTS.
     """
     clean_text = text.strip()
     if not clean_text:
         raise HTTPException(status_code=400, detail="Empty text provided")
+
+    target_voice = voice or os.environ.get("KOKORO_VOICE", "af_nicole")
 
     # If first_clause requested, synthesize the primary clause for immediate sub-second audio output
     target_text = clean_text
@@ -361,13 +364,13 @@ async def get_tts(
         if clauses:
             target_text = clauses[0]
 
-    # 1. Primary: Local Kokoro ONNX (British military persona bm_george)
+    # 1. Primary: Local Kokoro ONNX
     import time
     t0 = time.perf_counter()
     try:
         kokoro = KokoroSpeechEngine.get_instance()
         if kokoro.is_available():
-            audio_bytes, mime = await kokoro.synthesize_wav(target_text, voice="bm_george", speed=1.05)
+            audio_bytes, mime = await kokoro.synthesize_wav(target_text, voice=target_voice, speed=1.05)
             synth_ms = int((time.perf_counter() - t0) * 1000)
             if audio_bytes:
                 return Response(
@@ -384,11 +387,14 @@ async def get_tts(
 
     # 2. Secondary Fallback: Cloud Edge-TTS
     try:
+        fallback_voice = "en-US-JennyNeural" if target_voice.startswith("af_") else ("en-US-GuyNeural" if target_voice.startswith("am_") else GHOST_VOICE)
+        fallback_pitch = "+0Hz" if target_voice.startswith("a") else GHOST_PITCH
+        fallback_rate = "+0%" if target_voice.startswith("a") else GHOST_RATE
         communicate = edge_tts.Communicate(
             target_text,
-            voice=GHOST_VOICE,
-            pitch=GHOST_PITCH,
-            rate=GHOST_RATE
+            voice=fallback_voice,
+            pitch=fallback_pitch,
+            rate=fallback_rate
         )
         audio_chunks = []
         async for chunk in communicate.stream():

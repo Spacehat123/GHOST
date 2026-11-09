@@ -203,9 +203,63 @@ document.addEventListener('DOMContentLoaded', () => {
     orb.setAmplitude(0.05);
   }
 
+  function normalizeSpeechText(text) {
+    if (!text) return '';
+    let res = text.replace(/(?<=\d),(?=\d)/g, '');
+    res = res.replace(/\bv(\d+\.\d+)\b/gi, 'version $1');
+    res = res.replace(/\$(\d+)(?:\.(\d{1,2}))?\b/g, (m, dollars, cents) => {
+      const d = parseInt(dollars, 10);
+      const dUnit = d === 1 ? 'dollar' : 'dollars';
+      if (cents !== undefined) {
+        const c = parseInt(cents, 10);
+        const cUnit = c === 1 ? 'cent' : 'cents';
+        if (d === 0 && c > 0) return `${c} ${cUnit}`;
+        if (c === 0) return `${d} ${dUnit}`;
+        return `${d} ${dUnit} and ${c} ${cUnit}`;
+      }
+      return `${d} ${dUnit}`;
+    });
+    res = res.replace(/£(\d+)(?:\.(\d{1,2}))?\b/g, (m, pounds, pence) => {
+      const p = parseInt(pounds, 10);
+      const pUnit = p === 1 ? 'pound' : 'pounds';
+      if (pence !== undefined) {
+        const pen = parseInt(pence, 10);
+        const penUnit = pen === 1 ? 'penny' : 'pence';
+        if (p === 0 && pen > 0) return `${pen} ${penUnit}`;
+        if (pen === 0) return `${p} ${pUnit}`;
+        return `${p} ${pUnit} and ${pen} ${penUnit}`;
+      }
+      return `${p} ${pUnit}`;
+    });
+    res = res.replace(/€(\d+)(?:\.(\d{1,2}))?\b/g, (m, euros, cents) => {
+      const e = parseInt(euros, 10);
+      const eUnit = e === 1 ? 'euro' : 'euros';
+      if (cents !== undefined) {
+        const c = parseInt(cents, 10);
+        const cUnit = c === 1 ? 'cent' : 'cents';
+        if (e === 0 && c > 0) return `${c} ${cUnit}`;
+        if (c === 0) return `${e} ${eUnit}`;
+        return `${e} ${eUnit} and ${c} ${cUnit}`;
+      }
+      return `${e} ${eUnit}`;
+    });
+    res = res.replace(/(?:₹|Rs\.?\s*)(\d+)(?:\.(\d{1,2}))?\b/g, (m, rupees, paise) => {
+      const r = parseInt(rupees, 10);
+      if (paise !== undefined) {
+        const p = parseInt(paise, 10);
+        if (p === 0) return `${r} rupees`;
+        return `${r} rupees and ${p} paise`;
+      }
+      return `${r} rupees`;
+    });
+    res = res.replace(/(\d+)\.(\d+)/g, '$1 point $2');
+    return res;
+  }
+
   function splitIntoClauses(text) {
-    const clean = text.replace(/[*`_#]/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!clean) return [];
+    const rawClean = text.replace(/[*`_#]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!rawClean) return [];
+    const clean = normalizeSpeechText(rawClean);
     // Split on terminal punctuation and pauses
     const rawParts = clean.split(/(?<=[.!?:;\n—–])\s+|(?<=,)\s+/);
     const merged = [];

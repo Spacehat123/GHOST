@@ -16,15 +16,118 @@ MODEL_FP32 = os.environ.get("KOKORO_MODEL_FP32", os.path.join(KOKORO_DIR, "kokor
 MODEL_INT8 = os.environ.get("KOKORO_MODEL_INT8", os.path.join(KOKORO_DIR, "kokoro-v1.0.int8.onnx"))
 KOKORO_VOICES_PATH = os.environ.get("KOKORO_VOICES_PATH", os.path.join(KOKORO_DIR, "voices-v1.0.bin"))
 KOKORO_DEVICE = os.environ.get("KOKORO_DEVICE", "auto").lower()
+DEFAULT_VOICE = os.environ.get("KOKORO_VOICE", "af_nicole")
+
+
+def normalize_speech_text(text: str) -> str:
+    """
+    Normalizes numbers, decimals, versions, and currency into natural spoken text
+    so speech engines pronounce them correctly without treating periods as full stops.
+    Examples:
+      '$23.32' -> '23 dollars and 32 cents'
+      '2.2' -> '2 point 2'
+      'v1.0' -> 'version 1 point 0'
+      '45,000' -> '45000'
+    """
+    if not text:
+        return ""
+
+    # 1. Commas in numbers: 45,000 -> 45000, 1,000,000 -> 1000000
+    text = re.sub(r'(?<=\d),(?=\d)', '', text)
+
+    # 2. Versions: v2.2 -> version 2.2
+    text = re.sub(r'\bv(\d+\.\d+)\b', r'version \1', text, flags=re.IGNORECASE)
+
+    # 3. Currency formatting
+    # Dollars: $23.32 -> 23 dollars and 32 cents
+    def replace_dollar(m):
+        dollars = int(m.group(1))
+        cents_str = m.group(2)
+        if cents_str is not None:
+            cents = int(cents_str)
+            d_unit = "dollar" if dollars == 1 else "dollars"
+            c_unit = "cent" if cents == 1 else "cents"
+            if dollars == 0 and cents > 0:
+                return f"{cents} {c_unit}"
+            elif cents == 0:
+                return f"{dollars} {d_unit}"
+            else:
+                return f"{dollars} {d_unit} and {cents} {c_unit}"
+        else:
+            d_unit = "dollar" if dollars == 1 else "dollars"
+            return f"{dollars} {d_unit}"
+
+    text = re.sub(r'\$(\d+)(?:\.(\d{1,2}))?\b', replace_dollar, text)
+
+    # Pounds: £23.50 -> 23 pounds and 50 pence
+    def replace_pound(m):
+        pounds = int(m.group(1))
+        pence_str = m.group(2)
+        if pence_str is not None:
+            pence = int(pence_str)
+            p_unit = "pound" if pounds == 1 else "pounds"
+            pen_unit = "penny" if pence == 1 else "pence"
+            if pounds == 0 and pence > 0:
+                return f"{pence} {pen_unit}"
+            elif pence == 0:
+                return f"{pounds} {p_unit}"
+            else:
+                return f"{pounds} {p_unit} and {pence} {pen_unit}"
+        else:
+            p_unit = "pound" if pounds == 1 else "pounds"
+            return f"{pounds} {p_unit}"
+
+    text = re.sub(r'£(\d+)(?:\.(\d{1,2}))?\b', replace_pound, text)
+
+    # Euros: €23.50 -> 23 euros and 50 cents
+    def replace_euro(m):
+        euros = int(m.group(1))
+        cents_str = m.group(2)
+        if cents_str is not None:
+            cents = int(cents_str)
+            e_unit = "euro" if euros == 1 else "euros"
+            c_unit = "cent" if cents == 1 else "cents"
+            if euros == 0 and cents > 0:
+                return f"{cents} {c_unit}"
+            elif cents == 0:
+                return f"{euros} {e_unit}"
+            else:
+                return f"{euros} {e_unit} and {cents} {c_unit}"
+        else:
+            e_unit = "euro" if euros == 1 else "euros"
+            return f"{euros} {e_unit}"
+
+    text = re.sub(r'€(\d+)(?:\.(\d{1,2}))?\b', replace_euro, text)
+
+    # Rupees: ₹45000 -> 45000 rupees
+    def replace_rupee(m):
+        rupees = int(m.group(1))
+        paise_str = m.group(2)
+        if paise_str is not None:
+            paise = int(paise_str)
+            if paise == 0:
+                return f"{rupees} rupees"
+            return f"{rupees} rupees and {paise} paise"
+        return f"{rupees} rupees"
+
+    text = re.sub(r'(?:₹|Rs\.?\s*)(\d+)(?:\.(\d{1,2}))?\b', replace_rupee, text)
+
+    # 4. Decimals: 2.2 -> 2 point 2, 3.14 -> 3 point 14
+    text = re.sub(r'(\d+)\.(\d+)', r'\1 point \2', text)
+
+    return text
+
 
 def split_clauses(text: str) -> List[str]:
     """
     Split text into bite-sized conversational clauses for instant streaming playback.
     Ensures chunk 1 synthesizes in <1.2s instead of waiting for an entire paragraph.
+    Normalizes numeric expressions (currencies, decimals) so dots are pronounced naturally.
     """
     clean = re.sub(r'\s+', ' ', text).strip()
     if not clean:
         return []
+    clean = normalize_speech_text(clean)
     parts = re.split(r'(?<=[.!?:;\n—–])\s+|(?<=,)\s+', clean)
     merged = []
     buf = ''
@@ -49,7 +152,7 @@ class KokoroSpeechEngine:
     _init_error: Optional[str] = None
     _active_provider: str = "CPUExecutionProvider"
 
-    def __init__(self, voice: str = "bm_george"):
+    def __init__(self, voice: str = DEFAULT_VOICE):
         self.voice = voice
 
     @classmethod
@@ -72,16 +175,31 @@ class KokoroSpeechEngine:
             logger.error(self._init_error)
             return
 
-        if hasattr(ort, "preload_dlls"):
-            try:
-                ort.preload_dlls()  # loads CUDA/cuDNN from pip nvidia-* wheels
-            except Exception as e:
-                logger.warning(f"preload_dlls failed: {e}")
-
         device = (os.environ.get("KOKORO_DEVICE") or KOKORO_DEVICE).lower()
         sess = None
 
         if device in ("auto", "cuda"):
+            # Preload CUDA & cuDNN shared libraries from pip nvidia-* wheels with RTLD_GLOBAL
+            # so ONNX Runtime's C++ provider loader resolves libcublasLt, libcudnn, etc.
+            try:
+                import ctypes
+                import glob
+                import nvidia
+                for n_root in getattr(nvidia, "__path__", []):
+                    for lib_dir in sorted(glob.glob(os.path.join(n_root, "*", "lib"))):
+                        for so_file in sorted(glob.glob(os.path.join(lib_dir, "*.so*"))):
+                            try:
+                                ctypes.CDLL(so_file, mode=ctypes.RTLD_GLOBAL)
+                            except Exception:
+                                pass
+            except Exception as e:
+                logger.debug(f"NVIDIA wheel preloading skipped: {e}")
+
+            if hasattr(ort, "preload_dlls"):
+                try:
+                    ort.preload_dlls()  # loads CUDA/cuDNN from pip nvidia-* wheels
+                except Exception as e:
+                    logger.warning(f"preload_dlls failed: {e}")
             if "CUDAExecutionProvider" in ort.get_available_providers() and os.path.exists(MODEL_FP32):
                 so = ort.SessionOptions()
                 so.log_severity_level = 2  # show provider-load warnings
@@ -138,7 +256,8 @@ class KokoroSpeechEngine:
 
             # warm-up: first call pays kernel/cache setup; do it now, not on user's first sentence
             for t in ("Online.", "Understood, boss. Three demos are ready for review."):
-                self._kokoro.create(t, voice=self.voice, speed=1.05, lang="en-gb")
+                lang = "en-gb" if self.voice.startswith("b") else "en-us"
+                self._kokoro.create(t, voice=self.voice, speed=1.05, lang=lang)
         except Exception as e:
             logger.warning(f"Kokoro initialization warm-up or setup failed: {e}")
 
@@ -152,8 +271,9 @@ class KokoroSpeechEngine:
         """Synchronously synthesize a single clause into WAV bytes."""
         import soundfile as sf
         target_voice = voice or self.voice
+        clean_clause = normalize_speech_text(clause.strip())
         lang = "en-gb" if target_voice.startswith("b") else "en-us"
-        samples, sr = self._kokoro.create(clause, voice=target_voice, speed=speed, lang=lang)
+        samples, sr = self._kokoro.create(clean_clause, voice=target_voice, speed=speed, lang=lang)
         buf = io.BytesIO()
         sf.write(buf, samples, sr, format="WAV", subtype="PCM_16")
         return buf.getvalue(), "audio/wav"
@@ -163,7 +283,7 @@ class KokoroSpeechEngine:
         Synthesize text into WAV audio bytes using Kokoro local engine.
         Returns (audio_bytes, format).
         """
-        clean_text = text.strip()
+        clean_text = normalize_speech_text(text.strip())
         if not clean_text:
             return None, "empty"
 

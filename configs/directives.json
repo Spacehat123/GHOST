@@ -42,6 +42,11 @@
       "id": "mem_1794019786246_aa52b2",
       "text": "Strict zero-fake-photo rule: Never use fake, stock, unverified, or placeholder photography in any client demo or agency deliverable. Only verified authentic assets from source recon or clean typographic/abstract treatments permitted.",
       "created_at": 1794019786.2463033
+    },
+    {
+      "id": "mem_1794244869570_1760e3",
+      "text": "Hold execution on Grasshopper image downloads and staging until the operator explicitly gives the go command.",
+      "created_at": 1794244869.57099
     }
   ],
   "preferences": {
@@ -149,8 +154,8 @@
       "source": "user_confirmed",
       "confidence": 1.0,
       "importance": 0.9,
-      "conflict_detected": false,
-      "conflict_with_id": null,
+      "conflict_detected": true,
+      "conflict_with_id": "mem_1794244869570_1760e3",
       "created_at": 1793639776.253335,
       "last_verified": 1794019786.2462583,
       "expires_at": null
@@ -231,6 +236,19 @@
       "conflict_with_id": null,
       "created_at": 1794019786.2463033,
       "last_verified": 1794019786.2463036,
+      "expires_at": null
+    },
+    {
+      "id": "mem_1794244869570_1760e3",
+      "type": "directive",
+      "content": "Hold execution on Grasshopper image downloads and staging until the operator explicitly gives the go command.",
+      "source": "user_confirmed",
+      "confidence": 1.0,
+      "importance": 0.9,
+      "conflict_detected": true,
+      "conflict_with_id": "d_776253",
+      "created_at": 1794244869.57099,
+      "last_verified": 1794244869.5709906,
       "expires_at": null
     }
   ]
