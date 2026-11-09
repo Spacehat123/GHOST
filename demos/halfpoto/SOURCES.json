@@ -79,6 +79,22 @@
       "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
       "source": "dossier_photos",
       "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794108738.160315,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794108991.901318,
+      "sha256": "b3fd0affb8765e24b79e6abd901124f678cf5b7d06c868b066436f916ab44675",
+      "source": "dossier_photos",
+      "type": "business_photo"
     }
   ],
   "disclosure": "All facts are observed evidence; missing facts are listed as [Inquire for quotation]."

@@ -1,0 +1,138 @@
+{
+  "built_with": "section_kit/1",
+  "slug": "kit-sm-62ba17",
+  "sections": [
+    {
+      "name": "nav_floating",
+      "category": "navigation",
+      "source": "sections/nav_floating",
+      "slots_used": [
+        "main_title",
+        "present_ids",
+        "sub_title"
+      ]
+    },
+    {
+      "name": "hero_editorial",
+      "category": "hero",
+      "source": "sections/hero_editorial",
+      "slots_used": [
+        "hero_bg",
+        "main_title",
+        "rating_badge",
+        "sub_title",
+        "tagline"
+      ]
+    },
+    {
+      "name": "gap_banner",
+      "category": "banner",
+      "source": "sections/gap_banner",
+      "slots_used": []
+    },
+    {
+      "name": "story_philosophy",
+      "category": "story",
+      "source": "sections/story_philosophy",
+      "slots_used": [
+        "bento_img1",
+        "philosophy_body_1"
+      ]
+    },
+    {
+      "name": "services_bento",
+      "category": "services",
+      "source": "sections/services_bento",
+      "slots_used": [
+        "services"
+      ]
+    },
+    {
+      "name": "proof_reviews",
+      "category": "social_proof",
+      "source": "sections/proof_reviews",
+      "slots_used": [
+        "reviews"
+      ]
+    },
+    {
+      "name": "gallery_strip",
+      "category": "gallery",
+      "source": "sections/gallery_strip",
+      "slots_used": [
+        "gallery_1",
+        "gallery_2",
+        "gallery_3"
+      ]
+    },
+    {
+      "name": "journey_steps",
+      "category": "process",
+      "source": "sections/journey_steps",
+      "slots_used": [
+        "steps"
+      ]
+    },
+    {
+      "name": "booking_module",
+      "category": "booking",
+      "source": "sections/booking_module",
+      "slots_used": [
+        "initial_booking_href",
+        "initial_btn_text",
+        "phone",
+        "services"
+      ]
+    },
+    {
+      "name": "faq_answers",
+      "category": "faq",
+      "source": "sections/faq_answers",
+      "slots_used": [
+        "faqs"
+      ]
+    },
+    {
+      "name": "hours_location",
+      "category": "nap",
+      "source": "sections/hours_location",
+      "slots_used": [
+        "hours",
+        "location",
+        "main_title",
+        "phone"
+      ]
+    },
+    {
+      "name": "lead_capture",
+      "category": "leads",
+      "source": "sections/lead_capture",
+      "slots_used": [
+        "form_path",
+        "main_title"
+      ]
+    },
+    {
+      "name": "footer_mono",
+      "category": "footer",
+      "source": "sections/footer_mono",
+      "slots_used": [
+        "main_title"
+      ]
+    }
+  ],
+  "contracts": {
+    "booking_ids": [
+      "booking-service",
+      "booking-detail",
+      "booking-date",
+      "whatsapp-direct-btn",
+      "booking-btn-text"
+    ],
+    "motion_classes": [
+      ".reveal-el",
+      ".spring-card"
+    ],
+    "decor": "one svg.js hand-drawn divider (#kit-divider-svg)"
+  }
+}

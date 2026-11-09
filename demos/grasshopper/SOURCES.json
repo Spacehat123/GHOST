@@ -1,98 +1,123 @@
 {
-  "business_name": {
-    "field": "business_name",
-    "value": "Grasshopper",
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223076+00:00",
-    "verified": true,
-    "notes": null
+ "business_name": {
+  "field": "business_name",
+  "value": "Grasshopper",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223076+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "category": {
+  "field": "category",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223090+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "categories": {
+  "field": "categories",
+  "value": [],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223095+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "rating": {
+  "field": "rating",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223100+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "review_count": {
+  "field": "review_count",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223103+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "phone": {
+  "field": "phone",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223106+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "address": {
+  "field": "address",
+  "value": "Grasshopper Area",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223109+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "website": {
+  "field": "website",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223111+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "hours": {
+  "field": "hours",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223113+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "reviews": {
+  "field": "reviews",
+  "value": [],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223116+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "photos": {
+  "field": "photos",
+  "value": [],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.223119+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "services": {
+  "field": "services",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-07T11:30:12.238772+00:00",
+  "verified": false,
+  "notes": "Sample Concept Architecture \u2022 Not Scraped from Listing"
+ },
+ "assets/vendor/svg.min.js": {
+  "field": "vendor_script",
+  "value": "svg.min.js",
+  "source_url": "vendored",
+  "scraped_at": "2026-11-08T00:00:00Z",
+  "verified": true,
+  "notes": "Vendored SVG library under MIT license"
+ },
+ "assets": [
+  {
+   "file": "assets/vendor/svg.min.js",
+   "type": "vendor_script",
+   "license": "MIT",
+   "source": "https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.4/svg.min.js"
   },
-  "category": {
-    "field": "category",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223090+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "categories": {
-    "field": "categories",
-    "value": [],
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223095+00:00",
-    "verified": true,
-    "notes": null
-  },
-  "rating": {
-    "field": "rating",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223100+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "review_count": {
-    "field": "review_count",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223103+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "phone": {
-    "field": "phone",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223106+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "address": {
-    "field": "address",
-    "value": "Grasshopper Area",
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223109+00:00",
-    "verified": true,
-    "notes": null
-  },
-  "website": {
-    "field": "website",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223111+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "hours": {
-    "field": "hours",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223113+00:00",
-    "verified": false,
-    "notes": "Unverified or missing"
-  },
-  "reviews": {
-    "field": "reviews",
-    "value": [],
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223116+00:00",
-    "verified": true,
-    "notes": null
-  },
-  "photos": {
-    "field": "photos",
-    "value": [],
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.223119+00:00",
-    "verified": true,
-    "notes": null
-  },
-  "services": {
-    "field": "services",
-    "value": null,
-    "source_url": "google_maps",
-    "scraped_at": "2026-11-07T11:30:12.238772+00:00",
-    "verified": false,
-    "notes": "Sample Concept Architecture • Not Scraped from Listing"
+  {
+   "type": "vendor_library",
+   "file": "assets/vendor/svg.min.js",
+   "source_url": "https://github.com/svgdotjs/svg.js",
+   "license": "MIT (svgdotjs/svg.js v3.2.4)",
+   "scraped_at": "2026-11-08T03:29:02.114023+00:00",
+   "verified": true,
+   "notes": "Vendored locally from templates/svg/ \u2014 no CDN, CSP-safe."
   }
+ ]
 }
