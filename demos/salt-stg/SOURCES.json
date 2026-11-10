@@ -119,6 +119,14 @@
       "sha256": "af48b0a687827fe9ad104816c9467099147842bbf420b5a1efcc278845dcbfda",
       "source": "dossier_photos",
       "type": "business_photo"
+    },
+    {
+      "file": "assets/photos/photo-01.jpg",
+      "license_note": "business's own public listing photo \u2014 used in THIS business's demo only",
+      "retrieved_at": 1794301077.615632,
+      "sha256": "af48b0a687827fe9ad104816c9467099147842bbf420b5a1efcc278845dcbfda",
+      "source": "dossier_photos",
+      "type": "business_photo"
     }
   ],
   "disclosure": "All facts are observed evidence; missing facts are listed as [Inquire for quotation]."

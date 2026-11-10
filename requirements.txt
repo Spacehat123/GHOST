@@ -11,3 +11,7 @@ httpx==0.28.1
 websockets==17.4
 qrcode>=7.4
 python-multipart>=0.0.9
+openai>=1.40.0
+sympy>=1.13.0
+pillow>=10.0.0
+
