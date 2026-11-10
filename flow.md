@@ -36,8 +36,8 @@ flowchart TD
   - [ ] Disqualification criteria:
 
 ### Phase 3: Demo Engineering (The 5-Stage Autonomous State Machine)
-- **HARD RULE:** Ghost is **STRICTLY HARDCODED** to use the local OpenCode worker (`demo_builder.py` with `mimo-v2.6-flash-free`) executing sequential state-machine stages for pre-contract bait demos. Never one-shot 300+ lines of raw code.
-- **Objective:** Build a bespoke, single-page static HTML demo that wows the owner in under 4 seconds with 0 cloud token cost.
+- **HARD RULE:** Ghost executes sequential state-machine stages (`demo_state_machine.py` / `demo_builder.py` with OmniRoute cloud gateway) for pre-contract bait demos. Never one-shot ungrounded 300+ lines of raw code. No local models; all inference is cloud-routed.
+- **Objective:** Build a bespoke, single-page static HTML demo that wows the owner in under 4 seconds with 100% verified authentic photos, light mode default, dark mode toggle, and zero console errors.
 
 #### Stage 1: Recon & Brand Extraction (The Scraper Node)
 - **Inputs:** Business Name & Location/Neighborhood.

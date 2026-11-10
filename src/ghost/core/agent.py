@@ -259,8 +259,10 @@ class GhostAgent:
         # Initialize Bounded Loop Guard Parameters (4 Dimensions)
         task_id = f"task_{int(time.time() * 1000)}"
         task_start_time = time.time()
-        max_model_rounds = int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "1000"))
-        max_tool_executions = int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "5000"))
+        is_interactive_chat = (task_context is None)
+        # Cap interactive chat to 8 rounds / 15 tool executions max; allow full budget for mission tasks
+        max_model_rounds = int(os.environ.get("GHOST_MAX_CHAT_ROUNDS", "8")) if is_interactive_chat else int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "1000"))
+        max_tool_executions = int(os.environ.get("GHOST_MAX_CHAT_TOOL_EXECUTIONS", "15")) if is_interactive_chat else int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "5000"))
         max_task_elapsed_seconds = float(os.environ.get("GHOST_MAX_TASK_ELAPSED_SECONDS", "864000.0"))
         max_task_total_tokens = int(os.environ.get("GHOST_MAX_TASK_TOTAL_TOKENS", "1000000000"))
 
@@ -880,10 +882,13 @@ class GhostAgent:
                                 ]
                             })
                         else:
+                            res_str = json.dumps(res)
+                            if len(res_str) > 4000:
+                                res_str = res_str[:4000] + "... [OUTPUT TRUNCATED TO PREVENT TOKEN BLOAT]"
                             messages.append({
                                 "role": "tool",
                                 "tool_call_id": tc_info["id"],
-                                "content": json.dumps(res)
+                                "content": res_str
                             })
 
                     if limit_breached or operator_aborted:

@@ -65,9 +65,14 @@ def is_venue_photo(url: str) -> bool:
             return True
         return True
 
-    # Other external photo hosts (Unsplash, Cloudinary, business website)
-    if any(host in url_lower for host in ["unsplash.com", "cloudinary.com", "cdn", "images"]):
+    # Other external photo hosts & authentic business website assets
+    if any(host in url_lower for host in ["unsplash.com", "cloudinary.com", "cdn", "images", "media", "restaurantguru.com", "tripadvisor.com", "yelpcdn.com"]):
         return True
+
+    # Standard web image extensions from authentic business domains
+    if any(ext in url_lower for ext in [".jpg", ".jpeg", ".webp", ".png", ".avif"]):
+        if not any(b in url_lower for b in ["icon", "logo", "favicon", "avatar", "badge", "tracker", "pixel", "button", "sprite"]):
+            return True
 
     return False
 
@@ -130,6 +135,111 @@ class ReconScout:
         except Exception as e:
             logger.error(f"Failed to access Brave CDP on port 9222: {e}")
             return None
+
+    @classmethod
+    async def harvest_website_photos(cls, website_url: str, max_photos: int = 8) -> List[Dict[str, str]]:
+        """
+        Tier 2 Photo Harvester: Visits the business's official website headlessly
+        via Brave CDP and extracts authentic high-resolution content images and hero banners.
+        """
+        if not website_url or not str(website_url).startswith("http"):
+            return []
+
+        tab = await cls.get_or_create_recon_tab()
+        if not tab:
+            return []
+
+        ws_url = tab.get("webSocketDebuggerUrl")
+        if not ws_url:
+            return []
+
+        photos: List[Dict[str, str]] = []
+        try:
+            async with websockets.connect(ws_url, max_size=10_000_000, ping_timeout=10) as ws:
+                msg_id = 1
+                await cls._send_cdp(ws, msg_id, "Page.enable")
+                msg_id += 1
+                await cls._send_cdp(ws, msg_id, "Page.navigate", {"url": website_url})
+                await asyncio.sleep(2.5)
+
+                extract_script = """
+                (() => {
+                    const out = [];
+                    const seen = new Set();
+                    const els = Array.from(document.querySelectorAll('img, picture source, [style*="background-image"], header, section, div[class*="hero"], div[class*="gallery"], div[class*="banner"]'));
+                    for (const el of els) {
+                        let src = el.src || el.srcset || '';
+                        if (!src && el.style && el.style.backgroundImage) {
+                            const m = el.style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+                            if (m) src = m[1];
+                        }
+                        if (!src) continue;
+                        src = src.split(' ')[0].split(',')[0].trim();
+                        if (src.startsWith('data:') || src.includes('.svg') || src.includes('favicon') || src.includes('logo') || src.includes('icon') || src.includes('avatar') || src.includes('pixel') || src.includes('badge')) continue;
+
+                        try {
+                            const absUrl = new URL(src, window.location.href).href;
+                            if (!seen.has(absUrl)) {
+                                seen.add(absUrl);
+                                const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : {width: 0, height: 0};
+                                const natW = el.naturalWidth || 0;
+                                const natH = el.naturalHeight || 0;
+                                if (natW >= 300 || rect.width >= 300 || absUrl.includes('hero') || absUrl.includes('gallery') || absUrl.includes('upload') || absUrl.includes('wp-content') || absUrl.includes('cdn')) {
+                                    out.push(absUrl);
+                                }
+                            }
+                        } catch (e) {}
+                        if (out.length >= 10) break;
+                    }
+                    return out;
+                })()
+                """
+                msg_id += 1
+                res = await cls._send_cdp(ws, msg_id, "Runtime.evaluate", {"expression": extract_script, "returnByValue": True}, timeout=4.0)
+                urls = res.get("result", {}).get("result", {}).get("value") or []
+                for u in urls:
+                    if is_venue_photo(u):
+                        photos.append({
+                            "url": u,
+                            "raw_url": u,
+                            "source": "official_website"
+                        })
+                    if len(photos) >= max_photos:
+                        break
+        except Exception as e:
+            logger.debug(f"Website photo harvest note for {website_url}: {e}")
+        finally:
+            tab_id = tab.get("id")
+            if tab_id:
+                await cls.close_recon_tab(tab_id)
+
+        return photos
+
+    @classmethod
+    async def harvest_directory_photos(cls, business_name: str, city: str, max_photos: int = 6) -> List[Dict[str, str]]:
+        """
+        Tier 3 Photo Harvester: Searches public business directories (TripAdvisor,
+        Restaurant Guru, Yelp, Swiggy, Treatwell) for authentic customer & venue photography.
+        """
+        from ghost.mcp.bridge import WebSearchBridge
+        query = f'"{business_name}" "{city}" gallery OR photos site:tripadvisor.com OR site:restaurantguru.com OR site:yelp.com OR site:swiggy.com'
+        photos: List[Dict[str, str]] = []
+        try:
+            s_res = await WebSearchBridge.search(query, max_results=3)
+            results = s_res.get("results", []) if isinstance(s_res, dict) else []
+            for r in results:
+                link = r.get("url") or r.get("link")
+                if link and any(dom in link for dom in ["restaurantguru", "tripadvisor", "yelp", "swiggy", "zomato"]):
+                    site_photos = await cls.harvest_website_photos(link, max_photos=max_photos)
+                    if site_photos:
+                        for sp in site_photos:
+                            sp["source"] = "verified_directory"
+                        photos.extend(site_photos)
+                    if len(photos) >= max_photos:
+                        break
+        except Exception as e:
+            logger.debug(f"Directory photo harvest note: {e}")
+        return photos[:max_photos]
 
     @classmethod
     async def close_recon_tab(cls, tab_id: str):
@@ -393,7 +503,6 @@ class ReconScout:
                     for p in raw_photos:
                         raw_url = p.get("raw_url") if isinstance(p, dict) else str(p)
                         if is_venue_photo(raw_url):
-                            # Upgrade thumbnail to 1600x1200 high-res
                             high_res = re.sub(r'=w[0-9]+-h[0-9]+.*$', '=w1600-h1200-k-no', raw_url)
                             high_res = re.sub(r'=s[0-9]+.*$', '=s1600', high_res)
                             validated_photos.append({
@@ -401,6 +510,60 @@ class ReconScout:
                                 "raw_url": raw_url,
                                 "source": "google_maps_cdn"
                             })
+
+                    # Tier 1 Enhancement: Deep Google Maps Photo Gallery click & scroll
+                    if len(validated_photos) < 6:
+                        click_gallery_script = """
+                        (() => {
+                            const btn = document.querySelector('button[aria-label*="Photo"], button[jsaction*="pane.heroHeaderImage"], button[aria-label*="All"], button[jsaction*="photo"], div.Gpq6kf');
+                            if (btn) { btn.click(); return true; }
+                            return false;
+                        })()
+                        """
+                        msg_id += 1
+                        try:
+                            c_resp = await cls._send_cdp(ws, msg_id, "Runtime.evaluate", {"expression": click_gallery_script, "returnByValue": True}, timeout=2.0)
+                            if c_resp.get("result", {}).get("result", {}).get("value") is True:
+                                await asyncio.sleep(1.0)
+                                scroll_script = """
+                                (() => {
+                                    const feed = document.querySelector('div[role="feed"], div[class*="m6QErb"], div[tabindex="-1"]');
+                                    if (feed) feed.scrollTop = 900;
+                                    const imgs = Array.from(document.querySelectorAll('img[src*="googleusercontent.com"], div[style*="googleusercontent.com"]'));
+                                    const out = [];
+                                    const seen = new Set();
+                                    for (const el of imgs) {
+                                        let src = el.src || '';
+                                        if (!src && el.style && el.style.backgroundImage) {
+                                            const m = el.style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+                                            if (m) src = m[1];
+                                        }
+                                        if (src && src.includes('googleusercontent.com') && !seen.has(src)) {
+                                            if (!src.includes('/a/') && !src.includes('/a-/') && !src.includes('avatar') && !src.includes('profile')) {
+                                                seen.add(src);
+                                                out.push(src);
+                                                if (out.length >= 10) break;
+                                            }
+                                        }
+                                    }
+                                    return out;
+                                })()
+                                """
+                                msg_id += 1
+                                g_resp = await cls._send_cdp(ws, msg_id, "Runtime.evaluate", {"expression": scroll_script, "returnByValue": True}, timeout=3.0)
+                                extra_urls = g_resp.get("result", {}).get("result", {}).get("value") or []
+                                for u in extra_urls:
+                                    if is_venue_photo(u) and not any(p["raw_url"] == u for p in validated_photos):
+                                        high_res = re.sub(r'=w[0-9]+-h[0-9]+.*$', '=w1600-h1200-k-no', u)
+                                        high_res = re.sub(r'=s[0-9]+.*$', '=s1600', high_res)
+                                        validated_photos.append({
+                                            "url": high_res,
+                                            "raw_url": u,
+                                            "source": "google_maps_gallery"
+                                        })
+                        except Exception:
+                            pass
+
                     result_data["photos"] = validated_photos
 
                     # Process reviews: format author names and drop empty text
@@ -426,5 +589,25 @@ class ReconScout:
             tab_id = tab.get("id")
             if tab_id:
                 await cls.close_recon_tab(tab_id)
+
+        # Tier 2: If we still need authentic photos and the business has an official website, harvest it!
+        if len(result_data["photos"]) < 4 and result_data.get("website"):
+            try:
+                web_photos = await cls.harvest_website_photos(result_data["website"])
+                for wp in web_photos:
+                    if not any(p["url"] == wp["url"] for p in result_data["photos"]):
+                        result_data["photos"].append(wp)
+            except Exception as e:
+                logger.debug(f"Website photo harvest note: {e}")
+
+        # Tier 3: If still < 4 photos, search verified public directories
+        if len(result_data["photos"]) < 3:
+            try:
+                dir_photos = await cls.harvest_directory_photos(result_data["business_name"], city)
+                for dp in dir_photos:
+                    if not any(p["url"] == dp["url"] for p in result_data["photos"]):
+                        result_data["photos"].append(dp)
+            except Exception as e:
+                logger.debug(f"Directory photo harvest note: {e}")
 
         return result_data

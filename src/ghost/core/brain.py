@@ -1422,8 +1422,8 @@ def get_ghost_tools(mode: str = "core", user_text: str = "", has_active_mission:
         return GHOST_TOOLS
 
     clean_q = user_text.lower() if user_text else ""
-    agency_keywords = ("crm", "client", "lead", "venue", "scout", "email", "inbox", "pitch", "outreach", "dossier")
-    creative_keywords = ("3d", "motion", "website", "demo", "figma", "framer", "glb", "model", "render", "archetype")
+    agency_keywords = ("crm", "client", "lead", "venue", "scout", "email", "inbox", "pitch", "outreach", "dossier", "qualify")
+    creative_keywords = ("3d", "motion", "website", "demo", "demos", "figma", "framer", "glb", "model", "render", "archetype", "photo", "photos", "image", "images", "vercel", "deploy", "rebuild", "build", "fix", "redesign", "update")
     mission_keywords = ("mission", "git", "github", "rea", "reverse engineer", "database", "sql")
     screenshot_keywords = ("screenshot", "screen capture", "capture screen", "snapshot", "take a pic", "photo of screen")
 
@@ -1473,6 +1473,7 @@ class OmniRouteBrain:
         "   - Spotify Music: ALWAYS call media_control(action='spotify_action', query='<song or album name>') or media_control(action='play'). Instant track URI resolution and DBus OpenUri on native Wayland.\n"
         "   - Web Video / Streaming: Use browser_action(action='focus_tab') or browser_action(action='open_url'). For Hotstar 'Who is watching?' profile selection, auto-select 'Pranav'.\n"
         "9. MANDATORY TASK-TO-TOOL INTENT MATRIX (ZERO EXPLORATORY WANDERING):\n"
+        "   - Demo / Website Building, Fixes, Real Photos & Vercel Deployments: MUST call build_luxury_demo directly. NEVER run repetitive system_run bash commands to manually inspect code or reconstruct demo files.\n"
         "   - Screen Drawing / Visual Annotations / Pointing at UI: MUST call screen_draw directly. NEVER call capture_screen.\n"
         "   - Math Calculations / Equations / Derivatives: MUST call math_solve.\n"
         "   - Git Operations: MUST call git_action.\n"
@@ -2157,7 +2158,7 @@ class OmniRouteBrain:
             clients = crm.list_clients(status=stat)
             return {"count": len(clients), "pipeline": clients}
 
-        # 10. OpenCode / DeepSeek Luxury Demo Builder Worker Swarm
+        # 10. Autonomous Parallel Luxury Demo Builder Worker Swarm
         elif tool_name == "build_luxury_demo":
             from ghost.workers.demo_builder import DemoBuilderWorker
             rname = arguments.get("restaurant_name", "Luxury Lounge")

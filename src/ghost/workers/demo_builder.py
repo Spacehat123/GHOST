@@ -1,4 +1,4 @@
-"""OpenCode / DeepSeek Parallel Luxury Demo Builder Swarm.
+"""OmniRoute Cloud Parallel Luxury Demo Builder Swarm.
 Generates responsive bespoke static HTML/Tailwind demos grounded in the 4 Luxury Archetypes:
 1. Michelin / Fine Dining Editorial (Light #fcfbf9 default, champagne gold #997328 / #d4af37, Playfair/Plus Jakarta)
 2. Boutique Resort & Coastal Minimalist (Light #faf7f2 default, terracotta #735c44 / #a86b3b, Fraunces/Inter)
@@ -22,16 +22,10 @@ logger = logging.getLogger("ghost.workers.demo")
 
 REPO_DIR = os.path.abspath(os.environ.get("GHOST_PROJECT_ROOT") or os.path.join(os.path.dirname(__file__), "../../.."))
 DEMOS_DIR = os.environ.get("GHOST_DEMOS_DIR", os.path.join(REPO_DIR, "demos"))
-OPENCODE_BIN = os.environ.get("OPENCODE_BIN", os.path.expanduser("~/.opencode/bin/opencode"))
 
-# Model selection hierarchy:
-# Active designated default: opencode/glm-5.3-flash-free (high reasoning, ultra-fast)
-# Fallbacks: opencode/mimo-v2.6-flash-free, opencode/deepseek-v4.1-flash-free
-OPENCODE_MODELS = [
-    "opencode/glm-5.3-flash-free",
-    "opencode/mimo-v2.6-flash-free",
-    "opencode/deepseek-v4.1-flash-free"
-]
+# Cloud Model: 100% cloud inference via OmniRoute (antigravity/gemini-3.8-flash-low)
+# Zero local models, zero local GPU/VRAM contention, instant cloud generation.
+CLOUD_DEMO_MODEL = "antigravity/gemini-3.8-flash-low"
 
 ARCHETYPE_STYLES = {
     1: {
@@ -138,7 +132,7 @@ class DemoBuilderWorker:
         return re.sub(r'[\s-]+', '-', s)
 
     @classmethod
-    async def _run_opencode_generator(
+    async def _run_cloud_generator(
         cls,
         business_name: Optional[str] = None,
         slug: str = "",
@@ -152,18 +146,14 @@ class DemoBuilderWorker:
         **kwargs
     ) -> bool:
         """
-        Executes OpenCode CLI with `--auto -m opencode/glm-5.3-flash-free` to generate
-        or refine the bespoke static HTML demo.
-        Falls back down OPENCODE_MODELS if a provider rate-limits.
+        Executes cloud inference via OmniRoute (antigravity/gemini-3.8-flash-low)
+        to generate or refine the bespoke static HTML demo.
+        100% cloud-routed, zero local models or GPU contention.
         """
         name = (business_name or restaurant_name or "Client").strip()
-        style = style or ARCHETYPE_STYLES[1]
+        style = style or ARCHETYPE_STYLES.get(archetype_id, ARCHETYPE_STYLES[1])
         items = items or []
         contact = contact or {}
-
-        if not os.path.exists(OPENCODE_BIN):
-            logger.warning(f"OpenCode binary not found at {OPENCODE_BIN}. Using internal bespoke generator.")
-            return False
 
         from ghost.workers.demo_state_machine import detect_domain_profile, DOMAIN_CURATED_ASSETS, GENERAL_SERVICES_ASSETS, DOMAIN_COPY
         domain = detect_domain_profile(name, contact.get("address", ""), "")
@@ -187,28 +177,46 @@ class DemoBuilderWorker:
             f"Strict Sectional Flow per Website Build Guide: Nav -> Hero -> Social Proof Marquee -> BentoFeatures Grid -> How It Works (3 steps) -> FAQ Accordion -> Final CTA & Conversion Footer with removable 'Concept design' note.\n"
             f"Requirements: Zero generic bootstrap/stock buttons. Mobile-first responsive layout (360px to 1920px).\n"
             f"MANDATORY THEME REQUIREMENT: The website MUST be LIGHT MODE by default (clean editorial palette background {style['bg']}, surface {style['surface']}). It MUST also include a DARK MODE and a functional theme switcher toggle button in the navigation header with class 'dark' toggled on document.documentElement and preference persisted in localStorage.\n"
-            f"Write the complete valid HTML directly to file path: {html_path}"
+            f"Output ONLY the complete, valid, self-contained index.html code enclosed in ```html ... ```."
         )
 
-        for model_id in OPENCODE_MODELS:
-            cmd = f'"{OPENCODE_BIN}" run --auto -m "{model_id}" {json.dumps(prompt)}'
-            logger.info(f"Dispatching OpenCode worker with model: {model_id}")
-            try:
-                proc = await asyncio.create_subprocess_shell(
-                    cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=45.0)
-                if proc.returncode == 0 and os.path.exists(html_path) and os.path.getsize(html_path) > 500:
-                    logger.info(f"OpenCode worker ({model_id}) successfully generated {html_path} ({os.path.getsize(html_path)} bytes)")
-                    return True
-                else:
-                    logger.warning(f"OpenCode worker {model_id} returned {proc.returncode}. Stderr: {stderr.decode()[:200]}")
-            except Exception as e:
-                logger.warning(f"OpenCode worker run with {model_id} failed: {e}")
+        try:
+            from ghost.core.brain import OmniRouteBrain
+            client = OmniRouteBrain.get_client()
+            logger.info(f"Dispatching OmniRoute cloud generator with model: {CLOUD_DEMO_MODEL}")
+            response = await client.chat.completions.create(
+                model=CLOUD_DEMO_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are an elite front-end design technologist specializing in luxury agency websites. You produce production-ready, self-contained single-page HTML/Tailwind web apps with functional dark mode toggles, beautiful animations, and zero placeholder text. Return ONLY the complete HTML code within ```html ``` code blocks."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=8192
+            )
+            content = response.choices[0].message.content or ""
+            html_code = ""
+            if "```html" in content:
+                html_code = content.split("```html")[1].split("```")[0].strip()
+            elif "```" in content:
+                html_code = content.split("```")[1].split("```")[0].strip()
+            elif "<!DOCTYPE html" in content or "<html" in content:
+                html_code = content.strip()
 
-        return False
+            if html_code and len(html_code) > 500:
+                os.makedirs(os.path.dirname(html_path), exist_ok=True)
+                with open(html_path, "w", encoding="utf-8") as f:
+                    f.write(html_code)
+                logger.info(f"Cloud demo generator successfully created {html_path} ({len(html_code)} bytes)")
+                return True
+            else:
+                logger.warning(f"Cloud generator did not produce valid HTML. Output length: {len(content)}")
+                return False
+        except Exception as e:
+            logger.warning(f"Cloud generator run failed: {e}")
+            return False
+
+    # Backwards-compatible alias for previous OpenCode generator signature
+    _run_opencode_generator = _run_cloud_generator
 
     @classmethod
     async def build_demo(

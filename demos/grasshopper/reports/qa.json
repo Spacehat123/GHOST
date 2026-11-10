@@ -4,13 +4,13 @@
   "status": "passed",
   "screenshots_captured": 2,
   "screenshots": [
-    "demos/grasshopper/desktop_1440x900.jpg",
-    "demos/grasshopper/mobile_390x844.jpg"
+    "/home/pranc/projects/ghost/demos/grasshopper/desktop_1440x900.jpg",
+    "/home/pranc/projects/ghost/demos/grasshopper/mobile_390x844.jpg"
   ],
   "human_review": {
     "screenshots": [
-      "demos/grasshopper/desktop_1440x900.jpg",
-      "demos/grasshopper/mobile_390x844.jpg"
+      "/home/pranc/projects/ghost/demos/grasshopper/desktop_1440x900.jpg",
+      "/home/pranc/projects/ghost/demos/grasshopper/mobile_390x844.jpg"
     ]
   },
   "checks": {
@@ -26,6 +26,8 @@
     "hero_editorial",
     "gap_banner",
     "story_philosophy",
+    "proof_reviews",
+    "gallery_strip",
     "journey_steps",
     "booking_module",
     "faq_answers",

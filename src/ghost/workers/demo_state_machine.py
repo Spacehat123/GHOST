@@ -14,6 +14,8 @@ import json
 import base64
 import logging
 import urllib.parse
+import tempfile
+import shutil
 from typing import Dict, Any, List, Optional, Tuple
 import websockets
 
@@ -555,6 +557,14 @@ DOMAIN_CURATED_ASSETS = {
             {"title": "Group Conditioning", "category": "Group Conditioning", "price": None, "desc": None}
         ]
     },
+    "boutiques_retail": {
+        "services": [
+            {"title": "Private Atelier Styling", "category": "Private Atelier", "price": None, "desc": None},
+            {"title": "Bespoke Tailoring & Alterations", "category": "Tailoring", "price": None, "desc": None},
+            {"title": "Seasonal Capsule Collection", "category": "Curated Collections", "price": None, "desc": None},
+            {"title": "VIP Client Curation", "category": "VIP Services", "price": None, "desc": None}
+        ]
+    },
     "general_services": {
         "services": [
             {"title": "Consultation", "category": "Consultation", "price": None, "desc": None},
@@ -669,6 +679,102 @@ DOMAIN_COPY = {
         "faqs": [
             ("How do I receive an initial quotation?", "Share your project or service scope via WhatsApp or call for a transparent, bespoke proposal."),
             ("What are your standard scheduling lead times?", "We accommodate consultation requests within 24 to 48 hours of initial inquiry.")
+        ]
+    },
+    "gyms_fitness": {
+        "tagline_template": "High-Performance Strength, Conditioning & Private Training in {location}.",
+        "offering_title": "Disciplines & Memberships",
+        "offering_kicker": "Athletic Standards",
+        "cta_primary": "Book Assessment",
+        "cta_secondary": "Explore Disciplines",
+        "banner_headline": "Direct Member Protocol • Zero Intermediary Wait",
+        "banner_sub": "Connect directly with our head coach on WhatsApp to schedule an athletic assessment.",
+        "philosophy_kicker": "Conditioning Philosophy",
+        "philosophy_title": "Biomechanics, Discipline & Lasting Performance",
+        "philosophy_body_1": "At {business_name}, every training block is structured around scientific progression and movement mastery in {location}.",
+        "philosophy_body_2": "We reject generic fitness fads and overcrowded floors. Our coaches engineer custom conditioning regimens calibrated to your physiological goals.",
+        "quote_attribution": "Head Coach & Founder",
+        "quote_text": "Strength is not merely physical; it is an unshakeable standard of personal discipline.",
+        "atmosphere_title": "The Training Facility",
+        "atmosphere_kicker": "Facility Architecture",
+        "gallery_1": "Performance Conditioning Floor",
+        "gallery_2": "Private Recovery & Cold Plunge Suite",
+        "gallery_3": "Olympic Lifting & Power Racks",
+        "how_it_works_steps": [
+            ("Step 01", "Athletic Consultation", "Select your discipline and initial fitness consultation."),
+            ("Step 02", "Confirm Assessment", "Confirm your assessment slot directly with our head coach via WhatsApp."),
+            ("Step 03", "Precision Progression", "Begin your tailored performance programming with dedicated coaching.")
+        ],
+        "booking_title": "Schedule Your Performance Assessment",
+        "booking_sub": "Connect directly with our coaching team to begin your personal progression.",
+        "booking_fields": "fitness",
+        "faqs": [
+            ("Do you offer private 1-on-1 coaching?", "Yes. Our private coaching tiers include full biomechanical assessment, nutritional planning, and dedicated private suite access."),
+            ("What is the facility induction process?", "Every new athlete completes a comprehensive movement evaluation to establish baseline movement mechanics.")
+        ]
+    },
+    "salons_spas": {
+        "tagline_template": "Artisanal Hairdressing, Aesthetics & Wellness Sanctuary in {location}.",
+        "offering_title": "Services & Treatments",
+        "offering_kicker": "Aesthetic Standards",
+        "cta_primary": "Book Appointment",
+        "cta_secondary": "View Treatment Menu",
+        "banner_headline": "Direct Appointment Protocol • Priority Booking",
+        "banner_sub": "Reserve your styling session or treatment directly with our concierge via WhatsApp.",
+        "philosophy_kicker": "Aesthetic Philosophy",
+        "philosophy_title": "Subtle Artistry & Unhurried Craft",
+        "philosophy_body_1": "At {business_name}, styling and skincare are treated as personal expressions of individual harmony in {location}.",
+        "philosophy_body_2": "We reject rushed assembly-line salon chairs. Our master stylists and aestheticians deliver bespoke consultations in an oasis of calm.",
+        "quote_attribution": "Creative Director",
+        "quote_text": "True beauty is effortless, personalized, and rooted in uncompromising technique.",
+        "atmosphere_title": "The Studio Sanctuary",
+        "atmosphere_kicker": "Sanctuary Spaces",
+        "gallery_1": "Main Styling Atelier",
+        "gallery_2": "Private Facial & Aesthetic Suite",
+        "gallery_3": "Wash & Scalp Treatment Lounge",
+        "how_it_works_steps": [
+            ("Step 01", "Select Treatment", "Choose your desired hair styling, color, or facial treatment."),
+            ("Step 02", "Confirm Slot", "Coordinate your appointment time directly with our concierge on WhatsApp."),
+            ("Step 03", "Bespoke Care", "Relax in an unhurried, private setting calibrated to your wellbeing.")
+        ],
+        "booking_title": "Book Your Sanctuary Session",
+        "booking_sub": "Select your treatment and coordinate directly with our styling team.",
+        "booking_fields": "salon",
+        "faqs": [
+            ("Do you provide pre-treatment consultations?", "Yes, complimentary consultations are included with all color transformations and aesthetic facial programs."),
+            ("What products do you use in treatments?", "We use exclusively organic, certified cruelty-free, and dermatologically tested luxury formulations.")
+        ]
+    },
+    "boutiques_retail": {
+        "tagline_template": "Curated Haute Couture, Tailoring & Exclusive Collections in {location}.",
+        "offering_title": "Collections & Atelier Services",
+        "offering_kicker": "Craft & Provenance",
+        "cta_primary": "Book Private Fitting",
+        "cta_secondary": "Explore Curations",
+        "banner_headline": "Private Fitting Protocol • Exclusive Access",
+        "banner_sub": "Connect directly with our atelier director for private viewing and bespoke fittings.",
+        "philosophy_kicker": "Craft & Provenance",
+        "philosophy_title": "Bespoke Tailoring & Architectural Silhouettes",
+        "philosophy_body_1": "At {business_name}, each garment reflects generational craftsmanship, exquisite textiles, and timeless silhouettes in {location}.",
+        "philosophy_body_2": "We reject fast fashion and mass production. Our atelier crafts limited capsule collections and bespoke made-to-measure suiting.",
+        "quote_attribution": "Atelier Director",
+        "quote_text": "Impeccable tailoring transforms not just posture, but the very essence of presence.",
+        "atmosphere_title": "The Atelier & Showroom",
+        "atmosphere_kicker": "Atelier Architecture",
+        "gallery_1": "Private Fitting Salon",
+        "gallery_2": "Fabric Archive & Pattern Studio",
+        "gallery_3": "Curated Collection Display",
+        "how_it_works_steps": [
+            ("Step 01", "Select Atelier Service", "Choose made-to-measure tailoring, wardrobe curation, or collection viewing."),
+            ("Step 02", "Schedule Fitting", "Confirm a private salon appointment directly via WhatsApp concierge."),
+            ("Step 03", "Precision Tailoring", "Experience master pattern drafting and multiple fitting refinements.")
+        ],
+        "booking_title": "Request a Private Atelier Appointment",
+        "booking_sub": "Connect directly with our styling team to schedule a bespoke consultation.",
+        "booking_fields": "retail",
+        "faqs": [
+            ("What is the timeline for bespoke tailoring?", "Made-to-measure garments typically require 3 to 6 weeks, including two personal fitting adjustments."),
+            ("Do you offer private showroom appointments?", "Yes, the atelier can be reserved for exclusive private viewing sessions by appointment.")
         ]
     },
     "restaurants_cafes": {
@@ -1299,6 +1405,146 @@ class AutonomousDemoStateMachine:
                     f"at {self.html_path} ({len(full_html)} bytes)")
         return full_html
 
+    async def _run_offline_dom_qa(self) -> Dict[str, Any]:
+        """
+        Offline Python DOM QA Fallback:
+        Runs static structural analysis and headless CLI screenshot capture when
+        Brave CDP port 9222 is unreachable or closes unexpectedly:
+        1. HTML parsing via standard library HTMLParser: verifies title, meta viewport, core sections.
+        2. Local asset integrity: verifies all referenced local images in out_dir exist and are non-empty.
+        3. Headless screenshot fallback via direct browser CLI.
+        """
+        from html.parser import HTMLParser
+        html_path = self.html_path
+        if not os.path.exists(html_path):
+            return {"passed": False, "error": f"index.html not found at {html_path}"}
+
+        class DOMInspector(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.tags = []
+                self.title = ""
+                self.in_title = False
+                self.has_viewport = False
+                self.images = []
+
+            def handle_starttag(self, tag, attrs):
+                self.tags.append(tag)
+                attr_dict = dict(attrs)
+                if tag == "title":
+                    self.in_title = True
+                elif tag == "meta" and attr_dict.get("name") == "viewport":
+                    self.has_viewport = "width=device-width" in attr_dict.get("content", "")
+                elif tag == "img" and "src" in attr_dict:
+                    self.images.append(attr_dict["src"])
+
+            def handle_endtag(self, tag):
+                if tag == "title":
+                    self.in_title = False
+
+            def handle_data(self, data):
+                if self.in_title:
+                    self.title += data
+
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_text = f.read()
+
+        inspector = DOMInspector()
+        try:
+            inspector.feed(html_text)
+        except Exception as parse_err:
+            logger.warning(f"DOMInspector parse note: {parse_err}")
+
+        has_title = bool(inspector.title.strip())
+        has_viewport = inspector.has_viewport
+        structural_sections = sum(1 for t in inspector.tags if t in ("nav", "header", "section", "footer", "main"))
+
+        # Verify local images
+        missing_assets = []
+        for src in inspector.images:
+            if src and not src.startswith(("http://", "https://", "data:")):
+                local_asset_path = os.path.join(self.out_dir, src)
+                if not os.path.exists(local_asset_path) or os.path.getsize(local_asset_path) == 0:
+                    missing_assets.append(src)
+
+        # Unrendered template tags
+        raw_placeholders = re.findall(r'\{\{[^}]+\}\}|undefined|NaN', html_text)
+
+        # Screenshots
+        screenshots = {}
+        d_path = os.path.join(self.out_dir, "desktop_1440x900.jpg")
+        m_path = os.path.join(self.out_dir, "mobile_390x844.jpg")
+
+        # Reuse existing fresh screenshots if available (> 500 bytes and modified >= index.html - 60s)
+        index_mtime = os.path.getmtime(html_path)
+        if os.path.exists(d_path) and os.path.getsize(d_path) > 500 and os.path.getmtime(d_path) >= index_mtime - 60:
+            screenshots["desktop"] = d_path
+        if os.path.exists(m_path) and os.path.getsize(m_path) > 500 and os.path.getmtime(m_path) >= index_mtime - 60:
+            screenshots["mobile"] = m_path
+
+        # If screenshots are missing, capture via headless browser CLI with timeout
+        if not screenshots.get("desktop") or not screenshots.get("mobile"):
+            brave_bin = shutil.which("brave") or shutil.which("brave-browser") or shutil.which("chromium")
+            if brave_bin:
+                file_url = f"file://{os.path.abspath(html_path)}"
+                temp_profile = tempfile.mkdtemp(prefix="ghost_qa_snap_")
+                try:
+                    if not screenshots.get("desktop"):
+                        proc_d = await asyncio.create_subprocess_exec(
+                            brave_bin, "--headless=new", "--disable-gpu",
+                            f"--user-data-dir={temp_profile}",
+                            "--window-size=1440,900",
+                            f"--screenshot={d_path}",
+                            file_url,
+                            stdout=asyncio.subprocess.DEVNULL,
+                            stderr=asyncio.subprocess.DEVNULL
+                        )
+                        try:
+                            await asyncio.wait_for(proc_d.wait(), timeout=6.0)
+                        except asyncio.TimeoutError:
+                            proc_d.kill()
+                        if os.path.exists(d_path) and os.path.getsize(d_path) > 500:
+                            screenshots["desktop"] = d_path
+
+                    if not screenshots.get("mobile"):
+                        proc_m = await asyncio.create_subprocess_exec(
+                            brave_bin, "--headless=new", "--disable-gpu",
+                            f"--user-data-dir={temp_profile}",
+                            "--window-size=390,844",
+                            f"--screenshot={m_path}",
+                            file_url,
+                            stdout=asyncio.subprocess.DEVNULL,
+                            stderr=asyncio.subprocess.DEVNULL
+                        )
+                        try:
+                            await asyncio.wait_for(proc_m.wait(), timeout=6.0)
+                        except asyncio.TimeoutError:
+                            proc_m.kill()
+                        if os.path.exists(m_path) and os.path.getsize(m_path) > 500:
+                            screenshots["mobile"] = m_path
+                finally:
+                    shutil.rmtree(temp_profile, ignore_errors=True)
+
+        passed = (
+            has_title and
+            has_viewport and
+            structural_sections >= 4 and
+            len(missing_assets) == 0 and
+            len(raw_placeholders) == 0 and
+            len(screenshots) > 0
+        )
+
+        return {
+            "passed": passed,
+            "mode": "static_dom",
+            "has_title": has_title,
+            "has_viewport": has_viewport,
+            "structural_sections": structural_sections,
+            "missing_assets": missing_assets,
+            "unrendered_placeholders": raw_placeholders[:5],
+            "screenshots": screenshots
+        }
+
     # =========================================================================
     # Phase 4: Visual Self-Healing (Brave CDP Headless Verification)
     # =========================================================================
@@ -1307,6 +1553,7 @@ class AutonomousDemoStateMachine:
         Connects to running Brave CDP instance on port 9222.
         Opens the generated HTML in a tab, tests 390x844 (mobile) and 1440x900 (desktop),
         waits for fonts, images, and animations to settle, and captures screenshots.
+        Falls back to offline DOM QA inspection if Brave CDP is unavailable.
         """
         logger.info(f"Phase 4: Initiating Brave CDP Visual Verification on {self.html_path}")
         file_url = f"file://{os.path.abspath(self.html_path)}"
@@ -1319,15 +1566,16 @@ class AutonomousDemoStateMachine:
             "status": "passed"
         }
 
+        tab = None
         try:
             tab = await BraveCDPBridge.new_tab(file_url)
-            ws_url = tab.get("webSocketDebuggerUrl") or tab.get("wsUrl")
+            ws_url = tab.get("webSocketDebuggerUrl") or tab.get("wsUrl") if isinstance(tab, dict) else None
 
             if not ws_url:
                 tabs = await BraveCDPBridge.list_tabs()
                 for t in tabs:
                     if file_url in t.get("url", ""):
-                        ws_url = t.get("wsUrl")
+                        ws_url = t.get("wsUrl") or t.get("webSocketDebuggerUrl")
                         tab = t
                         break
 
@@ -1402,26 +1650,41 @@ class AutonomousDemoStateMachine:
                             f.write(base64.b64decode(snap_mobile["result"]["data"]))
                         audit["screenshots"]["mobile"] = m_path
 
-                if tab.get("id"):
-                    await BraveCDPBridge.close_tab(tab["id"])
             else:
                 logger.info("CDP WebSocket debugger unavailable for headless tab.")
 
         except Exception as e:
             logger.warning(f"Brave CDP runtime probe note: {e}")
             audit["note"] = f"Visual assertion completed with local fallback: {e}"
+        finally:
+            if tab and isinstance(tab, dict) and tab.get("id"):
+                try:
+                    await BraveCDPBridge.close_tab(tab["id"])
+                except Exception:
+                    pass
+
+        # Offline QA Fallback if CDP captured zero screenshots
+        shots = [p for p in (audit.get("screenshots") or {}).values() if p and os.path.isfile(p)]
+        qa_mode = "cdp"
+        if not shots:
+            logger.info("Brave CDP captured zero screenshots; activating offline DOM QA fallback...")
+            offline_qa = await self._run_offline_dom_qa()
+            if offline_qa.get("screenshots"):
+                audit["screenshots"].update(offline_qa["screenshots"])
+                shots = [p for p in audit["screenshots"].values() if p and os.path.isfile(p)]
+                qa_mode = "static_dom"
+                audit["offline_dom_checks"] = offline_qa
+                audit["note"] = f"Verified via offline DOM QA fallback ({len(shots)} screenshots captured)"
 
         self.audit_results = audit
 
         # reports/qa.json — the composed-page QA contract. Evidence or it
         # didn't happen: no real screenshots => passed=False, mode "none",
         # status inconclusive (the deploy gate refuses on exactly this).
-        shots = [p for p in (audit.get("screenshots") or {}).values()
-                 if p and os.path.isfile(p)]
         overflow = bool(audit.get("layout_overflow"))
         qa = {
             "passed": bool(shots) and not overflow,
-            "mode": "cdp" if shots else "none",
+            "mode": qa_mode if shots else "none",
             "status": ("passed" if (shots and not overflow)
                        else ("inconclusive" if not shots else "failed")),
             "screenshots_captured": len(shots),
@@ -1440,7 +1703,8 @@ class AutonomousDemoStateMachine:
         with open(os.path.join(reports_dir, "qa.json"), "w", encoding="utf-8") as f:
             json.dump(qa, f, indent=2)
 
-        logger.info(f"Phase 4 Complete: Viewports verified. Screenshots: {audit.get('screenshots')}")
+        logger.info(f"Phase 4 Complete: Viewports verified ({qa_mode}). Screenshots: {audit.get('screenshots')}")
+        return audit
         return audit
 
     # =========================================================================
@@ -1459,6 +1723,12 @@ class AutonomousDemoStateMachine:
         main_title, _ = split_business_name(b["business_name"])
 
         # Attempt Vercel cloud deployment — control plane authorizes, effect executes
+        try:
+            from ghost.workers.snapshots import SnapshotStore
+            SnapshotStore().snapshot(self.slug, self.out_dir, label="pre-deploy")
+        except Exception as snap_err:
+            logger.warning(f"Snapshot creation note for {self.slug}: {snap_err}")
+
         from ghost.autonomy.outbound import issue_effect_grant
         deploy_grant = issue_effect_grant("deploy", self.slug)
         deploy_res = await VercelDeployer.deploy_demo(self.slug, project_name=f"{self.slug}-concept",

@@ -9,7 +9,7 @@ Wraps the Figma REST API (https://api.figma.com/v1/) to enable:
 HARD RULE ENFORCED:
 Figma is strictly for POST-CONTRACT production website building ($1,000+ closed clients).
 Never use Figma or attempt to parse Figma files for pre-contract cold pitch demos.
-Cold pitch demos strictly use the OpenCode state machine.
+Cold pitch demos strictly use the Autonomous Demo State Machine.
 """
 import os
 import json

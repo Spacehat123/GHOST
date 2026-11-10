@@ -1,9 +1,9 @@
 # BESPOKE DESIGN BRIEF & ARCHITECTURAL BLUEPRINT
 **Establishment:** Grasshopper  
-**Domain:** restaurants_cafes (Service)  
-**Location / Market:** Grasshopper Area  
+**Domain:** restaurants_cafes (Fine dining restaurant)  
+**Location / Market:** 45, Bannerghatta Rd, near Meenakshi Temple, Kothnur, Kalena Agrahara, Bengaluru, Karnataka 560076  
 **Assigned Archetype:** Archetype 1 — Michelin & Fine Dining Editorial  
-**Classification Confidence:** 1.00 (Needs confirmation: False)
+**Classification Confidence:** 0.95 (Needs confirmation: False)
 
 ---
 
@@ -56,10 +56,6 @@
 ## HOUSE STYLE OVERRIDE — binding editorial standard
 
 The section builder MUST apply the standard below over any archetype default it conflicts with. Photography rule: use ONLY the staged local paths (`assets['hero_bg']`, `bento_img1/2`, `gallery_1..3` when they point at `assets/photos/`) — they are THE BUSINESS'S OWN photos. Never hotlink stock — stock images are banned entirely. A photo slot WITHOUT a staged local path renders as `[Inquire for quotation: photography]`, never a generic image.
-
-
-### PHOTOGRAPHY MODE: NONE AVAILABLE (binding)
-No real photos were staged. Build the PHOTOGRAPHY-FREE editorial variant: typography-led (giant ghosted wordmark, serif hierarchy, hairline rules, micro-caps meta), generous whitespace, and where a photo would go render a bordered slot reading `[Inquire for quotation: photography]`. STOCK IMAGES PRESENTED AS THIS BUSINESS ARE FORBIDDEN — a generic photo carrying a specific menu/product claim is a fabricated fact and fails QA claims lint.
 
 ```markdown
 <!-- capability

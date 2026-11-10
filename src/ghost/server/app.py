@@ -69,6 +69,15 @@ async def get_index(request: Request):
 @app.on_event("startup")
 async def startup_event():
     """Launch watchdog patrol + the FULL autonomy runtime (P0-P5 wiring)."""
+    # Load grant secret from secrets vault if not in environment
+    try:
+        from ghost.core import secrets
+        sec = secrets.get("GHOST_GRANT_SECRET")
+        if sec and "GHOST_GRANT_SECRET" not in os.environ:
+            os.environ["GHOST_GRANT_SECRET"] = sec
+    except Exception:
+        pass
+
     watchdog = AutonomousWatchdog.get_instance()
     watchdog.start_patrol()
     # Trigger initial patrol sweep asynchronously

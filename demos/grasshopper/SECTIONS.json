@@ -40,6 +40,24 @@
       ]
     },
     {
+      "name": "proof_reviews",
+      "category": "social_proof",
+      "source": "sections/proof_reviews",
+      "slots_used": [
+        "reviews"
+      ]
+    },
+    {
+      "name": "gallery_strip",
+      "category": "gallery",
+      "source": "sections/gallery_strip",
+      "slots_used": [
+        "gallery_1",
+        "gallery_2",
+        "gallery_3"
+      ]
+    },
+    {
       "name": "journey_steps",
       "category": "process",
       "source": "sections/journey_steps",

@@ -1,0 +1,9 @@
+{
+  "html_bytes": 32649,
+  "css_bytes": 0,
+  "js_bytes": 0,
+  "total_bundle_kb": 31.88,
+  "js_max_kb_gzip_budget": 150,
+  "budget_status": "within_budget",
+  "measurement_mode": "actual_file_bytes"
+}

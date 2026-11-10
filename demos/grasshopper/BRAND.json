@@ -1,94 +1,170 @@
 {
   "business_name": "Grasshopper",
-  "location": "Grasshopper Area",
+  "location": "45, Bannerghatta Rd, near Meenakshi Temple, Kothnur, Kalena Agrahara, Bengaluru, Karnataka 560076",
   "slug": "grasshopper",
-  "domain": "general_services",
-  "category": "",
+  "domain": "restaurants_cafes",
+  "category": "Fine dining restaurant",
   "assets": {
     "services": [
       {
-        "title": "Consultation",
-        "category": "Consultation",
+        "title": "Tasting Menus",
+        "category": "Tasting Menus",
         "price": null,
         "desc": null
       },
       {
-        "title": "Core Service Delivery",
-        "category": "Core Service Delivery",
+        "title": "Midday Menu",
+        "category": "Midday Menu",
         "price": null,
         "desc": null
       },
       {
-        "title": "Client Support",
-        "category": "Client Support",
+        "title": "Beverage Program",
+        "category": "Beverage Program",
         "price": null,
         "desc": null
       }
     ],
-    "photos_policy": "no_photos_inquire"
+    "hero_bg": "assets/photos/photo-01.jpg",
+    "bento_img1": "assets/photos/photo-02.jpg",
+    "bento_img2": "assets/photos/photo-03.jpg",
+    "gallery_1": "assets/photos/photo-04.jpg",
+    "gallery_2": "assets/photos/photo-05.jpg",
+    "gallery_3": "assets/photos/photo-06.jpg"
   },
   "copy": {
-    "tagline_template": "Professional Standards & Bespoke Service in {location}.",
-    "offering_title": "Capabilities & Offerings",
-    "offering_kicker": "Disciplined Standards",
-    "cta_primary": "Request Consultation",
-    "cta_secondary": "Explore Capabilities",
-    "banner_headline": "Direct Client Engagement \u2022 Transparent Communication",
-    "banner_sub": "Connect directly with our team with zero intermediary delays.",
-    "philosophy_kicker": "Standards & Philosophy",
-    "philosophy_title": "Uncompromising Quality & Client Trust",
-    "philosophy_body_1": "At {business_name}, every engagement is handled with personal dedication and rigor in {location}.",
-    "philosophy_body_2": "We focus on measured outcomes, clear accountability, and enduring relationships.",
-    "quote_attribution": "Principal & Client Director",
-    "quote_text": "Excellence is never accidental; it is the result of disciplined intention and consistent execution.",
-    "atmosphere_title": "Practice & Environment",
-    "atmosphere_kicker": "Our Space",
-    "gallery_1": "Client Consultation Room",
-    "gallery_2": "Work & Collaboration Space",
-    "gallery_3": "Executive Suite",
+    "tagline_template": "{name} in {location}.",
+    "offering_title": "Curated Offerings",
+    "offering_kicker": "Artisanal Precision",
+    "cta_primary": "Reserve Table",
+    "cta_secondary": "Explore Offerings",
+    "banner_headline": "Direct Table Protocol \u2022 Zero Intermediary Friction",
+    "banner_sub": "Instant booking confirmation via WhatsApp concierge with zero third-party commissions.",
+    "philosophy_kicker": "Philosophy & Provenance",
+    "philosophy_title": "Architectural Flavor & Uncompromising Standards",
+    "philosophy_body_1": "At {business_name}, every detail is calibrated to provide a memorable dining experience in {location}.",
+    "philosophy_body_2": "We reject automated mediocrity. Our team pairs artisanal heritage with warm hospitality.",
+    "quote_attribution": "Head Concierge",
+    "quote_text": "Hospitality crafted with discipline, warmth, and unhurried composure.",
+    "atmosphere_title": "Atmosphere & Spaces",
+    "atmosphere_kicker": "Visual Ambiance",
+    "gallery_1": "The Main Dining Room",
+    "gallery_2": "Bar & Lounge",
+    "gallery_3": "Private Dining Suite",
     "how_it_works_steps": [
       [
         "Step 01",
-        "Select Service Scope",
-        "Identify your specific requirements from our capabilities catalog."
+        "Select Experience",
+        "Choose your preferred seating and dining time."
       ],
       [
         "Step 02",
-        "Direct Coordination",
-        "Connect directly via WhatsApp or telephone to establish timelines."
+        "Instant WhatsApp",
+        "Connect directly with our team on WhatsApp with your date and party size pre-filled."
       ],
       [
         "Step 03",
-        "Tailored Delivery",
-        "Receive dedicated attention and transparent execution from our team."
+        "Hospitality",
+        "Arrive to an unhurried, tailored dining experience."
       ]
     ],
-    "booking_title": "Schedule a Consultation",
-    "booking_sub": "Select your service requirements and connect directly with our team.",
-    "booking_fields": "general",
+    "booking_title": "Reserve Your Table",
+    "booking_sub": "Choose your seating and initiate an instant booking conversation directly on WhatsApp.",
+    "booking_fields": "dining",
     "faqs": [
       [
-        "How do I receive an initial quotation?",
-        "Share your project or service scope via WhatsApp or call for a transparent, bespoke proposal."
+        "What are the reservation lead times?",
+        "Reservations open 14 days in advance. Direct WhatsApp inquiries receive priority confirmation."
       ],
       [
-        "What are your standard scheduling lead times?",
-        "We accommodate consultation requests within 24 to 48 hours of initial inquiry."
+        "Do you accommodate dietary preferences?",
+        "Yes, please inform us in advance so our kitchen can tailor your experience."
       ]
     ]
   },
-  "archetype_id": 5,
-  "archetype_name": "Clean Service & Modern Precision",
-  "tagline": "Professional Standards & Bespoke Service in Grasshopper Area.",
+  "archetype_id": 1,
+  "archetype_name": "Michelin & Fine Dining Editorial",
+  "tagline": "Grasshopper in 45 Kalena Agrahara.",
   "services": [],
   "services_verified": false,
-  "reviews": [],
-  "phone": null,
+  "reviews": [
+    {
+      "quote": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More",
+      "author": "Anjali A.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More",
+      "author": "Anjali A.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More",
+      "author": "Anjali A.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "To team grasshopper !\n\nWe had an incredible time at Grasshopper, so glad we chose the place to \u2026 More",
+      "author": "Megha V.",
+      "source": "Google Review \u2022 5 stars"
+    }
+  ],
+  "phone": "080501 65130",
   "email": null,
   "hours": null,
   "rating": null,
-  "review_count": null,
-  "scouted_photos": [],
-  "audit_data": null,
-  "needs_confirmation": true
+  "review_count": "848",
+  "scouted_photos": [
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLc0bIGjXhIvRKdXHML9Xy8FwWzkd1cTE1PlTkYRe8cNCHj3ybHzEnWnOTUsp70b-RNwtinMQ_JsizWrkF9jyOCbaNKgVqSWdZfYGkSPclCU7uK0Pw5jO9Ne_sowGsgFwNIvqkYQ=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLc0bIGjXhIvRKdXHML9Xy8FwWzkd1cTE1PlTkYRe8cNCHj3ybHzEnWnOTUsp70b-RNwtinMQ_JsizWrkF9jyOCbaNKgVqSWdZfYGkSPclCU7uK0Pw5jO9Ne_sowGsgFwNIvqkYQ=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLeZqp_Aj_sLQEFv4JHbjUD-5y6IdBv1Bara2HKc-W0I-v7oKdbMSndIM0xK3cOhkI6n5drlv7LR7UfulL41Gx_6kqxJXM0z3Vvmgy6__NQg-kKb9EW-7wpArpAn1LIfr7KrSYrN=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLeZqp_Aj_sLQEFv4JHbjUD-5y6IdBv1Bara2HKc-W0I-v7oKdbMSndIM0xK3cOhkI6n5drlv7LR7UfulL41Gx_6kqxJXM0z3Vvmgy6__NQg-kKb9EW-7wpArpAn1LIfr7KrSYrN=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdI6y3GzZ_hw4Ek0C0jkfKFszgItczbeezOysD6uNPqVSwzGYmLpZ0VT4enYpz5nlysUS7-xAFhrGDFzSVaswpRVRKFdP73cXsm2oIyYbuMR8o8xQXGOzCSHQzklQamaZzJnTc=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdI6y3GzZ_hw4Ek0C0jkfKFszgItczbeezOysD6uNPqVSwzGYmLpZ0VT4enYpz5nlysUS7-xAFhrGDFzSVaswpRVRKFdP73cXsm2oIyYbuMR8o8xQXGOzCSHQzklQamaZzJnTc=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SpIKVGWHHkTGnYYaz7lpIOYbhKRBgMvJM5dlLV_448_Ezifo3Ss3K4KEN-DyJOZsduHj0f4tfLP6qRFtSnvhB8_L36wfDKO2wlvxr10MAnu8gorpz4U2ZwtXHlOF-VSXTtEteR=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SpIKVGWHHkTGnYYaz7lpIOYbhKRBgMvJM5dlLV_448_Ezifo3Ss3K4KEN-DyJOZsduHj0f4tfLP6qRFtSnvhB8_L36wfDKO2wlvxr10MAnu8gorpz4U2ZwtXHlOF-VSXTtEteR=w531-h298-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9RHU1sg9PZk5XOjAL6X8VdeTmFGXQ_6WvvIsg2rCF_7Y2Dwt8K9JCg3dg9lxA9gmFAHW__1eDaPbA9lfZn6Fkm1EWFUdcC7hBYwR996wzVZKDKa2FEmibjR7pNuC4ABUxkqpk3F=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9RHU1sg9PZk5XOjAL6X8VdeTmFGXQ_6WvvIsg2rCF_7Y2Dwt8K9JCg3dg9lxA9gmFAHW__1eDaPbA9lfZn6Fkm1EWFUdcC7hBYwR996wzVZKDKa2FEmibjR7pNuC4ABUxkqpk3F=w224-h317-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SJ-obXkaBSA1Rn3CM1KSXTPgTCptFlC0uho1e9-FwGg7ItxkxZB7jfKwJZRIx-YzmGM8MPkHrw0KcMOizVmbDDRdhTibrUqh7F5OzktTSNPKLQ09vRx2Zua9thsFUbmb3IFtpO2w=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SJ-obXkaBSA1Rn3CM1KSXTPgTCptFlC0uho1e9-FwGg7ItxkxZB7jfKwJZRIx-YzmGM8MPkHrw0KcMOizVmbDDRdhTibrUqh7F5OzktTSNPKLQ09vRx2Zua9thsFUbmb3IFtpO2w=w529-h298-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TsVl4zrHHNnj6J3id3wpjuQefnBfRjco23i4OXTXolVnecb0QETU23yZNSj_EGsnJ4uNBfJfTXGFzsVf20FUcMPHoAQw-DrHxCa46JbKtF6_OCPK5QjVqQhMu29aOcrTQ9cy0JhQ=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TsVl4zrHHNnj6J3id3wpjuQefnBfRjco23i4OXTXolVnecb0QETU23yZNSj_EGsnJ4uNBfJfTXGFzsVf20FUcMPHoAQw-DrHxCa46JbKtF6_OCPK5QjVqQhMu29aOcrTQ9cy0JhQ=w447-h298-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SAmHwbSulNPuJ95pQzvf7oaNiOu6bWLA3KOTYsPFNt__bRiA_3COf6SEDtioaYZI9uoTabXsbzcpp20-2SXC9Xf4B2FuiJXU5d_qUVbrVAnrui8Y3IjGADQjMsHjgGa-H9NdykhQ=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9SAmHwbSulNPuJ95pQzvf7oaNiOu6bWLA3KOTYsPFNt__bRiA_3COf6SEDtioaYZI9uoTabXsbzcpp20-2SXC9Xf4B2FuiJXU5d_qUVbrVAnrui8Y3IjGADQjMsHjgGa-H9NdykhQ=w447-h298-k-no",
+      "source": "google_maps_cdn"
+    }
+  ],
+  "audit_data": {
+    "url": "https://www.instagram.com/grasshopperbangalore/",
+    "load_time_sec": 1.85,
+    "perf_score": 80,
+    "dom_nodes": 367,
+    "js_heap_mb": 13.7,
+    "mobile_friendly": true,
+    "scraped_at": "2026-11-10 05:51:55Z",
+    "method": "Brave CDP Headless"
+  },
+  "needs_confirmation": false
 }
