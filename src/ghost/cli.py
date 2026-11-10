@@ -304,6 +304,17 @@ def cmd_fixer(args) -> int:
     return 1
 
 
+def cmd_export(args) -> int:
+    from ghost.workers.export_demo_to_production import export_demo_to_production
+    try:
+        res = export_demo_to_production(args.slug, output_base_dir=args.out_dir)
+        print(f"✅ Exported demo '{args.slug}' to {res['target_dir']} ({res['files_created']} files, Next.js 14 App Router)")
+        return 0
+    except Exception as e:
+        print(f"❌ Failed to export '{args.slug}': {e}")
+        return 1
+
+
 COMMANDS = {
     "halt": (cmd_halt, "freeze ALL outbound now (the throat-cut handle)"),
     "resume": (cmd_resume, "clear a halt"),
@@ -323,6 +334,7 @@ COMMANDS = {
     "darkrun": (cmd_darkrun, "T10: 30-day dark run — preflight/start/status/stop"),
     "grantd": (cmd_grantd, "P4: grant authority daemon (key isolation; run alongside supervise)"),
     "fixer": (cmd_fixer, "P7: staged fixes — list the approval queue / approve one (--staged-id)"),
+    "export": (cmd_export, "export an approved demo to a production Next.js 14 App Router project"),
 }
 
 
@@ -363,6 +375,9 @@ def main(argv=None) -> int:
                            choices=["preflight", "start", "status", "stop"])
             p.add_argument("--force", action="store_true",
                            help="start despite failed preflight (recorded as forced)")
+        if name == "export":
+            p.add_argument("slug", help="demo slug to export to production Next.js codebase")
+            p.add_argument("--out-dir", default=None, help="output base directory (default dist/production)")
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

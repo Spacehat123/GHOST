@@ -91,16 +91,34 @@
       var onLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 
       if (!onLocal) {
-        // Hosted fallback: hand the inquiry straight to the business.
-        if (BUSINESS.hasPhone && !BUSINESS.isLandline) {
-          var msg = 'Hello ' + BUSINESS.name + ', I found your website. ';
-          if (message) msg += message + ' ';
-          msg += '— ' + (name || 'a visitor') + (contact ? ' (' + contact + ')' : '');
-          window.open('https://wa.me/' + BUSINESS.cleanPhone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
-          say('Opening WhatsApp — your message is ready to send.');
-          return;
+        // Hosted (Vercel / Netlify): POST to serverless api/contact endpoint, fallback to WhatsApp
+        say('Recording inquiry...');
+        fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, contact: contact, message: message })
+        }).then(function (r) {
+          if (r.ok) {
+            say('Thank you — your inquiry was recorded. ' + (BUSINESS.name || 'The team') + ' will get back to you.');
+            form.reset();
+          } else {
+            fallbackOutbound();
+          }
+        }).catch(function () {
+          fallbackOutbound();
+        });
+
+        function fallbackOutbound() {
+          if (BUSINESS.hasPhone && !BUSINESS.isLandline) {
+            var msg = 'Hello ' + BUSINESS.name + ', I found your website. ';
+            if (message) msg += message + ' ';
+            msg += '— ' + (name || 'a visitor') + (contact ? ' (' + contact + ')' : '');
+            window.open('https://wa.me/' + BUSINESS.cleanPhone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+            say('Opening WhatsApp — your message is ready to send.');
+            return;
+          }
+          say('Please reach us directly' + (BUSINESS.phone ? ': ' + BUSINESS.phone : '.') );
         }
-        say('Please reach us directly' + (BUSINESS.phone ? ': ' + BUSINESS.phone : '.') );
         return;
       }
 

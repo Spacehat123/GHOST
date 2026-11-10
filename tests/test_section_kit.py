@@ -414,6 +414,78 @@ class TestReferenceLibrary(unittest.TestCase):
 
 
 
+class TestVocabularyLinterAndServerlessStubs(unittest.TestCase):
+
+    def test_vocabulary_linter_purges_culinary_terms_for_non_food_vertical(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        sm_detailing = AutonomousDemoStateMachine(
+            business_name="Topaz Detailing",
+            location="Mayfair, London",
+            slug="topaz-detailing-test"
+        )
+        sm_detailing.domain = "home_trade_services"
+        dirty_markup = (
+            "<h1>Welcome to our Culinary Sanctuary</h1>"
+            "<p>Our Sommelier and Head Chef prepare a 7-course Tasting Menu.</p>"
+            "<p>Ask about our wine pairings and signature dishes in the dining room.</p>"
+        )
+        cleaned, count = sm_detailing._lint_and_sanitize_vocabulary(dirty_markup)
+        self.assertGreater(count, 0)
+        self.assertNotIn("culinary sanctuary", cleaned.lower())
+        self.assertNotIn("sommelier", cleaned.lower())
+        self.assertNotIn("head chef", cleaned.lower())
+        self.assertNotIn("tasting menu", cleaned.lower())
+        self.assertNotIn("wine pairings", cleaned.lower())
+        self.assertNotIn("signature dishes", cleaned.lower())
+        self.assertIn("Bespoke Sanctuary", cleaned)
+        self.assertIn("Curator", cleaned)
+        self.assertIn("Lead Specialist", cleaned)
+        self.assertIn("Signature Program", cleaned)
+        self.assertIn("curated pairings", cleaned)
+        self.assertIn("signature offerings", cleaned)
+
+    def test_vocabulary_linter_preserves_culinary_terms_for_restaurants(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        sm_restaurant = AutonomousDemoStateMachine(
+            business_name="L'Ambroisie",
+            location="Paris",
+            slug="ambroisie-test"
+        )
+        sm_restaurant.domain = "restaurants_cafes"
+        markup = "<p>Our Sommelier and Chef offer a tasting menu.</p>"
+        cleaned, count = sm_restaurant._lint_and_sanitize_vocabulary(markup)
+        self.assertEqual(count, 0)
+        self.assertEqual(cleaned, markup)
+
+    def test_serverless_stubs_scaffolded_in_api_dir(self):
+        from ghost.workers.demo_state_machine import AutonomousDemoStateMachine
+        out_dir = os.path.join(TMP, f"stubs-test-{uuid.uuid4().hex[:6]}")
+        os.makedirs(out_dir, exist_ok=True)
+        sm = AutonomousDemoStateMachine(
+            business_name="Aesthetic Clinic",
+            location="London",
+            slug="aesthetic-clinic"
+        )
+        sm.out_dir = out_dir
+        sm._scaffold_serverless_stubs()
+
+        contact_path = os.path.join(out_dir, "api", "contact.js")
+        book_path = os.path.join(out_dir, "api", "book.js")
+        self.assertTrue(os.path.isfile(contact_path))
+        self.assertTrue(os.path.isfile(book_path))
+
+        with open(contact_path, "r", encoding="utf-8") as f:
+            contact_src = f.read()
+        self.assertIn("company_website", contact_src)
+        self.assertIn("aesthetic-clinic", contact_src)
+        self.assertIn("GHOST_CRM_WEBHOOK_URL", contact_src)
+
+        with open(book_path, "r", encoding="utf-8") as f:
+            book_src = f.read()
+        self.assertIn("party_size", book_src)
+        self.assertIn("aesthetic-clinic", book_src)
+
+
 class TestMotionQaRefusal(unittest.TestCase):
     """qa_motion_site must refuse kit pages (2026-11-08: it failed a kit page
     for files kit pages don't have, and the executor looped on the evidence)."""
