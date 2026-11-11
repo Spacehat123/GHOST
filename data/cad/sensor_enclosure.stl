@@ -1,0 +1,9 @@
+solid sensor_enclosure
+  facet normal 0.0 0.0 1.0
+    outer loop
+      vertex 0.0 0.0 25
+      vertex 80 0.0 25
+      vertex 80 50 25
+    endloop
+  endfacet
+endsolid sensor_enclosure

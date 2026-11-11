@@ -195,7 +195,264 @@ def get_tool_registry() -> ToolRegistry:
     global _GLOBAL_TOOL_REGISTRY
     if _GLOBAL_TOOL_REGISTRY is None:
         _GLOBAL_TOOL_REGISTRY = ToolRegistry()
+        register_default_ghost_tools(_GLOBAL_TOOL_REGISTRY)
     return _GLOBAL_TOOL_REGISTRY
+
+
+def register_default_ghost_tools(registry: Optional[ToolRegistry] = None) -> ToolRegistry:
+    """Populates ToolRegistry from GHOST_TOOLS suite."""
+    reg = registry or get_tool_registry()
+    try:
+        from ghost.core.brain import GHOST_TOOLS, OmniRouteBrain
+        for t in GHOST_TOOLS:
+            fn = t.get("function", {})
+            name = fn.get("name")
+            desc = fn.get("description", "")
+            schema = fn.get("parameters", {})
+            if name and not reg.get(name):
+                is_side_effect = name in [
+                    "execute_command", "desktop_control", "deploy_demo",
+                    "send_email", "save_file", "write_file", "kill_process"
+                ]
+                def _build_handler(tool_name: str):
+                    async def _h(args: Dict[str, Any], cap: Optional[str] = None):
+                        return await OmniRouteBrain.execute_tool_call(tool_name, args)
+                    _h.__is_brain_wrapped__ = True
+                    return _h
+
+                reg.register(ToolDefinition(
+                    name=name,
+                    description=desc,
+                    parameters_schema=schema,
+                    is_side_effect=is_side_effect,
+                    handler=_build_handler(name),
+                ))
+
+        # Register specialized physical, creative, and personal domain tools
+        if not reg.get("ha_get_states"):
+            from ghost.integrations.homeassistant import HomeAssistantClient
+            ha_client = HomeAssistantClient()
+            reg.register(ToolDefinition(
+                name="ha_get_states",
+                description="Query all entity and sensor states from Home Assistant smart home.",
+                parameters_schema={"type": "object", "properties": {}},
+                is_side_effect=False,
+                handler=lambda args, cap: ha_client.get_states(),
+            ))
+
+        if not reg.get("ha_call_service"):
+            from ghost.integrations.homeassistant import HomeAssistantClient
+            ha_client = HomeAssistantClient()
+            reg.register(ToolDefinition(
+                name="ha_call_service",
+                description="Execute physical device service call on Home Assistant (e.g. light.turn_on, switch.toggle).",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "domain": {"type": "string"},
+                        "service": {"type": "string"},
+                        "service_data": {"type": "object"},
+                    },
+                    "required": ["domain", "service"],
+                },
+                is_side_effect=True,
+                required_permission="physical.control",
+                handler=lambda args, cap: ha_client.call_service(args.get("domain", ""), args.get("service", ""), args.get("service_data", {})),
+            ))
+
+        if not reg.get("mqtt_publish"):
+            from ghost.integrations.mqtt import MQTTClient
+            mqtt_client = MQTTClient()
+            reg.register(ToolDefinition(
+                name="mqtt_publish",
+                description="Publish an MQTT message to the smart home broker topic.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "topic": {"type": "string"},
+                        "payload": {"type": "string"},
+                    },
+                    "required": ["topic", "payload"],
+                },
+                is_side_effect=True,
+                required_permission="physical.mqtt",
+                handler=lambda args, cap: mqtt_client.publish(args.get("topic", ""), args.get("payload", "")),
+            ))
+
+        if not reg.get("scad_render_model"):
+            from ghost.agents.creative_agent import CreativeIntelligenceAgent
+            creative_agent = CreativeIntelligenceAgent()
+            async def _scad_handler(args, cap):
+                task_mock = Task(
+                    task_id="tsk-tool-scad",
+                    objective_id="obj-tool",
+                    assigned_agent="creative_agent",
+                    title="Render CAD",
+                    description="",
+                    status=TaskStatus.RUNNING,
+                    input_payload={"action": "generate_scad_model", "model_name": args.get("model_name", "part"), "parameters": args.get("parameters", {})},
+                )
+                return await creative_agent.execute_task(task_mock, {})
+            reg.register(ToolDefinition(
+                name="scad_render_model",
+                description="Generate a parametric 3D CAD model using OpenSCAD (.scad and .stl).",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "model_name": {"type": "string"},
+                        "parameters": {"type": "object"},
+                    },
+                    "required": ["model_name"],
+                },
+                is_side_effect=False,
+                handler=_scad_handler,
+            ))
+
+        if not reg.get("personal_create_briefing"):
+            from ghost.agents.personal_agent import PersonalIntelligenceAgent
+            personal_agent = PersonalIntelligenceAgent()
+            async def _briefing_handler(args, cap):
+                task_mock = Task(
+                    task_id="tsk-tool-briefing",
+                    objective_id="obj-tool",
+                    assigned_agent="personal_agent",
+                    title="Create Briefing",
+                    description="",
+                    status=TaskStatus.RUNNING,
+                    input_payload={"type": "daily_briefing"},
+                )
+                return await personal_agent.execute_task(task_mock, {})
+            reg.register(ToolDefinition(
+                name="personal_create_briefing",
+                description="Synthesize executive daily intelligence briefing document.",
+                parameters_schema={"type": "object", "properties": {}},
+                is_side_effect=False,
+                handler=_briefing_handler,
+            ))
+
+        # Register central meta-orchestration tools
+        if not reg.get("delegate_task"):
+            async def _delegate_handler(args: Dict[str, Any], cap: Optional[str] = None):
+                from ghost.core.task_router import get_task_router
+                router = get_task_router()
+                agent_id = args.get("assigned_agent", "")
+                objective = args.get("objective", "")
+                inputs = args.get("inputs", {})
+                decision = router.classify_and_route(objective, context=inputs)
+                decision.decision_type = "SINGLE_AGENT"
+                decision.target_agent = agent_id
+                results = []
+                async for evt in router.dispatch_workflow(decision, context=inputs):
+                    if evt["type"] == "workflow_finished":
+                        results.append(evt)
+                return {"ok": True, "delegation": results[0] if results else {}}
+
+            reg.register(ToolDefinition(
+                name="delegate_task",
+                description="Delegates a specialized objective to a domain intelligence agent with isolated execution context.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "assigned_agent": {
+                            "type": "string",
+                            "enum": ["system_agent", "dev_agent", "research_agent", "business_agent", "personal_agent", "physical_agent", "creative_agent"],
+                        },
+                        "objective": {"type": "string"},
+                        "inputs": {"type": "object"},
+                    },
+                    "required": ["assigned_agent", "objective"],
+                },
+                is_side_effect=True,
+                handler=_delegate_handler,
+            ))
+
+        if not reg.get("execute_workflow"):
+            async def _workflow_handler(args: Dict[str, Any], cap: Optional[str] = None):
+                from ghost.core.task_router import get_task_router
+                router = get_task_router()
+                wf_name = args.get("workflow_name", "")
+                params = args.get("parameters", {})
+                query = params.get("query", wf_name)
+                decision = router.classify_and_route(query, context=params)
+                decision.workflow_name = wf_name
+                events = []
+                async for evt in router.dispatch_workflow(decision, context=params):
+                    events.append(evt)
+                return {"ok": True, "workflow": wf_name, "events": events}
+
+            reg.register(ToolDefinition(
+                name="execute_workflow",
+                description="Executes a multi-agent workflow (e.g. business_reconnaissance, dev_incident_investigation).",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "workflow_name": {
+                            "type": "string",
+                            "enum": ["business_reconnaissance", "dev_incident_investigation", "focus_session_activation", "creative_asset_pipeline"],
+                        },
+                        "parameters": {"type": "object"},
+                    },
+                    "required": ["workflow_name"],
+                },
+                is_side_effect=True,
+                handler=_workflow_handler,
+            ))
+
+        if not reg.get("query_agent_registry"):
+            async def _query_registry_handler(args: Dict[str, Any], cap: Optional[str] = None):
+                from ghost.core.agent_registry import get_agent_registry
+                areg = get_agent_registry()
+                domain = args.get("domain")
+                if domain:
+                    desc = areg.get_by_domain(domain)
+                    return {"agents": [desc.to_dict()] if desc else []}
+                return {"agents": [d.to_dict() for d in areg.list_descriptors()]}
+
+            reg.register(ToolDefinition(
+                name="query_agent_registry",
+                description="Queries the canonical AgentCapabilityRegistry to inspect available agents and capabilities.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"domain": {"type": "string"}},
+                },
+                is_side_effect=False,
+                handler=_query_registry_handler,
+            ))
+
+        if not reg.get("check_task_status"):
+            async def _task_status_handler(args: Dict[str, Any], cap: Optional[str] = None):
+                from ghost.core.task_orchestrator import get_task_orchestrator
+                orch = get_task_orchestrator()
+                tid = args.get("task_id", "")
+                t = orch.get_task(tid)
+                if not t:
+                    return {"found": False, "task_id": tid}
+                return {
+                    "found": True,
+                    "task_id": t.task_id,
+                    "status": t.status.value,
+                    "attempts": t.attempts,
+                    "assigned_agent": t.assigned_agent,
+                    "output": t.output_payload,
+                    "error": t.error_reason,
+                    "verification": t.verification_details,
+                }
+
+            reg.register(ToolDefinition(
+                name="check_task_status",
+                description="Checks the execution progress, verification evidence, and status of a delegated task.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"task_id": {"type": "string"}},
+                    "required": ["task_id"],
+                },
+                is_side_effect=False,
+                handler=_task_status_handler,
+            ))
+
+    except Exception as e:
+        logger.warning(f"Could not load default tools into registry: {e}")
+    return reg
 
 
 def reset_tool_registry(registry: Optional[ToolRegistry] = None) -> None:

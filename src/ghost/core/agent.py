@@ -261,8 +261,8 @@ class GhostAgent:
         task_start_time = time.time()
         is_interactive_chat = (task_context is None)
         # Cap interactive chat to 8 rounds / 15 tool executions max; allow full budget for mission tasks
-        max_model_rounds = int(os.environ.get("GHOST_MAX_CHAT_ROUNDS", "8")) if is_interactive_chat else int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "1000"))
-        max_tool_executions = int(os.environ.get("GHOST_MAX_CHAT_TOOL_EXECUTIONS", "15")) if is_interactive_chat else int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "5000"))
+        max_model_rounds = int(os.environ.get("GHOST_MAX_CHAT_ROUNDS") or os.environ.get("GHOST_MAX_MODEL_ROUNDS") or "8") if is_interactive_chat else int(os.environ.get("GHOST_MAX_MODEL_ROUNDS", "1000"))
+        max_tool_executions = int(os.environ.get("GHOST_MAX_CHAT_TOOL_EXECUTIONS") or os.environ.get("GHOST_MAX_TOOL_EXECUTIONS") or "15") if is_interactive_chat else int(os.environ.get("GHOST_MAX_TOOL_EXECUTIONS", "5000"))
         max_task_elapsed_seconds = float(os.environ.get("GHOST_MAX_TASK_ELAPSED_SECONDS", "864000.0"))
         max_task_total_tokens = int(os.environ.get("GHOST_MAX_TASK_TOTAL_TOKENS", "1000000000"))
 
@@ -316,6 +316,14 @@ class GhostAgent:
         if directives_context:
             system_content += f"\n\n{directives_context}"
 
+        # Inject compact agent capability summary
+        try:
+            from ghost.core.agent_registry import get_agent_registry
+            agent_reg = get_agent_registry()
+            system_content += f"\n\n{agent_reg.get_compact_capability_summary()}"
+        except Exception:
+            pass
+
         # Context Loading: Active Mission context takes precedence over rolling chat history
         active_mission = None
         try:
@@ -323,6 +331,135 @@ class GhostAgent:
             active_mission = store.active_mission()
         except Exception:
             pass
+
+        # Check deterministic routing for specialized domain tasks and multi-agent workflows
+        if not task_context:
+            try:
+                from ghost.core.task_router import IntentCategory, get_task_router
+                router = get_task_router()
+                routing_decision = router.classify_and_route(user_text, context=task_context)
+
+                # 1. Capability Discovery Queries (CAPABILITY_QUERY) - No execution
+                if routing_decision.intent_category == IntentCategory.CAPABILITY_QUERY:
+                    yield {"type": "state", "state": "SPEAKING"}
+                    expl = routing_decision.capability_explanation or {}
+                    domains = expl.get("domains", [])
+                    resp_lines = [
+                        "Here is the breakdown of GHOST tools and specialized domain capabilities matching your inquiry:\n"
+                    ]
+                    for d in domains:
+                        resp_lines.append(f"### {d['agent_name']} (`{d['agent_id']}` — {d['domain'].title()})")
+                        status_map = {
+                            "READY": "🟢",
+                            "UNCONFIGURED": "🟡",
+                            "UNAUTHORIZED": "🔒",
+                            "UNAVAILABLE": "🔴"
+                        }
+                        for tool in d.get("tools", []):
+                            t_stat = tool.get("status", "READY" if tool.get("works") else "UNAVAILABLE")
+                            icon = status_map.get(t_stat, "🟢" if tool.get("works") else "🔴")
+                            resp_lines.append(f"- {icon} `[{t_stat}]` **`{tool['tool_id']}`**: {tool['description']} — *{tool['notes']}*")
+                        resp_lines.append("")
+
+                    full_resp = "\n".join(resp_lines)
+                    yield {"type": "token", "text": full_resp}
+                    OmniRouteBrain._history.append({"role": "user", "content": user_text})
+                    OmniRouteBrain._history.append({"role": "assistant", "content": full_resp})
+                    OmniRouteBrain.save_history()
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+
+                # 2. Task Planning Queries (TASK_PLANNING) - Dry-run plan only
+                if routing_decision.intent_category == IntentCategory.TASK_PLANNING:
+                    yield {"type": "state", "state": "SPEAKING"}
+                    plan = routing_decision.execution_plan or {}
+                    stages = plan.get("stages", [])
+                    resp_lines = [
+                        f"[TASK EXECUTION PLAN: {plan.get('domain', 'general').upper()}] (Dry-Run / Non-Executing Plan)\n"
+                    ]
+                    for st in stages:
+                        resp_lines.append(f"**Stage {st['stage']}: {st['agent']} ({st['domain']})**")
+                        resp_lines.append(f"- Objective: {st['objective']}")
+                        resp_lines.append(f"- Permitted Tools: {', '.join(st.get('tools', []))}")
+                        resp_lines.append(f"- Verification: {st['verification']}\n")
+                    resp_lines.append("To execute this plan, simply instruct: 'Execute the plan above'.")
+                    full_resp = "\n".join(resp_lines)
+                    yield {"type": "token", "text": full_resp}
+                    OmniRouteBrain._history.append({"role": "user", "content": user_text})
+                    OmniRouteBrain._history.append({"role": "assistant", "content": full_resp})
+                    OmniRouteBrain.save_history()
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+
+                # 3. Clarification Queries (TASK_CLARIFICATION) - Incomplete / truncated requests
+                if routing_decision.intent_category == IntentCategory.TASK_CLARIFICATION:
+                    yield {"type": "state", "state": "SPEAKING"}
+                    q_text = routing_decision.clarification_question or "Could you clarify the objective for this task?"
+                    clarif_resp = f"[TACTICAL CLARIFICATION REQUIRED]\n{q_text}"
+                    yield {"type": "token", "text": clarif_resp}
+                    OmniRouteBrain._history.append({"role": "user", "content": user_text})
+                    OmniRouteBrain._history.append({"role": "assistant", "content": clarif_resp})
+                    OmniRouteBrain.save_history()
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+
+                # 4. Task Execution (TASK_EXECUTION) - Imperative directives
+                if routing_decision.intent_category == IntentCategory.TASK_EXECUTION and routing_decision.decision_type in ("MULTI_AGENT_WORKFLOW", "SINGLE_AGENT"):
+                    yield {"type": "state", "state": "SPEAKING"}
+                    yield {
+                        "type": "token",
+                        "text": f"[{routing_decision.domain.upper()} DIRECTIVE] Objective classified: {routing_decision.rationale}\n"
+                                f"Delegating to {routing_decision.workflow_name or routing_decision.target_agent} across {len(routing_decision.contracts)} isolated stage(s)...\n\n"
+                    }
+
+                    all_results = {}
+                    final_status = "UNKNOWN"
+                    async for w_event in router.dispatch_workflow(routing_decision, context=task_context):
+                        if w_event["type"] == "stage_dispatched":
+                            yield {"type": "state", "state": "THINKING"}
+                            yield {
+                                "type": "token",
+                                "text": f"-> Stage {w_event.get('order', 1)}: Dispatched to [{w_event['agent_id']}] for '{w_event['objective']}'\n"
+                            }
+                        elif w_event["type"] == "stage_completed":
+                            yield {"type": "state", "state": "SPEAKING"}
+                            v_flag = "VERIFIED" if w_event.get("verified") else "UNVERIFIED"
+                            yield {
+                                "type": "token",
+                                "text": f"-> Stage {w_event['task_id']} [{v_flag}]: {w_event['summary']}\n"
+                            }
+                        elif w_event["type"] == "stage_failed":
+                            yield {"type": "state", "state": "SPEAKING"}
+                            yield {
+                                "type": "token",
+                                "text": f"[BLOCK/FAIL]: {w_event.get('error', 'Stage execution failed')}\n"
+                            }
+                        elif w_event["type"] == "workflow_finished":
+                            final_status = w_event.get("status", "COMPLETED")
+                            all_results = w_event.get("results", {})
+
+                    yield {"type": "state", "state": "SPEAKING"}
+                    if final_status == "COMPLETED":
+                        yield {
+                            "type": "token",
+                            "text": f"\nMission objective accomplished, sir. All {len(routing_decision.contracts)} delegated stage(s) verified with ground-truth evidence."
+                        }
+                    else:
+                        yield {
+                            "type": "token",
+                            "text": f"\nMission objective halted or blocked with status [{final_status}]. See audit trail for details."
+                        }
+
+                    # Persist isolated summary to conversation history so Central GHOST remembers the outcome without context pollution
+                    summary_entry = f"Delegated {routing_decision.workflow_name or routing_decision.target_agent}: Status [{final_status}]. {len(all_results)} stage(s) completed."
+                    OmniRouteBrain._history.append({"role": "user", "content": user_text})
+                    OmniRouteBrain._history.append({"role": "assistant", "content": summary_entry})
+                    OmniRouteBrain.save_history()
+
+                    yield {"type": "state", "state": "IDLE"}
+                    return
+            except Exception as e:
+                logger.warning(f"TaskRouter classification exception: {e}")
 
         # Tool Selection: Lean CORE_TOOLS for interactive user chat; full GHOST_TOOLS for MissionRunner or domain tasks
         effective_tools = get_ghost_tools(user_text=user_text, has_active_mission=bool(task_context))
@@ -806,6 +943,23 @@ class GhostAgent:
                                     output=str(c_out),
                                     metadata={"args": args, "status": res.get("status") if isinstance(res, dict) else None}
                                 )
+
+                                # Automatically attach generated artifacts & ledger references to active task
+                                curr_tid = (task_context or {}).get("task_id")
+                                if curr_tid and m_id:
+                                    try:
+                                        from ghost.core.evidence import auto_extract_evidence_from_tool
+                                        extracted_ev = auto_extract_evidence_from_tool(
+                                            tool_name=tool_name,
+                                            args=args,
+                                            res=res,
+                                            task_id=curr_tid,
+                                            mission_id=m_id
+                                        )
+                                        for ev_it in extracted_ev:
+                                            MissionStore.get_instance().attach_task_evidence(m_id, curr_tid, ev_it)
+                                    except Exception as ex:
+                                        logger.debug(f"Evidence auto-attach notice for {curr_tid}: {ex}")
                             except Exception as e:
                                 logger.warning(f"Failed recording tool call {tc_info['id']}: {e}")
 

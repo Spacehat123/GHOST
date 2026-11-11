@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "mode": "cdp",
+  "status": "passed",
+  "screenshots_captured": 2,
+  "screenshots": [
+    "/home/pranc/projects/ghost/demos/kit-sm-d485b0/desktop_1440x900.jpg",
+    "/home/pranc/projects/ghost/demos/kit-sm-d485b0/mobile_390x844.jpg"
+  ],
+  "human_review": {
+    "screenshots": [
+      "/home/pranc/projects/ghost/demos/kit-sm-d485b0/desktop_1440x900.jpg",
+      "/home/pranc/projects/ghost/demos/kit-sm-d485b0/mobile_390x844.jpg"
+    ]
+  },
+  "checks": {
+    "layout_overflow": false,
+    "viewports_tested": [
+      "390x844 (Mobile)",
+      "1440x900 (Desktop)"
+    ],
+    "note": "",
+    "vocabulary_lint": {
+      "passed": true,
+      "domain": "general_services",
+      "terms_sanitized": 14
+    }
+  },
+  "sections": [
+    "nav_floating",
+    "hero_editorial",
+    "gap_banner",
+    "story_philosophy",
+    "services_bento",
+    "proof_reviews",
+    "gallery_strip",
+    "journey_steps",
+    "booking_module",
+    "faq_answers",
+    "hours_location",
+    "lead_capture",
+    "footer_mono"
+  ],
+  "builder": "demo_state_machine/section_kit"
+}

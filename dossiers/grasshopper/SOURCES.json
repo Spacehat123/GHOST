@@ -1,0 +1,31 @@
+{
+  "venue": "Grasshopper",
+  "photos": [
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwQ4CrOMica0DPrTEb5pIZqqYjbu_krBpyF1GJtW1vvbmnCfbGNoZBRRFJWz7BdERciUQ0G_4DGcjWq5dBmUSIbT4A7pHfJlRoq1aIrtb4UbkJAbygU0HoeQBKl3RD3n2dsgaA=w1600-h1200-k-no",
+      "sha256": "33685a7cf60c4205a0db469d8fd6dc183fb6bec9b3a3a6ad81a731d1db28702f",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdjFsNtmukXLtajAHz9OhNxZ4yxp_OLRrgl39sbRNDjfY9-KbGZkQJhj7RZhtotERIztrDDZiErkAkkDMdKFo_JOOKmf21SfMIFIQqN3Kvvnl9HgPMhTr04yG1k3Qh42U7x9vj8=w1600-h1200-k-no",
+      "sha256": "3f85ccdf0f96e1df92fb41c8158b44d9e42146000870bf290bcfccaaf5c05a4b",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLccf2UvEI75f5I9cSi_O26zrMAoe4CQ1UtSW83xV1nAhhMdtZ8KowikPpw0FbNdBsRtclR2lX-3etEjzb9O9kXcXg1aTP50_XRBXqQ0GWiE0WHrtjbmpiAUCDaf_UYUDZHeiWMj=w1600-h1200-k-no",
+      "sha256": "da388a92ed7d5f1306fa041e881eac2b4c65822c9cb94f25237966dba64d1ed5",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdpXoisunmvltqcY6_H7W8e6GvHhWl2-RNA-AXPAWGZ5FnLBCVIZ-xQCJZieS7MJeucdTwiwnPH4x21FLRo6AX2mUmtmdNcbGKuvYg2ZXop1E7jTRV1xSl56k-fXFxFaOJIU7Q=w1600-h1200-k-no",
+      "sha256": "5a3a3e49f95c6cfb91adae9e3eb7b19b971a2f6d618cbe5d9924e1396533d058",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S2YVplfcZhBNCI6BuicJXIz7AsxVR8U60MPz37obnNlA2uLyIriumO6xDLkTIiR9AaFQPqwdU0NXHHCopoO6EJC2IgyeFnLfpNnzxrn7_-IYlJ0eTdJBwqPLobeBCFTEiaiVAb=w1600-h1200-k-no",
+      "sha256": "6cba2055665456d6ae3bf75012644d5ba9599d2057af8d688168f71d2dda4bc0",
+      "source": "google_maps_cdn"
+    }
+  ],
+  "timestamp": 1794380946.0465689
+}

@@ -298,7 +298,7 @@ class TaskOrchestrator:
         sql = f"""
             SELECT * FROM tasks
             WHERE {' AND '.join(clauses)}
-            ORDER BY created_at ASC
+            ORDER BY created_at DESC
             LIMIT ?
         """
         params.append(limit)
@@ -620,11 +620,15 @@ class TaskOrchestrator:
 _GLOBAL_TASK_ORCHESTRATOR: Optional[TaskOrchestrator] = None
 
 
-def get_task_orchestrator(bus: Optional[EventBus] = None) -> TaskOrchestrator:
+def get_task_orchestrator(
+    bus: Optional[EventBus] = None,
+    event_bus: Optional[EventBus] = None,
+) -> TaskOrchestrator:
     """Returns the process-wide global TaskOrchestrator."""
     global _GLOBAL_TASK_ORCHESTRATOR
+    actual_bus = event_bus or bus
     if _GLOBAL_TASK_ORCHESTRATOR is None:
-        _GLOBAL_TASK_ORCHESTRATOR = TaskOrchestrator(event_bus=bus)
+        _GLOBAL_TASK_ORCHESTRATOR = TaskOrchestrator(event_bus=actual_bus)
     return _GLOBAL_TASK_ORCHESTRATOR
 
 

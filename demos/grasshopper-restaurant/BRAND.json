@@ -1,0 +1,170 @@
+{
+  "business_name": "Grasshopper",
+  "location": "45, Bannerghatta Rd, near Meenakshi Temple, Kothnur, Kalena Agrahara, Bengaluru, Karnataka 560076",
+  "slug": "grasshopper-restaurant",
+  "domain": "restaurants_cafes",
+  "category": "Fine dining restaurant",
+  "assets": {
+    "services": [
+      {
+        "title": "Tasting Menus",
+        "category": "Tasting Menus",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Midday Menu",
+        "category": "Midday Menu",
+        "price": null,
+        "desc": null
+      },
+      {
+        "title": "Beverage Program",
+        "category": "Beverage Program",
+        "price": null,
+        "desc": null
+      }
+    ],
+    "hero_bg": "assets/photos/photo-01.jpg",
+    "bento_img1": "assets/photos/photo-02.jpg",
+    "bento_img2": "assets/photos/photo-03.jpg",
+    "gallery_1": "assets/photos/photo-04.jpg",
+    "gallery_2": "assets/photos/photo-05.jpg",
+    "gallery_3": "assets/photos/photo-06.jpg"
+  },
+  "copy": {
+    "tagline_template": "{name} in {location}.",
+    "offering_title": "Curated Offerings",
+    "offering_kicker": "Artisanal Precision",
+    "cta_primary": "Reserve Table",
+    "cta_secondary": "Explore Offerings",
+    "banner_headline": "Direct Table Protocol \u2022 Zero Intermediary Friction",
+    "banner_sub": "Instant booking confirmation via WhatsApp concierge with zero third-party commissions.",
+    "philosophy_kicker": "Philosophy & Provenance",
+    "philosophy_title": "Architectural Flavor & Uncompromising Standards",
+    "philosophy_body_1": "At {business_name}, every detail is calibrated to provide a memorable dining experience in {location}.",
+    "philosophy_body_2": "We reject automated mediocrity. Our team pairs artisanal heritage with warm hospitality.",
+    "quote_attribution": "Head Concierge",
+    "quote_text": "Hospitality crafted with discipline, warmth, and unhurried composure.",
+    "atmosphere_title": "Atmosphere & Spaces",
+    "atmosphere_kicker": "Visual Ambiance",
+    "gallery_1": "The Main Dining Room",
+    "gallery_2": "Bar & Lounge",
+    "gallery_3": "Private Dining Suite",
+    "how_it_works_steps": [
+      [
+        "Step 01",
+        "Select Experience",
+        "Choose your preferred seating and dining time."
+      ],
+      [
+        "Step 02",
+        "Instant WhatsApp",
+        "Connect directly with our team on WhatsApp with your date and party size pre-filled."
+      ],
+      [
+        "Step 03",
+        "Hospitality",
+        "Arrive to an unhurried, tailored dining experience."
+      ]
+    ],
+    "booking_title": "Reserve Your Table",
+    "booking_sub": "Choose your seating and initiate an instant booking conversation directly on WhatsApp.",
+    "booking_fields": "dining",
+    "faqs": [
+      [
+        "What are the reservation lead times?",
+        "Reservations open 14 days in advance. Direct WhatsApp inquiries receive priority confirmation."
+      ],
+      [
+        "Do you accommodate dietary preferences?",
+        "Yes, please inform us in advance so our kitchen can tailor your experience."
+      ]
+    ]
+  },
+  "archetype_id": 1,
+  "archetype_name": "Michelin & Fine Dining Editorial",
+  "tagline": "Grasshopper Restaurant in 45 Kalena Agrahara.",
+  "services": [],
+  "services_verified": false,
+  "reviews": [
+    {
+      "quote": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More",
+      "author": "Payal M.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More",
+      "author": "Payal M.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More",
+      "author": "Payal M.",
+      "source": "Google Review \u2022 5 stars"
+    },
+    {
+      "quote": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More",
+      "author": "Anjali A.",
+      "source": "Google Review \u2022 5 stars"
+    }
+  ],
+  "phone": "080501 65130",
+  "email": null,
+  "hours": null,
+  "rating": null,
+  "review_count": "848",
+  "scouted_photos": [
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwQ4CrOMica0DPrTEb5pIZqqYjbu_krBpyF1GJtW1vvbmnCfbGNoZBRRFJWz7BdERciUQ0G_4DGcjWq5dBmUSIbT4A7pHfJlRoq1aIrtb4UbkJAbygU0HoeQBKl3RD3n2dsgaA=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwQ4CrOMica0DPrTEb5pIZqqYjbu_krBpyF1GJtW1vvbmnCfbGNoZBRRFJWz7BdERciUQ0G_4DGcjWq5dBmUSIbT4A7pHfJlRoq1aIrtb4UbkJAbygU0HoeQBKl3RD3n2dsgaA=w427-h240-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdjFsNtmukXLtajAHz9OhNxZ4yxp_OLRrgl39sbRNDjfY9-KbGZkQJhj7RZhtotERIztrDDZiErkAkkDMdKFo_JOOKmf21SfMIFIQqN3Kvvnl9HgPMhTr04yG1k3Qh42U7x9vj8=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdjFsNtmukXLtajAHz9OhNxZ4yxp_OLRrgl39sbRNDjfY9-KbGZkQJhj7RZhtotERIztrDDZiErkAkkDMdKFo_JOOKmf21SfMIFIQqN3Kvvnl9HgPMhTr04yG1k3Qh42U7x9vj8=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLccf2UvEI75f5I9cSi_O26zrMAoe4CQ1UtSW83xV1nAhhMdtZ8KowikPpw0FbNdBsRtclR2lX-3etEjzb9O9kXcXg1aTP50_XRBXqQ0GWiE0WHrtjbmpiAUCDaf_UYUDZHeiWMj=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLccf2UvEI75f5I9cSi_O26zrMAoe4CQ1UtSW83xV1nAhhMdtZ8KowikPpw0FbNdBsRtclR2lX-3etEjzb9O9kXcXg1aTP50_XRBXqQ0GWiE0WHrtjbmpiAUCDaf_UYUDZHeiWMj=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdpXoisunmvltqcY6_H7W8e6GvHhWl2-RNA-AXPAWGZ5FnLBCVIZ-xQCJZieS7MJeucdTwiwnPH4x21FLRo6AX2mUmtmdNcbGKuvYg2ZXop1E7jTRV1xSl56k-fXFxFaOJIU7Q=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdpXoisunmvltqcY6_H7W8e6GvHhWl2-RNA-AXPAWGZ5FnLBCVIZ-xQCJZieS7MJeucdTwiwnPH4x21FLRo6AX2mUmtmdNcbGKuvYg2ZXop1E7jTRV1xSl56k-fXFxFaOJIU7Q=w140-h140-p-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S2YVplfcZhBNCI6BuicJXIz7AsxVR8U60MPz37obnNlA2uLyIriumO6xDLkTIiR9AaFQPqwdU0NXHHCopoO6EJC2IgyeFnLfpNnzxrn7_-IYlJ0eTdJBwqPLobeBCFTEiaiVAb=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S2YVplfcZhBNCI6BuicJXIz7AsxVR8U60MPz37obnNlA2uLyIriumO6xDLkTIiR9AaFQPqwdU0NXHHCopoO6EJC2IgyeFnLfpNnzxrn7_-IYlJ0eTdJBwqPLobeBCFTEiaiVAb=w531-h298-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TrUQmlPqEB92xo9En7W6QPLHeSTL6-nVC8gre6dzTBA1kWqDiPhhLw3fMA0bTe2A51S0aV3CNjWM7BWU5J64I6uS3jhF0Dw8vRIiZnOle8pWqD8cZOjuboJElo4KpM6NyvJGux=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TrUQmlPqEB92xo9En7W6QPLHeSTL6-nVC8gre6dzTBA1kWqDiPhhLw3fMA0bTe2A51S0aV3CNjWM7BWU5J64I6uS3jhF0Dw8vRIiZnOle8pWqD8cZOjuboJElo4KpM6NyvJGux=w224-h317-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S5QKoIaTMqPuko7cgVdSotauywXzCUdfCX2pELRL0v_ZB8he0fK2kmNU4Ce6QP092pA6lLXweaJq2xGUfNlXJMa4fdwd1Z6IoH89cZs0MpRR9TKDtrjqT6iwwFK3JB9l4ISLrHAA=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S5QKoIaTMqPuko7cgVdSotauywXzCUdfCX2pELRL0v_ZB8he0fK2kmNU4Ce6QP092pA6lLXweaJq2xGUfNlXJMa4fdwd1Z6IoH89cZs0MpRR9TKDtrjqT6iwwFK3JB9l4ISLrHAA=w529-h298-k-no",
+      "source": "google_maps_cdn"
+    },
+    {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9R0eNkPwSyCDgtZlwDEge7fhktPCkbiOFXmSUcRDw4XhMP6Bvwm0n2fauMM8N-dLJKmivYE0bqbibJN_DchMi7Hq_NmM3AJJ2Mwxg3dypMdNAvWehsgECTw8yftPFk8RFQcAL1TKg=w1600-h1200-k-no",
+      "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9R0eNkPwSyCDgtZlwDEge7fhktPCkbiOFXmSUcRDw4XhMP6Bvwm0n2fauMM8N-dLJKmivYE0bqbibJN_DchMi7Hq_NmM3AJJ2Mwxg3dypMdNAvWehsgECTw8yftPFk8RFQcAL1TKg=w447-h298-k-no",
+      "source": "google_maps_cdn"
+    }
+  ],
+  "audit_data": {
+    "url": "https://www.instagram.com/grasshopperbangalore/",
+    "load_time_sec": 1.21,
+    "perf_score": 85,
+    "dom_nodes": 487,
+    "js_heap_mb": 24.2,
+    "mobile_friendly": true,
+    "scraped_at": "2026-11-11 06:35:02Z",
+    "method": "Brave CDP Headless"
+  },
+  "needs_confirmation": false
+}

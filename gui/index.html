@@ -17,57 +17,9 @@
     </div>
     
     <div class="hud-right">
-      <div class="hud-pill-group">
-        <select id="select-hud-voice" class="hud-pill-btn hud-pill-select" title="Voice Persona (English & Hindi only)">
-          <optgroup label="English (US) — Female">
-            <option value="af_nicole" selected>VOICE: af_nicole (US)</option>
-            <option value="af_aoede">VOICE: af_aoede (US)</option>
-            <option value="af_bella">VOICE: af_bella (US)</option>
-            <option value="af_heart">VOICE: af_heart (US)</option>
-            <option value="af_jessica">VOICE: af_jessica (US)</option>
-            <option value="af_kore">VOICE: af_kore (US)</option>
-            <option value="af_nova">VOICE: af_nova (US)</option>
-            <option value="af_river">VOICE: af_river (US)</option>
-            <option value="af_sarah">VOICE: af_sarah (US)</option>
-            <option value="af_sky">VOICE: af_sky (US)</option>
-            <option value="af_alloy">VOICE: af_alloy (US)</option>
-          </optgroup>
-          <optgroup label="English (US) — Male">
-            <option value="am_adam">VOICE: am_adam (US)</option>
-            <option value="am_echo">VOICE: am_echo (US)</option>
-            <option value="am_eric">VOICE: am_eric (US)</option>
-            <option value="am_fenrir">VOICE: am_fenrir (US)</option>
-            <option value="am_liam">VOICE: am_liam (US)</option>
-            <option value="am_michael">VOICE: am_michael (US)</option>
-            <option value="am_onyx">VOICE: am_onyx (US)</option>
-            <option value="am_puck">VOICE: am_puck (US)</option>
-            <option value="am_santa">VOICE: am_santa (US)</option>
-          </optgroup>
-          <optgroup label="English (UK) — Female">
-            <option value="bf_alice">VOICE: bf_alice (UK)</option>
-            <option value="bf_emma">VOICE: bf_emma (UK)</option>
-            <option value="bf_isabella">VOICE: bf_isabella (UK)</option>
-            <option value="bf_lily">VOICE: bf_lily (UK)</option>
-          </optgroup>
-          <optgroup label="English (UK) — Male">
-            <option value="bm_daniel">VOICE: bm_daniel (UK)</option>
-            <option value="bm_fable">VOICE: bm_fable (UK)</option>
-            <option value="bm_george">VOICE: bm_george (UK)</option>
-            <option value="bm_lewis">VOICE: bm_lewis (UK)</option>
-          </optgroup>
-          <optgroup label="Hindi — Female">
-            <option value="hf_alpha">VOICE: hf_alpha (HI)</option>
-            <option value="hf_beta">VOICE: hf_beta (HI)</option>
-          </optgroup>
-          <optgroup label="Hindi — Male">
-            <option value="hm_omega">VOICE: hm_omega (HI)</option>
-            <option value="hm_psi">VOICE: hm_psi (HI)</option>
-          </optgroup>
-        </select>
-        <button id="btn-hud-history" class="hud-pill-btn" title="Interaction History">HISTORY</button>
-        <button id="btn-hud-logs" class="hud-pill-btn" title="System Logs">LOGS</button>
-        <button id="btn-hud-dev" class="hud-pill-btn" title="Developer Telemetry">DEV</button>
-        <button id="btn-hud-clear" class="hud-pill-btn" title="Toggle Clean Focus View">CLEAR VIEW</button>
+      <div id="vitals-telemetry-chip" class="telemetry-chip" title="Real-time Host Hardware Telemetry">
+        <span class="telemetry-icon">⚡</span>
+        <span id="vitals-stats-text">CPU: --% | RAM: --% | GPU: --%</span>
       </div>
 
       <div id="token-telemetry-chip" class="telemetry-chip" title="Active session and daily token consumption">
@@ -80,11 +32,15 @@
         <span id="status-label">IDLE</span>
       </div>
 
+      <button id="btn-quick-halt" class="hud-btn hud-btn-halt" title="Toggle Emergency Halt">
+        <span id="quick-halt-label">🛑 HALT</span>
+      </button>
+
       <button id="btn-interrupt" class="hud-btn hud-btn-danger" title="Barge-In Interruption">
         <span>Intercept</span>
       </button>
 
-      <button id="btn-open-deck" class="hud-btn hud-btn-primary" title="Agency Command Deck">
+      <button id="btn-open-deck" class="hud-btn hud-btn-primary" title="Command Deck">
         <span>⚔️ Command Deck</span>
       </button>
 
@@ -98,9 +54,127 @@
     </div>
   </header>
 
-  <!-- Fullscreen Glowing Multi-Filament Orbital Sphere -->
-  <div id="canvas-container">
-    <canvas id="orb-canvas"></canvas>
+  <!-- Main Cybernetic Command Viewport (Left Organs, Center Orbital Core, Right Telemetry) -->
+  <div class="cyber-viewport" id="cyber-viewport">
+    
+    <!-- Left Navigation Dock (Organs, Feeds, Audit) -->
+    <aside class="cyber-nav-left" id="cyber-nav-left">
+      <div class="nav-section-label">OPERATIONAL ORGANS</div>
+      <div class="hud-pill-group hud-pill-vertical">
+        <button id="btn-hud-awareness" class="hud-pill-btn active" title="Live System Telemetry">
+          <span class="pill-dot green"></span>
+          <span class="pill-text">AWARENESS</span>
+        </button>
+        <button id="btn-hud-feed" class="hud-pill-btn" title="Intelligence Feed">
+          <span class="pill-dot cyan"></span>
+          <span class="pill-text">FEED</span>
+        </button>
+        <button id="btn-hud-agents" class="hud-pill-btn" title="Specialized Domain Agents">
+          <span class="pill-dot green"></span>
+          <span class="pill-text">AGENTS</span>
+        </button>
+        <button id="btn-hud-projects" class="hud-pill-btn" title="Projects & Tasks">
+          <span class="pill-dot amber"></span>
+          <span class="pill-text">PROJECTS</span>
+        </button>
+        <button id="btn-hud-research" class="hud-pill-btn" title="Research & Verified Dossiers">
+          <span class="pill-dot cyan"></span>
+          <span class="pill-text">RESEARCH</span>
+        </button>
+        <button id="btn-hud-memory" class="hud-pill-btn" title="Memory & Directives">
+          <span class="pill-dot purple"></span>
+          <span class="pill-text">MEMORY</span>
+        </button>
+      </div>
+
+      <div class="nav-section-label" style="margin-top: 1.2rem;">SYSTEM AUDIT</div>
+      <div class="hud-pill-group hud-pill-vertical">
+        <button id="btn-hud-history" class="hud-pill-btn" title="Interaction History">
+          <span class="pill-dot dim"></span>
+          <span class="pill-text">HISTORY</span>
+        </button>
+        <button id="btn-hud-logs" class="hud-pill-btn" title="System Logs">
+          <span class="pill-dot dim"></span>
+          <span class="pill-text">LOGS</span>
+        </button>
+        <button id="btn-hud-dev" class="hud-pill-btn" title="Developer Telemetry">
+          <span class="pill-dot dim"></span>
+          <span class="pill-text">DEV</span>
+        </button>
+        <button id="btn-hud-clear" class="hud-pill-btn" title="Toggle Clean Focus View">
+          <span class="pill-dot dim"></span>
+          <span class="pill-text">CLEAR VIEW</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Center Stage: The Animated Cybernetic Orbital Core -->
+    <main class="cyber-stage-center">
+      <div id="canvas-container">
+        <canvas id="orb-canvas"></canvas>
+      </div>
+
+      <!-- Core Identity Reticle -->
+      <div class="core-reticle-banner">
+        <span class="reticle-line-left"></span>
+        <span class="reticle-core-id">ORBITAL INTELLIGENCE CORE // ACTIVE</span>
+        <span class="reticle-line-right"></span>
+      </div>
+    </main>
+
+    <!-- Right Sidebar: Active Task, Agent Status & Hardware Telemetry -->
+    <aside class="cyber-telemetry-right" id="cyber-telemetry-right">
+      <div class="telemetry-panel">
+        <div class="telemetry-panel-header">
+          <span class="panel-tag cyan">ACTIVE OBJECTIVE</span>
+          <span class="panel-status-val" id="active-objective-status">ONLINE</span>
+        </div>
+        <div class="active-mission-box">
+          <div class="mission-name" id="active-mission-name">Autonomous Agency Core</div>
+          <div class="mission-subtext" id="active-mission-sub">AeroSpire Planter CAD & Venue Reconnaissance</div>
+          <div class="mission-bar"><div class="mission-bar-fill" style="width: 100%;"></div></div>
+        </div>
+      </div>
+
+      <div class="telemetry-panel">
+        <div class="telemetry-panel-header">
+          <span class="panel-tag">DOMAIN AGENTS</span>
+          <span class="panel-status-val green">7 READY</span>
+        </div>
+        <div class="agents-status-stack">
+          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Creative Agent</span><span class="agent-spec">OpenSCAD CAD</span></div>
+          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Research Agent</span><span class="agent-spec">Brave CDP Web</span></div>
+          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Business Agent</span><span class="agent-spec">CRM & Obsidian</span></div>
+          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">System Agent</span><span class="agent-spec">Procfs Vitals</span></div>
+          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Development Agent</span><span class="agent-spec">Git & Pytest</span></div>
+        </div>
+      </div>
+
+      <div class="telemetry-panel">
+        <div class="telemetry-panel-header">
+          <span class="panel-tag">TELEMETRY VITALS</span>
+          <span class="panel-status-val green">EARLYOOM OK</span>
+        </div>
+        <div class="vitals-mini-bars">
+          <div class="v-bar-row">
+            <span class="v-lbl">CPU UTIL</span>
+            <div class="v-track"><div class="v-fill cyan" id="hud-cpu-fill" style="width: 14%;"></div></div>
+            <span class="v-num" id="hud-cpu-num">14%</span>
+          </div>
+          <div class="v-bar-row">
+            <span class="v-lbl">RAM (8GB)</span>
+            <div class="v-track"><div class="v-fill amber" id="hud-ram-fill" style="width: 38%;"></div></div>
+            <span class="v-num" id="hud-ram-num">38%</span>
+          </div>
+          <div class="v-bar-row">
+            <span class="v-lbl">GTX 1650</span>
+            <div class="v-track"><div class="v-fill red" id="hud-gpu-fill" style="width: 4%;"></div></div>
+            <span class="v-num" id="hud-gpu-num">4%</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
   </div>
 
   <!-- Bottom Telemetry HUD Line (Matching Reference Video) -->
@@ -231,7 +305,7 @@
         <span id="mic-icon">🎙️</span>
       </button>
 
-      <input type="text" id="text-input" placeholder="Type a command and press Enter, or speak aloud..." autocomplete="off" />
+      <textarea id="text-input" rows="1" placeholder="Type a command and press Enter (Shift+Enter for newline), or speak aloud..." autocomplete="off"></textarea>
 
       <button id="btn-send" class="hud-btn hud-btn-primary hud-btn-icon" title="Send message (Enter)">
         <span>➔</span>
@@ -247,12 +321,29 @@
     <!-- Top Deck Header Bar -->
     <header class="deck-header">
       <div class="deck-brand">
-        <span class="deck-brand-title">AGENCY COMMAND DECK</span>
+        <span class="deck-brand-title">GHOST UNIVERSAL INTELLIGENCE</span>
         <span class="deck-badge" id="deck-operator-status">Operator Active</span>
+        <div style="display:inline-flex; align-items:center; margin-left:14px; gap:6px;">
+          <span style="font-size:10px; color:var(--deck-text-muted); font-weight:600;">MODE:</span>
+          <select id="select-operating-mode" class="deck-select" style="padding:2px 8px; font-size:10px; height:24px; border-radius:4px; background:rgba(255,255,255,0.06); color:#fff; border:1px solid var(--deck-border);">
+            <option value="AMBIENT" selected>AMBIENT</option>
+            <option value="OBJECTIVE">OBJECTIVE</option>
+            <option value="REACTIVE">REACTIVE</option>
+          </select>
+        </div>
       </div>
 
       <nav class="deck-nav">
-        <button class="deck-tab-btn active" data-view="kanban">Pipeline</button>
+        <button class="deck-tab-btn active" data-view="awareness">Awareness</button>
+        <button class="deck-tab-btn" data-view="feed">Intelligence Feed</button>
+        <button class="deck-tab-btn" data-view="objectives">Objectives</button>
+        <button class="deck-tab-btn" data-view="agents">Agents</button>
+        <button class="deck-tab-btn" data-view="projects">Projects & Tasks</button>
+        <button class="deck-tab-btn" data-view="physical">Smart Home</button>
+        <button class="deck-tab-btn" data-view="creative">Creative 3D</button>
+        <button class="deck-tab-btn" data-view="memory">Memory</button>
+        <button class="deck-tab-btn" data-view="control">Control</button>
+        <button class="deck-tab-btn" data-view="kanban">Pipeline</button>
         <button class="deck-tab-btn" data-view="campaigns">Campaigns</button>
         <button class="deck-tab-btn" data-view="confirmation">Confirmation</button>
         <button class="deck-tab-btn" data-view="demos">Demos</button>
@@ -274,8 +365,506 @@
 
     <!-- Main Deck Views Content -->
     <main class="deck-content">
+
+      <!-- =====================================================================
+           0. AWARENESS VIEW
+           ===================================================================== -->
+      <section id="view-awareness" class="deck-view active">
+        <div class="deck-panel-box" style="max-width:1200px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="deck-section-title">System Awareness & Telemetry</div>
+              <div class="deck-section-desc">Real-time passive monitoring across hardware vitals, desktop focus, and Git state.</div>
+            </div>
+            <button class="deck-btn" id="btn-refresh-awareness">🔄 Refresh</button>
+          </div>
+
+          <!-- Hardware Vitals Cards -->
+          <div class="vitals-grid">
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">CPU Utilization</span>
+                <span id="vital-cpu-cores" class="vital-subtext">8 Threads</span>
+              </div>
+              <div class="vital-val" id="vital-cpu-val">0.0%</div>
+              <div class="vital-progress">
+                <div class="vital-bar" id="vital-cpu-bar" style="width: 0%;"></div>
+              </div>
+              <span class="vital-subtext" id="vital-cpu-sub">Deterministic procfs sample</span>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">Host RAM</span>
+                <span id="vital-ram-total" class="vital-subtext">8.0 GB Total</span>
+              </div>
+              <div class="vital-val" id="vital-ram-val">0.0%</div>
+              <div class="vital-progress">
+                <div class="vital-bar" id="vital-ram-bar" style="width: 0%;"></div>
+              </div>
+              <span class="vital-subtext" id="vital-ram-sub">0 MB used</span>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">GTX 1650 Mobile GPU</span>
+                <span id="vital-gpu-temp" class="vital-subtext">--°C</span>
+              </div>
+              <div class="vital-val" id="vital-gpu-val">--%</div>
+              <div class="vital-progress">
+                <div class="vital-bar" id="vital-gpu-bar" style="width: 0%;"></div>
+              </div>
+              <span class="vital-subtext" id="vital-gpu-vram-sub">VRAM: -- / -- MB</span>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">Disk Storage</span>
+                <span class="vital-subtext">Local NVMe</span>
+              </div>
+              <div class="vital-val" id="vital-disk-val">-- GB</div>
+              <div class="vital-progress">
+                <div class="vital-bar" id="vital-disk-bar" style="width: 25%;"></div>
+              </div>
+              <span class="vital-subtext">Free storage available</span>
+            </div>
+          </div>
+
+          <!-- Environment & Git State -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">Desktop & Window Context</span>
+                <span class="deck-badge" id="vital-desktop-workspace">Workspace 1</span>
+              </div>
+              <div style="margin-top:8px;">
+                <div style="font-size:11px; color:var(--deck-text-faint); text-transform:uppercase; font-family:var(--deck-font-mono);">Focused Window</div>
+                <div id="vital-desktop-window" style="font-size:14px; font-weight:600; color:var(--deck-text-main); margin-top:2px;">None</div>
+              </div>
+            </div>
+
+            <div class="vital-card">
+              <div class="vital-header">
+                <span class="vital-label">Git Codebase State</span>
+                <span class="deck-badge" id="vital-git-dirty">CLEAN</span>
+              </div>
+              <div style="margin-top:8px; display:flex; justify-content:space-between;">
+                <div>
+                  <div style="font-size:11px; color:var(--deck-text-faint); text-transform:uppercase; font-family:var(--deck-font-mono);">Branch</div>
+                  <div id="vital-git-branch" style="font-size:13px; font-weight:600; font-family:var(--deck-font-mono); color:var(--deck-text-main);">main</div>
+                </div>
+                <div>
+                  <div style="font-size:11px; color:var(--deck-text-faint); text-transform:uppercase; font-family:var(--deck-font-mono);">HEAD Commit</div>
+                  <div id="vital-git-commit" style="font-size:13px; font-weight:600; font-family:var(--deck-font-mono); color:var(--deck-text-main);">--</div>
+                </div>
+              </div>
+              <div id="vital-git-files" style="margin-top:8px; font-size:11px; font-family:var(--deck-font-mono); color:var(--deck-text-muted);">0 modified files</div>
+            </div>
+          </div>
+
+          <!-- Recent Alerts -->
+          <div style="margin-top:18px;">
+            <div class="deck-section-title" style="font-size:13px;">Recent Alerts & Resource Spikes</div>
+            <div id="awareness-alerts-list" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No active resource alerts. System healthy.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0b. INTELLIGENCE FEED VIEW
+           ===================================================================== -->
+      <section id="view-feed" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1200px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="deck-section-title">Intelligence Feed</div>
+              <div class="deck-section-desc">Unified chronological stream of GHOST's perceptions, analyses, decisions, executions, and verifications.</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <select id="feed-filter-type" class="deck-select" style="width:140px; padding:4px 8px; font-size:11px;">
+                <option value="">ALL DOMAINS</option>
+                <option value="system">System</option>
+                <option value="dev">Development</option>
+                <option value="agent">Agents</option>
+                <option value="task">Tasks</option>
+                <option value="tool">Tools</option>
+              </select>
+              <button class="deck-btn" id="btn-refresh-feed">🔄 Refresh</button>
+              <button class="deck-btn" id="btn-clear-feed">Clear</button>
+            </div>
+          </div>
+
+          <div class="intel-feed-container" id="intel-feed-list">
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0b2. PROACTIVE OBJECTIVES VIEW
+           ===================================================================== -->
+      <section id="view-objectives" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1200px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="deck-section-title">Proactive Operator Objectives & Goals</div>
+              <div class="deck-section-desc">Long-term objectives across all 7 domains with autonomous criteria tracking.</div>
+            </div>
+            <button class="deck-btn deck-btn-primary" id="btn-toggle-new-objective">➕ New Objective</button>
+          </div>
+
+          <!-- New Objective Form -->
+          <div id="new-objective-form-box" class="hidden" style="margin-top:14px; padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--deck-border); border-radius:6px;">
+            <div class="deck-section-title" style="font-size:13px; margin-bottom:10px;">Define Proactive Objective</div>
+            <form id="form-create-objective">
+              <div class="deck-form-grid">
+                <div class="deck-field-group">
+                  <label class="deck-label">Title</label>
+                  <input type="text" id="obj-title" class="deck-input" placeholder="e.g. Maintain Zero Build Regressions" required />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Domain</label>
+                  <select id="obj-domain" class="deck-select">
+                    <option value="system">System Intelligence</option>
+                    <option value="dev">Development Intelligence</option>
+                    <option value="research">Research Intelligence</option>
+                    <option value="personal">Personal Intelligence</option>
+                    <option value="physical">Physical Intelligence</option>
+                    <option value="business">Business Intelligence</option>
+                    <option value="creative">Creative Intelligence</option>
+                  </select>
+                </div>
+              </div>
+              <div class="deck-form-grid" style="margin-top:8px;">
+                <div class="deck-field-group">
+                  <label class="deck-label">Target Agent</label>
+                  <select id="obj-target-agent" class="deck-select">
+                    <option value="dev_agent">Development Agent</option>
+                    <option value="system_agent">System Agent</option>
+                    <option value="personal_agent">Personal Agent</option>
+                    <option value="research_agent">Research Agent</option>
+                    <option value="physical_agent">Physical Agent</option>
+                    <option value="business_agent">Business Agent</option>
+                    <option value="creative_agent">Creative Agent</option>
+                  </select>
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Criteria (comma-separated)</label>
+                  <input type="text" id="obj-criteria" class="deck-input" placeholder="e.g. all tests pass, latency < 100ms" />
+                </div>
+              </div>
+              <div style="margin-top:12px; display:flex; gap:8px;">
+                <button type="submit" class="deck-btn deck-btn-primary">Create Objective</button>
+                <button type="button" class="deck-btn" id="btn-cancel-objective">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Objectives List -->
+          <div id="objectives-list-container" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+            <div class="skel"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0c. SPECIALIZED AGENTS VIEW
+           ===================================================================== -->
+      <section id="view-agents" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1200px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="deck-section-title">Specialized Domain Intelligence Agents</div>
+              <div class="deck-section-desc">Independent modular agents conforming to AgentContract with verifiable evidence requirements.</div>
+            </div>
+            <button class="deck-btn" id="btn-refresh-agents">🔄 Refresh Agents</button>
+          </div>
+
+          <div class="agents-grid" id="agents-grid">
+            <div class="skel" style="height:140px;"></div>
+            <div class="skel" style="height:140px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0d. PROJECTS & TASKS VIEW
+           ===================================================================== -->
+      <section id="view-projects" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1200px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="deck-section-title">Projects, Missions & Task Orchestration</div>
+              <div class="deck-section-desc">Governed by the 11-state task lifecycle state machine with lease locking and failure ladders.</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="deck-btn deck-btn-primary" id="btn-open-create-task">+ Submit Task</button>
+              <button class="deck-btn" id="btn-refresh-projects">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <!-- Active Missions -->
+          <div style="margin-top:16px;">
+            <div class="deck-section-title" style="font-size:13px;">Active Missions</div>
+            <div id="projects-missions-list" style="margin-top:8px;"></div>
+          </div>
+
+          <!-- Tasks Table -->
+          <div style="margin-top:20px;">
+            <div class="deck-section-title" style="font-size:13px;">Tasks (TaskOrchestrator)</div>
+            <div class="tasks-table-container">
+              <table class="deck-table">
+                <thead>
+                  <tr>
+                    <th>Task ID</th>
+                    <th>Status</th>
+                    <th>Assigned Agent</th>
+                    <th>Title</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="projects-tasks-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Delegation Execution Chains (Deterministic Routing) -->
+          <div style="margin-top:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div class="deck-section-title" style="font-size:13px;">Delegation Execution Chains (Parent-Child Task Trees)</div>
+                <div class="deck-section-desc" style="margin-top:2px;">Track multi-agent workflows, isolated context boundaries, and verified receipts.</div>
+              </div>
+              <button class="deck-btn" id="btn-refresh-chains">🔄 Refresh Chains</button>
+            </div>
+            <div id="delegation-chains-container" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+              <div class="skel"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0d2. PHYSICAL INTELLIGENCE / SMART HOME VIEW
+           ===================================================================== -->
+      <section id="view-physical" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1100px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="deck-section-title">Physical Intelligence & Smart Home</div>
+              <div class="deck-section-desc">Home Assistant and MQTT integration with independent readback state verification.</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="deck-badge" id="ha-status-badge">HA: Checking...</span>
+              <button class="deck-btn" id="btn-refresh-physical">🔄 Refresh Devices</button>
+            </div>
+          </div>
+
+          <!-- Smart Home Entities Cards -->
+          <div id="ha-entities-container" style="margin-top:16px; display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">
+            <div class="skel"></div>
+          </div>
+
+          <!-- MQTT Actuator Command Box -->
+          <div style="margin-top:24px; padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--deck-border); border-radius:6px;">
+            <div class="deck-section-title" style="font-size:13px; margin-bottom:8px;">Direct MQTT Actuator Command</div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="mqtt-topic-input" class="deck-input" placeholder="Topic: e.g. ghost/ambient/desk" style="flex:1;" />
+              <input type="text" id="mqtt-payload-input" class="deck-input" placeholder="Payload: e.g. {'state': 'on'}" style="flex:1;" />
+              <button class="deck-btn deck-btn-primary" id="btn-send-mqtt">Publish</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0d3. CREATIVE INTELLIGENCE VIEW
+           ===================================================================== -->
+      <section id="view-creative" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1100px;">
+          <div class="deck-section-title">Creative Intelligence & Parametric CAD</div>
+          <div class="deck-section-desc">OpenSCAD 3D modeling, headless Blender workflows, and UI component synthesis with geometry verification.</div>
+
+          <!-- Parametric 3D CAD Generator -->
+          <div style="margin-top:16px; padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--deck-border); border-radius:6px;">
+            <div class="deck-section-title" style="font-size:13px; margin-bottom:10px;">Parametric 3D CAD Generator (OpenSCAD)</div>
+            <form id="form-generate-cad">
+              <div class="deck-form-grid">
+                <div class="deck-field-group">
+                  <label class="deck-label">Model Name</label>
+                  <input type="text" id="cad-name" class="deck-input" value="sensor_enclosure" required />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Length (mm)</label>
+                  <input type="number" id="cad-len" class="deck-input" value="80" required />
+                </div>
+              </div>
+              <div class="deck-form-grid" style="margin-top:8px;">
+                <div class="deck-field-group">
+                  <label class="deck-label">Width (mm)</label>
+                  <input type="number" id="cad-width" class="deck-input" value="50" required />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Height (mm)</label>
+                  <input type="number" id="cad-height" class="deck-input" value="25" required />
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button type="submit" class="deck-btn deck-btn-primary" id="btn-generate-cad">Generate & Verify 3D Model</button>
+              </div>
+            </form>
+
+            <!-- CAD Output Display -->
+            <div id="cad-output-box" class="hidden" style="margin-top:14px; padding:10px; background:rgba(0,0,0,0.3); border-radius:4px; font-family:var(--deck-font-mono); font-size:12px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0e. MEMORY & KNOWLEDGE VIEW
+           ===================================================================== -->
+      <section id="view-memory" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1000px;">
+          <div class="deck-section-title">Persistent Memory & Directives</div>
+          <div class="deck-section-desc">Directives, knowledge facts, and episodic memory with conflict resolution.</div>
+
+          <!-- Memory Search -->
+          <div style="margin-top:14px; display:flex; gap:8px;">
+            <input type="text" id="memory-search-input" class="deck-input" placeholder="Search directives and discovered facts..." style="flex:1;" />
+            <button class="deck-btn deck-btn-primary" id="btn-memory-search">Search</button>
+          </div>
+
+          <!-- Directives Management -->
+          <div style="margin-top:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="deck-section-title" style="font-size:14px;">Active Directives (Core Memory)</div>
+            </div>
+            <div id="directives-list" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
+
+            <!-- Add Directive -->
+            <form id="form-add-directive" style="margin-top:14px; display:flex; gap:8px;">
+              <input type="text" id="new-directive-text" class="deck-input" placeholder="Enter new operator directive (e.g. Always verify unit tests before staging code)..." style="flex:1;" required />
+              <button type="submit" class="deck-btn deck-btn-primary">Add Directive</button>
+            </form>
+          </div>
+
+          <!-- Discovered Facts -->
+          <div style="margin-top:24px;">
+            <div class="deck-section-title" style="font-size:14px;">Knowledge Facts</div>
+            <div id="facts-list" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0f. CONTROL PLANE VIEW
+           ===================================================================== -->
+      <section id="view-control" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1100px;">
+          <div class="deck-section-title">Control Plane & Safety Gateways</div>
+          <div class="deck-section-desc">Fail-closed emergency controls, autonomy ladder promotions, and tool capabilities.</div>
+
+          <!-- Emergency Halt Card -->
+          <div class="vital-card" style="margin-top:14px; border-color:rgba(255,46,99,0.3);">
+            <div class="vital-header">
+              <span class="vital-label" style="color:var(--deck-accent-primary);">Emergency Kill-Switch (Global Halt)</span>
+              <span class="deck-badge" id="control-halt-status">NORMAL</span>
+            </div>
+            <div style="font-size:12px; color:var(--deck-text-muted); line-height:1.45;">
+              When tripped, all outbound communications, tool executions, and file mutations are frozen immediately server-side.
+            </div>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <button class="deck-btn deck-btn-danger" id="btn-control-trip-halt">🛑 Trip Emergency Halt</button>
+              <button class="deck-btn" id="btn-control-resume-halt">✅ Resume Operations</button>
+            </div>
+          </div>
+
+          <!-- Tool Registry Browser -->
+          <div style="margin-top:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div class="deck-section-title" style="font-size:14px;">Unified Tool Registry (49 Tools)</div>
+                <div class="deck-section-desc">Declarative tools with JSON schema enforcement, permission gates, and side-effect markers.</div>
+              </div>
+              <input type="text" id="tool-search-input" class="deck-input" placeholder="Filter tools..." style="width:200px;" />
+            </div>
+
+            <div class="tasks-table-container">
+              <table class="deck-table">
+                <thead>
+                  <tr>
+                    <th>Tool Name</th>
+                    <th>Side Effect?</th>
+                    <th>Timeout</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody id="control-tools-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Approvals Queue -->
+          <div style="margin-top:24px;">
+            <div class="deck-section-title" style="font-size:14px;">Operator Approvals Queue (Gateways)</div>
+            <div class="deck-section-desc">Tasks paused in WAITING_FOR_APPROVAL status awaiting operator sign-off.</div>
+            <div id="control-approvals-container" style="margin-top:10px;">
+              <div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No tasks currently waiting for approval.</div>
+            </div>
+          </div>
+
+          <!-- External Service Credentials & Tooling Settings -->
+          <div style="margin-top:24px;">
+            <div class="deck-section-title" style="font-size:14px;">External Integrations & Tooling Credentials</div>
+            <div class="deck-section-desc">Configure Home Assistant, MQTT, OpenSCAD, and Blender binary paths into the secrets vault.</div>
+
+            <form id="form-operator-settings" style="margin-top:12px;">
+              <div class="deck-form-grid">
+                <div class="deck-field-group">
+                  <label class="deck-label">Home Assistant URL</label>
+                  <input type="text" id="cfg-ha-url" class="deck-input" placeholder="http://homeassistant.local:8123" />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Home Assistant Token</label>
+                  <input type="password" id="cfg-ha-token" class="deck-input" placeholder="Long-Lived Access Token" />
+                </div>
+              </div>
+              <div class="deck-form-grid" style="margin-top:8px;">
+                <div class="deck-field-group">
+                  <label class="deck-label">MQTT Broker Host</label>
+                  <input type="text" id="cfg-mqtt-host" class="deck-input" placeholder="127.0.0.1 or mqtt.local" />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">MQTT Port</label>
+                  <input type="number" id="cfg-mqtt-port" class="deck-input" placeholder="1883" />
+                </div>
+              </div>
+              <div class="deck-form-grid" style="margin-top:8px;">
+                <div class="deck-field-group">
+                  <label class="deck-label">OpenSCAD Binary Path</label>
+                  <input type="text" id="cfg-openscad-bin" class="deck-input" placeholder="/usr/bin/openscad" />
+                </div>
+                <div class="deck-field-group">
+                  <label class="deck-label">Blender Binary Path</label>
+                  <input type="text" id="cfg-blender-bin" class="deck-input" placeholder="/usr/bin/blender" />
+                </div>
+              </div>
+              <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                <button type="submit" class="deck-btn deck-btn-primary" id="btn-save-settings">Save Integration Settings</button>
+                <span id="settings-save-status" style="font-size:11px; color:var(--deck-accent-primary);"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <!-- 1. Pipeline Board View -->
-      <section id="view-kanban" class="deck-view active">
+      <section id="view-kanban" class="deck-view">
         <div class="kanban-grid" id="kanban-board"></div>
       </section>
 

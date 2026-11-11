@@ -187,6 +187,20 @@ class AgentContract(ABC):
 - Execution and verification are decoupled.
 - An agent that generates a file, deploys a site, or triggers an MQTT switch cannot verify its own success; a dedicated verification procedure (e.g. DOM inspection, screenshot capture, readback state) must inspect the resulting artifact.
 
+### Layer 10: Central Intelligence, Deterministic Task Routing & Context Isolation
+- **Centralized Intelligence Coordinator:** Central GHOST remains the primary user conversational interface without prompt bloat. Receives a compact capability summary (< 400 tokens) rather than 54+ raw tool schemas.
+- **Deterministic TaskRouter:** Programmatically routes requests to single-domain specialists or multi-stage composite workflows (`business_reconnaissance`, `dev_incident_investigation`, `focus_session_activation`, `creative_asset_pipeline`) without relying on probabilistic model recall.
+- **Agent Capability Registry:** Programmatically indexes all 7 specialist domain agents with capability descriptors, supported task types, input/output schemas, verification criteria, and scoped tool IDs derived directly from `ToolRegistry`.
+- **Context Isolation & Scoped Tools:** Specialist agents receive only authorized tools within their permission envelope. Detailed tool logs and execution traces remain isolated in the store; only structured `DelegationResult` summaries return to Central GHOST.
+- **Typed Delegation Contracts:** Enforces `DelegationTaskContract` specifications with parent-child linkage, execution order, dependency resolution, and mandatory ground-truth `VerificationEvidence`.
+
+### Layer 11: Input Integrity, Intent Categorization & Anti-Contamination
+- **Zero Silent Truncation:** Complete, unadulterated user requests are preserved authoritatively in `InputPayload` dataclasses across the entire pipeline. No string slicing (`[:60]`, `[:70]`) is permitted on user instructions or objectives.
+- **Incomplete Payload Detection:** Severed tokens, truncated words at string boundaries, and unclosed quotes/code blocks trigger immediate `TASK_CLARIFICATION` prompts rather than partial or hallucinated execution.
+- **Strict Intent Boundary:** Inquiries asking what tools work or how a task could be done are classified as `CAPABILITY_QUERY` or `TASK_PLANNING` respectively, returning verified tool/agent statuses or dry-run execution outlines with zero task dispatches. Imperative execution requires explicit action directives.
+- **Directive / Example Isolation:** Quoted passages, examples, and code blocks are isolated prior to intent and keyword evaluation.
+- **Anti-Contamination Verification:** Stage outputs must demonstrate topic relevance to the delegation objective. Scavenging stale cached artifacts from disk (e.g. static demos or previous task dossiers) is rejected with `INVALID_DISPATCH`.
+
 ---
 
 ## 4. Hardware & Resource Budgeting (GTX 1650 / 8 GB RAM)

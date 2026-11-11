@@ -88,3 +88,15 @@ data/ghost.db*
 # --- Ghost secrets vault (operator-set via the UI; NEVER in git) ---
 configs/secrets.json
 .skill-vendor/
+
+# --- Dynamic runtime state & archives ---
+data/archive/
+data/snapshots/
+data/heartbeat.json
+data/rhythm/
+data/HALTED
+data/HALTED.json
+data/REVOCATION_EPOCH
+data/intake_seen.json
+data/reports/
+

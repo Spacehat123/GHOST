@@ -95,16 +95,30 @@ graph TD
 
 #### `UnifiedToolRegistry` ([`src/ghost/core/tool_registry.py`](file:///home/pranc/projects/ghost/src/ghost/core/tool_registry.py))
 - **Plane:** Core Foundation (Layer 7)
-- **Responsibility:** Central registry for all 14+ tools, separating JSON parameter schemas, permission requirements, side-effect assertions, and execution handlers.
+- **Responsibility:** Central declarative registry for all 49 system tools (`register_default_ghost_tools()`), separating JSON parameter schemas, permission requirements, side-effect assertions, execution timeouts, and execution handlers via `OmniRouteBrain.execute_tool_call()`.
 - **Inputs:** Tool invocation requests with arguments and optional capability grant token.
 - **Outputs:** Structured execution receipts and verified output artifacts.
-- **Security Check:** Asserts `grant_token` validity via `authority/protocol.py` for all outbound effect tools before execution.
+- **Security Check:** Validates schema, checks `ghost_security.is_halted()`, enforces execution timeout, and asserts `grant_token` validity via `authority/protocol.py` for all outbound effect tools before execution.
 
 #### `TaskOrchestrator` ([`src/ghost/core/task_orchestrator.py`](file:///home/pranc/projects/ghost/src/ghost/core/task_orchestrator.py))
 - **Plane:** Central Orchestrator (Layer 5)
-- **Responsibility:** Manages objectives and enforces the 11-state task state machine.
+- **Responsibility:** Manages objectives and enforces the 11-state task state machine (`CREATED`, `PLANNED`, `QUEUED`, `RUNNING`, `VERIFYING`, `COMPLETED`, `FAILED`, `BLOCKED`, `CANCELLED`, `RETRYING`, `WAITING_FOR_APPROVAL`).
 - **Inputs:** Objectives submitted via chat, scheduled jobs, or event-driven rules.
-- **Outputs:** Atomic task state transitions persisted to SQLite `jobs` table in `ghost.db`.
+- **Outputs:** Atomic task state transitions persisted to SQLite `jobs` table in `ghost.db` and broadcast via `EventBus`.
+
+#### `Specialized Domain Agents` ([`src/ghost/agents/`](file:///home/pranc/projects/ghost/src/ghost/agents/))
+- **Plane:** Agent Suite (Layer 6)
+- **Responsibility:** Standardized modular agents inheriting from `AgentContract` (`base.py`) providing `plan()`, `execute()`, and returning structured `VerificationEvidence`.
+- **Agents:**
+  - `SystemIntelligenceAgent`: Analyzes resource spikes, anomalous processes, and hardware telemetry.
+  - `DevelopmentIntelligenceAgent`: Analyzes test failures, inspects git diffs, isolates regressions, and stages fixes.
+  - `ResearchIntelligenceAgent`: Queries web sources, performs reconnaissance, and builds structured research dossiers.
+  - `BusinessIntelligenceAgent`: Orchestrates prospective client qualification, demo generation, and CRM synchronization.
+
+#### `Desktop Presentation & Agency Command Deck` ([`gui/`](file:///home/pranc/projects/ghost/gui/))
+- **Plane:** Presentation & Interaction Plane
+- **Responsibility:** Ambient Top HUD and full Agency Command Deck spanning 7 operational domains (Awareness, Intelligence Feed, Agents, Projects & Tasks, Memory, Control Plane, Pipeline).
+- **Communication:** Real-time bi-directional WebSocket streaming (`/ws/events`) and structured REST APIs in `src/ghost/server/app.py`.
 
 ---
 

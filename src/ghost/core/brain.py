@@ -1390,6 +1390,161 @@ GHOST_TOOLS = [
                 "required": ["demo_dir"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delegate_task",
+            "description": "Delegates a specialized objective to an autonomous domain intelligence agent (system_agent, dev_agent, research_agent, business_agent, personal_agent, physical_agent, creative_agent) in an isolated execution context with verified evidence receipts.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "assigned_agent": {
+                        "type": "string",
+                        "enum": ["system_agent", "dev_agent", "research_agent", "business_agent", "personal_agent", "physical_agent", "creative_agent"],
+                        "description": "Target specialist agent ID"
+                    },
+                    "objective": {
+                        "type": "string",
+                        "description": "Clear directive statement with goals, acceptance criteria, and required evidence"
+                    },
+                    "inputs": {
+                        "type": "object",
+                        "description": "Domain-specific inputs, targets, query, or parameters"
+                    }
+                },
+                "required": ["assigned_agent", "objective"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_workflow",
+            "description": "Executes a multi-agent sequential or parallel workflow across specialist agents with verified evidence gates (business_reconnaissance, dev_incident_investigation, focus_session_activation, creative_asset_pipeline, product_engineering_pipeline).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "workflow_name": {
+                        "type": "string",
+                        "enum": ["business_reconnaissance", "dev_incident_investigation", "focus_session_activation", "creative_asset_pipeline", "product_engineering_pipeline"],
+                        "description": "Canonical workflow name to execute"
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Parameters for workflow execution"
+                    }
+                },
+                "required": ["workflow_name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_agent_registry",
+            "description": "Queries the canonical AgentCapabilityRegistry to inspect available specialized agents, their operational status, permitted tools, and domains.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "Optional domain filter (system, development, research, business, personal, physical, creative)"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_task_status",
+            "description": "Checks the execution progress, verification evidence, and status of a delegated task or workflow.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "string",
+                        "description": "Task identifier to query"
+                    }
+                },
+                "required": ["task_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "scad_render_model",
+            "description": "Generate a parametric 3D CAD model using OpenSCAD (.scad, .stl, .3mf) with geometric validation (volume, watertightness, bounding box).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Base filename for the CAD model"
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Parametric dimensions, wall thicknesses, tolerances, and features"
+                    }
+                },
+                "required": ["model_name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ha_get_states",
+            "description": "Query all entity and sensor states from Home Assistant smart home.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ha_call_service",
+            "description": "Execute physical device service call on Home Assistant (e.g. light.turn_on, switch.toggle).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "service": {"type": "string"},
+                    "service_data": {"type": "object"}
+                },
+                "required": ["domain", "service"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mqtt_publish",
+            "description": "Publish an MQTT message to the smart home broker topic.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {"type": "string"},
+                    "payload": {"type": "string"}
+                },
+                "required": ["topic", "payload"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "personal_create_briefing",
+            "description": "Synthesize executive daily intelligence briefing document.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
     }
 ]
 
@@ -1404,6 +1559,10 @@ CORE_TOOL_NAMES = {
     "math_solve",
     "web_search",
     "system_run",
+    "delegate_task",
+    "execute_workflow",
+    "query_agent_registry",
+    "check_task_status",
 }
 
 CORE_TOOLS = [t for t in GHOST_TOOLS if t["function"]["name"] in CORE_TOOL_NAMES]
@@ -1412,7 +1571,7 @@ CORE_TOOLS = [t for t in GHOST_TOOLS if t["function"]["name"] in CORE_TOOL_NAMES
 def get_ghost_tools(mode: str = "core", user_text: str = "", has_active_mission: bool = False) -> List[Dict[str, Any]]:
     """
     Returns lean, cache-optimized CORE_TOOLS set (~2,000 tokens) for general chat,
-    math, desktop actions, and screen drawing, or the full 49-tool GHOST_TOOLS suite
+    math, desktop actions, and screen drawing, or the full GHOST_TOOLS suite
     when executing active missions or specialized agency workflows.
     """
     if os.environ.get("GHOST_TOOL_TIERING", "true").lower() in ("false", "0", "no"):
@@ -1422,12 +1581,36 @@ def get_ghost_tools(mode: str = "core", user_text: str = "", has_active_mission:
         return GHOST_TOOLS
 
     clean_q = user_text.lower() if user_text else ""
-    agency_keywords = ("crm", "client", "lead", "venue", "scout", "email", "inbox", "pitch", "outreach", "dossier", "qualify")
-    creative_keywords = ("3d", "motion", "website", "demo", "demos", "figma", "framer", "glb", "model", "render", "archetype", "photo", "photos", "image", "images", "vercel", "deploy", "rebuild", "build", "fix", "redesign", "update")
-    mission_keywords = ("mission", "git", "github", "rea", "reverse engineer", "database", "sql")
+    agency_keywords = (
+        "crm", "client", "clients", "lead", "leads", "venue", "venues", "scout",
+        "email", "inbox", "pitch", "outreach", "dossier", "dossiers", "qualify",
+        "qualification", "recon", "reconnaissance", "prospect", "prospects",
+        "restaurant", "restaurants", "hospitality", "pricing", "aggregator"
+    )
+    creative_keywords = (
+        "3d", "motion", "website", "demo", "demos", "figma", "framer", "glb",
+        "model", "models", "render", "renders", "archetype", "photo", "photos",
+        "image", "images", "vercel", "deploy", "rebuild", "build", "fix",
+        "redesign", "update", "cad", "scad", "openscad", "planter", "stl", "mesh"
+    )
+    mission_keywords = (
+        "mission", "git", "github", "rea", "reverse engineer", "database", "sql",
+        "hardware", "vitals", "cpu", "ram", "gpu", "vram", "smart home", "home assistant",
+        "mqtt", "briefing", "objective", "objectives"
+    )
+    orchestration_keywords = (
+        "tool", "tools", "agent", "agents", "capability", "capabilities",
+        "delegate", "delegation", "workflow", "workflows", "finish", "continue",
+        "proceed", "execute", "status", "ready", "work/dont", "available", "halt"
+    )
     screenshot_keywords = ("screenshot", "screen capture", "capture screen", "snapshot", "take a pic", "photo of screen")
 
-    if any(k in clean_q for k in agency_keywords) or any(k in clean_q for k in creative_keywords) or any(k in clean_q for k in mission_keywords):
+    if (
+        any(k in clean_q for k in agency_keywords)
+        or any(k in clean_q for k in creative_keywords)
+        or any(k in clean_q for k in mission_keywords)
+        or any(k in clean_q for k in orchestration_keywords)
+    ):
         return GHOST_TOOLS
 
     if any(k in clean_q for k in screenshot_keywords):
@@ -2402,7 +2585,7 @@ class OmniRouteBrain:
             stat = str(arguments.get("status", "")).strip()
             summary = str(arguments.get("result_summary", "")).strip()
             reason = str(arguments.get("reason", "")).strip()
-            ev_list = arguments.get("evidence", [])
+            ev_list = arguments.get("evidence")
 
             try:
                 task = store.update_task(
@@ -2605,5 +2788,126 @@ class OmniRouteBrain:
             from ghost.workers.motion_site_builder import MotionQA
             d_dir = str(arguments.get("demo_dir", "")).strip()
             return await MotionQA.run_qa(demo_dir=d_dir)
+
+        elif tool_name == "delegate_task":
+            from ghost.core.task_router import get_task_router
+            router = get_task_router()
+            agent_id = str(arguments.get("assigned_agent", "")).strip()
+            objective = str(arguments.get("objective", "")).strip()
+            inputs = arguments.get("inputs") or {}
+            decision = router.classify_and_route(objective, context=inputs)
+            decision.decision_type = "SINGLE_AGENT"
+            decision.target_agent = agent_id
+            results = []
+            async for evt in router.dispatch_workflow(decision, context=inputs):
+                if evt.get("type") == "workflow_finished":
+                    results.append(evt)
+            final_res = results[0] if results else {"status": "COMPLETED", "summary": f"Delegated to {agent_id}"}
+            return {"ok": True, "agent_id": agent_id, "objective": objective, "delegation": final_res}
+
+        elif tool_name == "execute_workflow":
+            from ghost.core.task_router import get_task_router
+            router = get_task_router()
+            wf_name = str(arguments.get("workflow_name", "")).strip()
+            params = arguments.get("parameters") or {}
+            query = params.get("query") or wf_name
+            decision = router.classify_and_route(query, context=params)
+            decision.workflow_name = wf_name
+            events = []
+            async for evt in router.dispatch_workflow(decision, context=params):
+                events.append(evt)
+            return {"ok": True, "workflow": wf_name, "events": events}
+
+        elif tool_name == "query_agent_registry":
+            from ghost.core.agent_registry import get_agent_registry
+            areg = get_agent_registry()
+            domain = arguments.get("domain")
+            if domain:
+                desc = areg.get_by_domain(domain)
+                return {"agents": [desc.to_dict()] if desc else []}
+            return {"agents": [d.to_dict() for d in areg.list_descriptors()]}
+
+        elif tool_name == "check_task_status":
+            from ghost.core.task_orchestrator import get_task_orchestrator
+            orch = get_task_orchestrator()
+            tid = str(arguments.get("task_id", "")).strip()
+            t = orch.get_task(tid)
+            if not t:
+                return {"found": False, "task_id": tid}
+            return {
+                "found": True,
+                "task_id": t.task_id,
+                "status": t.status.value,
+                "attempts": t.attempts,
+                "assigned_agent": t.assigned_agent,
+                "output": t.output_payload,
+                "error": t.error_reason,
+                "verification": t.verification_details,
+            }
+
+        elif tool_name == "scad_render_model":
+            from ghost.agents.creative_agent import CreativeIntelligenceAgent
+            from ghost.core.task_orchestrator import Task, TaskStatus
+            creative_agent = CreativeIntelligenceAgent()
+            m_name = str(arguments.get("model_name", "part")).strip()
+            params = arguments.get("parameters") or {}
+            task_mock = Task(
+                task_id=f"tsk-scad-{int(time.time()*1000)}",
+                objective_id="obj-tool",
+                assigned_agent="creative_agent",
+                title=f"Render CAD {m_name}",
+                description="Parametric OpenSCAD render",
+                status=TaskStatus.RUNNING,
+                input_payload={"action": "generate_scad_model", "model_name": m_name, "parameters": params},
+            )
+            return await creative_agent.execute_task(task_mock, {})
+
+        elif tool_name == "personal_create_briefing":
+            from ghost.agents.personal_agent import PersonalIntelligenceAgent
+            from ghost.core.task_orchestrator import Task, TaskStatus
+            p_agent = PersonalIntelligenceAgent()
+            task_mock = Task(
+                task_id=f"tsk-brief-{int(time.time()*1000)}",
+                objective_id="obj-tool",
+                assigned_agent="personal_agent",
+                title="Synthesize Executive Briefing",
+                description="Create daily briefing document",
+                status=TaskStatus.RUNNING,
+                input_payload={"type": "daily_briefing"},
+            )
+            return await p_agent.execute_task(task_mock, {})
+
+        elif tool_name == "ha_get_states":
+            from ghost.integrations.homeassistant import HomeAssistantClient
+            ha_client = HomeAssistantClient()
+            return await ha_client.get_states()
+
+        elif tool_name == "ha_call_service":
+            from ghost.integrations.homeassistant import HomeAssistantClient
+            ha_client = HomeAssistantClient()
+            return await ha_client.call_service(
+                domain=arguments.get("domain", ""),
+                service=arguments.get("service", ""),
+                service_data=arguments.get("service_data", {})
+            )
+
+        elif tool_name == "mqtt_publish":
+            from ghost.integrations.mqtt import MQTTClient
+            mqtt_client = MQTTClient()
+            return await mqtt_client.publish(
+                topic=arguments.get("topic", ""),
+                payload=str(arguments.get("payload", ""))
+            )
+
+        # Fallback to ToolRegistry if registered
+        try:
+            from ghost.core.tool_registry import get_tool_registry
+            reg = get_tool_registry()
+            tool_def = reg.get(tool_name)
+            if tool_def and tool_def.handler:
+                if not getattr(tool_def.handler, "__is_brain_wrapped__", False):
+                    return await reg.execute(tool_name, arguments)
+        except Exception as e_reg:
+            logger.warning(f"Tool registry fallback failed for {tool_name}: {e_reg}")
 
         return {"error": f"Tool {tool_name} not recognized"}

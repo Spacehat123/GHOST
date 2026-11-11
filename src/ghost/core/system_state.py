@@ -65,6 +65,8 @@ class StateSnapshot:
     queue_pending: int = 0
     halt_active: bool = False
     integrations_healthy: Dict[str, bool] = field(default_factory=dict)
+    recent_alerts: List[Dict[str, Any]] = field(default_factory=list)
+    operating_mode: str = "AMBIENT"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -83,10 +85,11 @@ class StateSnapshot:
 
         halt_str = "⚠️ HALTED" if self.halt_active else "🟢 ACTIVE"
         active_str = ", ".join(self.active_agents) if self.active_agents else "None"
+        alerts_str = f" | Alerts: {len(self.recent_alerts)}" if self.recent_alerts else ""
 
         return (
             f"[GHOST System Status - {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.timestamp))}]\n"
-            f"• State: {halt_str} | Active Agents: [{active_str}]\n"
+            f"• Mode: {self.operating_mode} | State: {halt_str} | Active Agents: [{active_str}]{alerts_str}\n"
             f"• Tasks: {self.running_tasks} running, {self.queue_pending} queued\n"
             f"• CPU: {self.vitals.cpu_percent:.1f}% | RAM: {self.vitals.ram_percent:.1f}% "
             f"({self.vitals.ram_used_mb:.0f}/{self.vitals.ram_total_mb:.0f} MB) | Disk Free: {self.vitals.disk_free_gb:.1f} GB\n"
@@ -108,16 +111,22 @@ class SystemStateManager:
         self._active_agents: Set[str] = set()
         self._running_tasks: int = 0
         self._queue_pending: int = 0
+        self._operating_mode: str = "AMBIENT"
+        self._recent_alerts: Dict[str, Dict[str, Any]] = {}
         self._integrations_healthy: Dict[str, bool] = {
             "omniroute": True,
             "sqlite_wal": True,
             "display": True,
         }
 
-        # Subscribe to EventBus telemetry events
+        # Subscribe to EventBus telemetry and resource alert events
         self._sub_id = self._event_bus.subscribe(
             "system.telemetry.sample",
             self._on_telemetry_event,
+        )
+        self._sub_alert_id = self._event_bus.subscribe(
+            "system.resource.*",
+            self._on_resource_event,
         )
 
     def _on_telemetry_event(self, event: Event) -> None:
@@ -128,9 +137,73 @@ class SystemStateManager:
         except Exception as e:
             logger.warning(f"Failed to parse telemetry event payload: {e}")
 
+    def _on_resource_event(self, event: Event) -> None:
+        """Handle resource alerts, sustained anomalies, and recovery events."""
+        try:
+            if event.event_type in ("system.resource.alert", "system.resource.sustained_anomaly"):
+                alerts_dict = event.payload.get("alerts", {})
+                if not alerts_dict and "metric" in event.payload:
+                    alerts_dict = {event.payload["metric"]: event.payload}
+                for metric, detail in alerts_dict.items():
+                    detail_is_sustained = (
+                        detail.get("is_sustained", False)
+                        if isinstance(detail, dict)
+                        else False
+                    )
+                    is_sustained = (
+                        event.event_type == "system.resource.sustained_anomaly"
+                        or event.payload.get("is_sustained", False)
+                        or detail_is_sustained
+                    )
+                    self.record_alert(
+                        metric_name=metric,
+                        severity=event.severity.value,
+                        details=detail,
+                        is_sustained=is_sustained,
+                    )
+            elif event.event_type == "system.resource.recovered":
+                metric = event.payload.get("metric")
+                if metric:
+                    self.clear_alert(metric)
+        except Exception as e:
+            logger.warning(f"Failed to process resource event: {e}")
+
     def set_vitals(self, vitals: HardwareVitals) -> None:
         with self._lock:
             self._vitals = vitals
+
+    def set_operating_mode(self, mode: str) -> None:
+        mode_upper = mode.upper()
+        if mode_upper in ("AMBIENT", "OBJECTIVE", "REACTIVE"):
+            with self._lock:
+                self._operating_mode = mode_upper
+                logger.info(f"System operating mode changed to: {mode_upper}")
+
+    def record_alert(
+        self,
+        metric_name: str,
+        severity: str,
+        details: Dict[str, Any],
+        is_sustained: bool = False,
+    ) -> None:
+        with self._lock:
+            existing = self._recent_alerts.get(metric_name)
+            sustained_flag = is_sustained or (existing.get("is_sustained", False) if existing else False)
+            self._recent_alerts[metric_name] = {
+                "metric": metric_name,
+                "severity": severity,
+                "details": details,
+                "is_sustained": sustained_flag,
+                "timestamp": time.time(),
+            }
+
+    def clear_alert(self, metric_name: str) -> None:
+        with self._lock:
+            self._recent_alerts.pop(metric_name, None)
+
+    def get_active_alerts(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            return list(self._recent_alerts.values())
 
     def update_desktop_context(
         self,
@@ -170,6 +243,8 @@ class SystemStateManager:
             running_copy = self._running_tasks
             pending_copy = self._queue_pending
             integrations_copy = dict(self._integrations_healthy)
+            alerts_copy = list(self._recent_alerts.values())
+            mode_copy = self._operating_mode
 
         return StateSnapshot(
             timestamp=time.time(),
@@ -181,6 +256,8 @@ class SystemStateManager:
             queue_pending=pending_copy,
             halt_active=is_halted(),
             integrations_healthy=integrations_copy,
+            recent_alerts=alerts_copy,
+            operating_mode=mode_copy,
         )
 
     def get_context_for_prompt(self) -> str:

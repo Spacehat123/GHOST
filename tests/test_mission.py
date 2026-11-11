@@ -558,3 +558,72 @@ class TestMissionGuards(unittest.TestCase):
         self.assertEqual(refreshed.tasks[0].status, TaskStatus.blocked)
         self.assertIn("Attempt cap", refreshed.tasks[0].result_summary)
 
+
+class TestEvidenceAutoRegistration(unittest.TestCase):
+    """Test automated evidence extraction and attachment mechanism."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "test_auto_ev.db")
+        self.store = MissionStore(db_path=self.db_path)
+
+    def tearDown(self):
+        self.store.close()
+        self.temp_dir.cleanup()
+
+    def test_auto_extract_evidence_from_tool(self):
+        from ghost.core.evidence import auto_extract_evidence_from_tool
+
+        # 1. File write
+        test_file = os.path.join(self.temp_dir.name, "report.md")
+        with open(test_file, "w") as f:
+            f.write("# Verified Report\nDetails here.")
+        file_ev = auto_extract_evidence_from_tool(
+            tool_name="desktop_control",
+            args={"action": "write_file", "path": test_file},
+            res={"status": "success", "target": test_file}
+        )
+        self.assertTrue(any(e["type"] == "file" and e["path"] == test_file for e in file_ev))
+
+        # 2. CRM get client
+        crm_ev = auto_extract_evidence_from_tool(
+            tool_name="crm_get_client",
+            args={"slug": "grasshopper"},
+            res={"client": {"slug": "grasshopper", "phone": "080501 65130"}}
+        )
+        self.assertTrue(any(e["type"] == "ledger" and e["slug"] == "grasshopper" for e in crm_ev))
+
+        # 3. Database query on CRM
+        db_ev = auto_extract_evidence_from_tool(
+            tool_name="database_query",
+            args={"database": "data/crm.db"},
+            res={"status": "success", "rows": [{"slug": "grasshopper", "id": 101}]}
+        )
+        self.assertTrue(any(e["type"] == "ledger" and e["slug"] == "grasshopper" for e in db_ev))
+
+    def test_attach_task_evidence_and_update(self):
+        tasks = [
+            {"id": "t1", "title": "Audit dossier", "description": "Review grasshopper",
+             "acceptance": ["Dossier and CRM verified"], "evidence_required": ["file", "ledger"]}
+        ]
+        mission = self.store.create_mission(goal="Audit Grasshopper", tasks=tasks)
+        m_id = mission.id
+        self.store.update_task(m_id, "t1", status=TaskStatus.in_progress)
+
+        # Attach file evidence
+        test_file = os.path.join(self.temp_dir.name, "dossier.md")
+        with open(test_file, "w") as f:
+            f.write("Grasshopper fine dining dossier.")
+        self.store.attach_task_evidence(m_id, "t1", {"type": "file", "path": test_file})
+
+        # Attach ledger evidence
+        self.store.attach_task_evidence(m_id, "t1", {"type": "ledger", "slug": "grasshopper", "row_id": "grasshopper"})
+
+        # Now mark done without passing explicit evidence argument (verifies auto-attached evidence)
+        updated = self.store.update_task(m_id, "t1", status=TaskStatus.done, result_summary="Audit verified")
+        self.assertEqual(updated.status, TaskStatus.done)
+        self.assertEqual(len(updated.evidence), 2)
+        ev_types = {e["type"] for e in updated.evidence}
+        self.assertEqual(ev_types, {"file", "ledger"})
+
+

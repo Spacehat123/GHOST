@@ -1,0 +1,179 @@
+{
+ "business_name": {
+  "field": "business_name",
+  "value": "Grasshopper",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709779+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "category": {
+  "field": "category",
+  "value": "Fine dining restaurant",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709820+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "categories": {
+  "field": "categories",
+  "value": [
+   "Fine dining restaurant",
+   "Add a label"
+  ],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709833+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "rating": {
+  "field": "rating",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709840+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "review_count": {
+  "field": "review_count",
+  "value": "848",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709847+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "phone": {
+  "field": "phone",
+  "value": "080501 65130",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709853+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "address": {
+  "field": "address",
+  "value": "45, Bannerghatta Rd, near Meenakshi Temple, Kothnur, Kalena Agrahara, Bengaluru, Karnataka 560076",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709860+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "website": {
+  "field": "website",
+  "value": "https://www.instagram.com/grasshopperbangalore/",
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709866+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "hours": {
+  "field": "hours",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709872+00:00",
+  "verified": false,
+  "notes": "Unverified or missing"
+ },
+ "reviews": {
+  "field": "reviews",
+  "value": [
+   {
+    "author": "Payal M.",
+    "stars": "5 stars",
+    "text": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More"
+   },
+   {
+    "author": "Payal M.",
+    "stars": "5 stars",
+    "text": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More"
+   },
+   {
+    "author": "Payal M.",
+    "stars": "5 stars",
+    "text": "The Grasshopper is a small, intimate space tucked away amidst plenty of greenery. The setting is beautifully romantic, with dim candlelight, wooden tables and a magical old-world charm that makes the whole experience feel special. \u2026 More"
+   },
+   {
+    "author": "Anjali A.",
+    "stars": "5 stars",
+    "text": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More"
+   },
+   {
+    "author": "Anjali A.",
+    "stars": "5 stars",
+    "text": "Wow!! What an incredible dining experience!! The place is beautiful and it looks lovely at night.. We had the 5 course meal.. Every dish is a surprise.. Well curated as per your taste... The prawns, the lamb roulade and the chicken were \u2026 More"
+   }
+  ],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709879+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "photos": {
+  "field": "photos",
+  "value": [
+   {
+    "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwQ4CrOMica0DPrTEb5pIZqqYjbu_krBpyF1GJtW1vvbmnCfbGNoZBRRFJWz7BdERciUQ0G_4DGcjWq5dBmUSIbT4A7pHfJlRoq1aIrtb4UbkJAbygU0HoeQBKl3RD3n2dsgaA=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwQ4CrOMica0DPrTEb5pIZqqYjbu_krBpyF1GJtW1vvbmnCfbGNoZBRRFJWz7BdERciUQ0G_4DGcjWq5dBmUSIbT4A7pHfJlRoq1aIrtb4UbkJAbygU0HoeQBKl3RD3n2dsgaA=w427-h240-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdjFsNtmukXLtajAHz9OhNxZ4yxp_OLRrgl39sbRNDjfY9-KbGZkQJhj7RZhtotERIztrDDZiErkAkkDMdKFo_JOOKmf21SfMIFIQqN3Kvvnl9HgPMhTr04yG1k3Qh42U7x9vj8=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdjFsNtmukXLtajAHz9OhNxZ4yxp_OLRrgl39sbRNDjfY9-KbGZkQJhj7RZhtotERIztrDDZiErkAkkDMdKFo_JOOKmf21SfMIFIQqN3Kvvnl9HgPMhTr04yG1k3Qh42U7x9vj8=w140-h140-p-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLccf2UvEI75f5I9cSi_O26zrMAoe4CQ1UtSW83xV1nAhhMdtZ8KowikPpw0FbNdBsRtclR2lX-3etEjzb9O9kXcXg1aTP50_XRBXqQ0GWiE0WHrtjbmpiAUCDaf_UYUDZHeiWMj=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLccf2UvEI75f5I9cSi_O26zrMAoe4CQ1UtSW83xV1nAhhMdtZ8KowikPpw0FbNdBsRtclR2lX-3etEjzb9O9kXcXg1aTP50_XRBXqQ0GWiE0WHrtjbmpiAUCDaf_UYUDZHeiWMj=w140-h140-p-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdpXoisunmvltqcY6_H7W8e6GvHhWl2-RNA-AXPAWGZ5FnLBCVIZ-xQCJZieS7MJeucdTwiwnPH4x21FLRo6AX2mUmtmdNcbGKuvYg2ZXop1E7jTRV1xSl56k-fXFxFaOJIU7Q=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/grass-cs/AABkmLdpXoisunmvltqcY6_H7W8e6GvHhWl2-RNA-AXPAWGZ5FnLBCVIZ-xQCJZieS7MJeucdTwiwnPH4x21FLRo6AX2mUmtmdNcbGKuvYg2ZXop1E7jTRV1xSl56k-fXFxFaOJIU7Q=w140-h140-p-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S2YVplfcZhBNCI6BuicJXIz7AsxVR8U60MPz37obnNlA2uLyIriumO6xDLkTIiR9AaFQPqwdU0NXHHCopoO6EJC2IgyeFnLfpNnzxrn7_-IYlJ0eTdJBwqPLobeBCFTEiaiVAb=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S2YVplfcZhBNCI6BuicJXIz7AsxVR8U60MPz37obnNlA2uLyIriumO6xDLkTIiR9AaFQPqwdU0NXHHCopoO6EJC2IgyeFnLfpNnzxrn7_-IYlJ0eTdJBwqPLobeBCFTEiaiVAb=w531-h298-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TrUQmlPqEB92xo9En7W6QPLHeSTL6-nVC8gre6dzTBA1kWqDiPhhLw3fMA0bTe2A51S0aV3CNjWM7BWU5J64I6uS3jhF0Dw8vRIiZnOle8pWqD8cZOjuboJElo4KpM6NyvJGux=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TrUQmlPqEB92xo9En7W6QPLHeSTL6-nVC8gre6dzTBA1kWqDiPhhLw3fMA0bTe2A51S0aV3CNjWM7BWU5J64I6uS3jhF0Dw8vRIiZnOle8pWqD8cZOjuboJElo4KpM6NyvJGux=w224-h317-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S5QKoIaTMqPuko7cgVdSotauywXzCUdfCX2pELRL0v_ZB8he0fK2kmNU4Ce6QP092pA6lLXweaJq2xGUfNlXJMa4fdwd1Z6IoH89cZs0MpRR9TKDtrjqT6iwwFK3JB9l4ISLrHAA=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9S5QKoIaTMqPuko7cgVdSotauywXzCUdfCX2pELRL0v_ZB8he0fK2kmNU4Ce6QP092pA6lLXweaJq2xGUfNlXJMa4fdwd1Z6IoH89cZs0MpRR9TKDtrjqT6iwwFK3JB9l4ISLrHAA=w529-h298-k-no",
+    "source": "google_maps_cdn"
+   },
+   {
+    "url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9R0eNkPwSyCDgtZlwDEge7fhktPCkbiOFXmSUcRDw4XhMP6Bvwm0n2fauMM8N-dLJKmivYE0bqbibJN_DchMi7Hq_NmM3AJJ2Mwxg3dypMdNAvWehsgECTw8yftPFk8RFQcAL1TKg=w1600-h1200-k-no",
+    "raw_url": "https://lh3.googleusercontent.com/gps-cs-s/ANWiy9R0eNkPwSyCDgtZlwDEge7fhktPCkbiOFXmSUcRDw4XhMP6Bvwm0n2fauMM8N-dLJKmivYE0bqbibJN_DchMi7Hq_NmM3AJJ2Mwxg3dypMdNAvWehsgECTw8yftPFk8RFQcAL1TKg=w447-h298-k-no",
+    "source": "google_maps_cdn"
+   }
+  ],
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:00.709885+00:00",
+  "verified": true,
+  "notes": null
+ },
+ "services": {
+  "field": "services",
+  "value": null,
+  "source_url": "google_maps",
+  "scraped_at": "2026-11-11T06:35:04.232314+00:00",
+  "verified": false,
+  "notes": "Sample Concept Architecture \u2022 Not Scraped from Listing"
+ },
+ "assets": [
+  {
+   "type": "vendor_library",
+   "file": "assets/vendor/svg.min.js",
+   "source_url": "https://github.com/svgdotjs/svg.js",
+   "license": "MIT (svgdotjs/svg.js v3.2.4)",
+   "scraped_at": "2026-11-11T06:35:04.333742+00:00",
+   "verified": true,
+   "notes": "Vendored locally from templates/svg/ \u2014 no CDN, CSP-safe."
+  }
+ ]
+}

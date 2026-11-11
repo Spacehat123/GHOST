@@ -178,3 +178,52 @@ class StateSnapshot:
     halt_active: bool
     integrations_healthy: Dict[str, bool]
 ```
+
+---
+
+## 6. Frontend / Backend API & WebSocket Contracts (`src/ghost/server/app.py`)
+
+### 6.1 WebSocket Event Stream (`/ws/events`)
+All connected desktop GUI clients receive real-time updates via JSON envelopes:
+
+```json
+{
+  "type": "universal_event",
+  "event": {
+    "event_id": "018f4a21-7000-7000-8000-000000000001",
+    "event_type": "system.telemetry.sample",
+    "source": "collector.system",
+    "timestamp": 1731234567.89,
+    "severity": "INFO",
+    "payload": {
+      "cpu_percent": 12.4,
+      "ram_percent": 48.2,
+      "gpu_percent": 5.0,
+      "vram_used_mb": 412
+    },
+    "correlation_id": null,
+    "provenance": null,
+    "dedup_id": null
+  }
+}
+```
+
+### 6.2 REST Endpoints
+
+1. **`GET /api/awareness/telemetry`**
+   - Returns: `{ "vitals": HardwareVitals, "git": { "branch": str, "uncommitted": int }, "active_window": str }`
+2. **`GET /api/agents`**
+   - Returns: `{ "status": "ok", "agents": [ { "agent_id": str, "name": str, "responsibility": str, "supported_tasks": [...], "required_permissions": [...] } ] }`
+3. **`POST /api/agents/{id}/plan`**
+   - Payload: `{ "goal": str, "params": { ... } }`
+   - Returns: `{ "status": "ok", "agent_id": str, "plan": [ Task, ... ] }`
+4. **`POST /api/agents/{id}/execute`**
+   - Payload: `{ "task": Task, "context": { ... } }`
+   - Returns: `{ "status": "ok", "agent_id": str, "result": { ... }, "evidence": VerificationEvidence }`
+5. **`GET /api/tasks` & `POST /api/tasks`**
+   - Returns list of tasks in 11-state lifecycle or submits a new task to `TaskOrchestrator`.
+6. **`POST /api/tasks/{id}/cancel`**
+   - Transitions task immediately to `CANCELLED` and emits `task.cancelled` event.
+7. **`GET /api/tools`**
+   - Returns: `{ "status": "ok", "count": 49, "tools": [ { "name": str, "description": str, "is_side_effect": bool, "timeout_s": float, "schema": { ... } } ] }`
+

@@ -294,9 +294,32 @@ class VercelDeployer:
         from ghost.store import outbox as _outbox
         if _outbox.state_of(ob_key) in ("sent", "verified"):
             audit("deploy.duplicate_refused", subject=slug, outbox_key=ob_key)
+            existing_url = None
+            try:
+                from ghost.crm.db import CRMDatabase
+                crm = CRMDatabase.get_instance()
+                client = crm.get_client(slug)
+                if client and client.get("interactions"):
+                    for inter in client["interactions"]:
+                        if inter.get("channel") == "vercel" and "https://" in inter.get("content", ""):
+                            for word in inter["content"].split():
+                                if word.startswith("https://"):
+                                    existing_url = word.strip()
+                                    break
+                        if existing_url:
+                            break
+                if not existing_url:
+                    lead = crm.get_lead(slug)
+                    if lead and lead.get("demo_url"):
+                        existing_url = lead["demo_url"]
+            except Exception:
+                pass
+            if not existing_url:
+                p_name_hint = project_name or f"{slug}-concept"
+                existing_url = f"https://{p_name_hint}.vercel.app"
             return {"status": "already_deployed",
                     "message": f"Deploy for '{slug}' already recorded for this QA evidence.",
-                    "url": None}
+                    "url": existing_url}
         _outbox.record("deploy", ob_key, {"slug": slug, "qa_hash": qa_hash[:12]})
 
         token = cls.get_token()

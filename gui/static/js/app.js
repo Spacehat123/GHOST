@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   textInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
       sendTextMessage();

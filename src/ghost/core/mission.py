@@ -307,6 +307,48 @@ class MissionStore:
             ).fetchall()
             return [dict(r) for r in rows]
 
+    def attach_task_evidence(self, mission_id: str, task_id: str, item: Dict[str, Any]) -> bool:
+        """Attach a verified evidence item to a task, avoiding duplicates."""
+        if not isinstance(item, dict) or not item.get("type"):
+            return False
+
+        mission = self.get_mission(mission_id)
+        if not mission:
+            return False
+
+        target_task = next((t for t in mission.tasks if t.id == task_id), None)
+        if not target_task:
+            return False
+
+        ev_list = list(target_task.evidence or [])
+
+        def _key(x):
+            if not isinstance(x, dict):
+                return str(x)
+            return (
+                x.get("type"),
+                x.get("path") or x.get("command") or x.get("slug") or x.get("row_id") or x.get("url") or x.get("tool_call_id")
+            )
+
+        new_key = _key(item)
+        for existing in ev_list:
+            if isinstance(existing, dict) and _key(existing) == new_key:
+                return True  # already attached
+
+        ev_list.append(item)
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE tasks
+                SET evidence = ?
+                WHERE mission_id = ? AND id = ?;
+                """,
+                (json.dumps(ev_list), mission_id, task_id)
+            )
+        target_task.evidence = ev_list
+        logger.info(f"Attached {item.get('type')} evidence to Mission {mission_id} Task {task_id}")
+        return True
+
     def create_mission(
         self,
         goal: str,
@@ -530,7 +572,23 @@ class MissionStore:
             if "." in val:
                 val = val.split(".")[-1]
             target_status = TaskStatus(val.lower())
-        new_evidence = evidence if evidence is not None else target_task.evidence
+        existing_evidence = list(target_task.evidence or [])
+        passed_evidence = list(evidence) if evidence else []
+        combined_evidence = []
+        seen_keys = set()
+        for item in passed_evidence + existing_evidence:
+            if isinstance(item, dict):
+                k = (
+                    item.get("type"),
+                    item.get("path") or item.get("command") or item.get("slug") or item.get("row_id") or item.get("url") or item.get("tool_call_id") or item.get("reason")
+                )
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    combined_evidence.append(item)
+            elif item:
+                combined_evidence.append(item)
+
+        new_evidence = combined_evidence if combined_evidence else target_task.evidence
         summary = (result_summary or failure_reason or target_task.result_summary).strip()
 
         # Invariant 1: Single in_progress task & dependency check
@@ -607,6 +665,13 @@ class MissionStore:
         target_task.result_summary = summary
         target_task.evidence = new_evidence
         target_task.attempts = attempts
+
+        # If a blocked mission has its blocking task completed and no other tasks are blocked, restore in_progress
+        if mission.status == "blocked" and target_status == TaskStatus.done:
+            remaining_blocked = any(ot.status in (TaskStatus.blocked, TaskStatus.failed) for ot in other_tasks)
+            if not remaining_blocked:
+                mission.status = "in_progress"
+                self.update_mission(mission)
 
         logger.info(f"Updated Mission {mission_id} Task {task_id} -> {target_status.value}")
         return target_task

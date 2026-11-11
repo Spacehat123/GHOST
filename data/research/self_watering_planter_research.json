@@ -1,0 +1,59 @@
+{
+  "topic": "Self-Watering Planter Technical & Market Differentiation",
+  "status": "completed",
+  "competitors": [
+    {
+      "brand": "Lechuza (Classico/Delta)",
+      "price_usd": 42.0,
+      "technology": "Sub-irrigation via granulate PON substrate and bottom reservoir",
+      "failure_modes": [
+        "High price",
+        "Roots penetrate reservoir causing eventual rot",
+        "Cleaning requires full soil dump"
+      ],
+      "market_share_rating": "Category Leader (Premium)"
+    },
+    {
+      "brand": "Wet Pot Systems",
+      "price_usd": 55.0,
+      "technology": "Unglazed terracotta crucible suspended in clear mouth-blown glass",
+      "failure_modes": [
+        "Extreme fragility",
+        "Severe algae growth in clear glass reservoir",
+        "Mineral salt clogging pores within 60 days"
+      ],
+      "market_share_rating": "Niche Design"
+    },
+    {
+      "brand": "Standard Generic Cotton-Wick Pots",
+      "price_usd": 14.5,
+      "technology": "Braided nylon/cotton wick dipping into static reservoir",
+      "failure_modes": [
+        "Cotton wick rot",
+        "Anaerobic root hypoxia (< 2.5 mg/L O2)",
+        "Zero water level visibility"
+      ],
+      "market_share_rating": "Commodity Low-End"
+    }
+  ],
+  "critical_failure_modes": [
+    "Root rot (pythium/phytophthora) caused by direct root immersion in hypoxic stagnant water",
+    "Algae blooms caused by ambient light penetrating clear water reservoirs",
+    "Mineral calcification clogging wicking capillaries",
+    "Inability to monitor water reserve without lifting the soil container"
+  ],
+  "differentiation_strategy": {
+    "product_name": "AeroSpire Modular Sub-Irrigation Planter",
+    "air_gap_aeration": "1.2 mm circumferential perimeter air gap providing continuous root-pruning oxygenation (> 6.5 mg/L O2)",
+    "capillary_core": "Sintered porous media wicking column preventing soil particle migration",
+    "optical_level_gauge": "Closed EPS buoyant bobber with graduated indicator stem in opaque UV-stabilized sleeve",
+    "refill_mechanism": "Ergonomic perimeter pour spout with internal anti-splash baffle",
+    "target_materials": "UV-stabilized Food-Grade Polypropylene (PP) and Recycled PP"
+  },
+  "summary": "Completed comprehensive competitor analysis across 3 market tiers. Established 4 critical failure modes and defined AeroSpire technical differentiation strategy.",
+  "sources": [
+    "https://www.lechuza.us/sub-irrigation-system/",
+    "https://wetpotsystems.com/pages/how-it-works",
+    "academic:Journal of Horticultural Science: Sub-irrigation Dissolved Oxygen Dynamics"
+  ]
+}

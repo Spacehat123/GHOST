@@ -20,7 +20,14 @@ DEFAULT_TTL_S = 300.0
 
 
 def _key(secret: Optional[str] = None) -> Optional[str]:
-    return secret or os.environ.get("GHOST_GRANT_SECRET")
+    k = secret or os.environ.get("GHOST_GRANT_SECRET")
+    if not k:
+        try:
+            from ghost.core.secrets import get as get_secret
+            k = get_secret("GHOST_GRANT_SECRET")
+        except Exception:
+            pass
+    return k
 
 
 # ---- halt + epoch (pure file reads — identical behavior from any process) ----

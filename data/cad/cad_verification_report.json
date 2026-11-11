@@ -1,0 +1,173 @@
+{
+  "engine": "trimesh-independent-verifier",
+  "verified_components": [
+    {
+      "id": "reservoir_base",
+      "file": "aerospire_reservoir_base.stl",
+      "status": "PASS",
+      "verified": true,
+      "role": "Water reservoir shell and level indicator sleeve",
+      "material": "PP_polypropylene",
+      "is_watertight": true,
+      "volume_cm3": 215.11,
+      "calculated_mass_g": 194.68,
+      "surface_area_cm2": 1673.29,
+      "extents_mm": [
+        144.08,
+        140.0,
+        160.43
+      ],
+      "bounds_mm": [
+        [
+          -74.08,
+          -70.0,
+          0.0
+        ],
+        [
+          70.0,
+          70.0,
+          160.43
+        ]
+      ],
+      "facets_count": 1822,
+      "vertices_count": 911,
+      "euler_characteristic": 0
+    },
+    {
+      "id": "inner_basket",
+      "file": "aerospire_inner_basket.stl",
+      "status": "PASS",
+      "verified": true,
+      "role": "Soil chamber with aeration slots and capillary well",
+      "material": "PP_polypropylene",
+      "is_watertight": true,
+      "volume_cm3": 109.4,
+      "calculated_mass_g": 99.01,
+      "surface_area_cm2": 955.09,
+      "extents_mm": [
+        142.43,
+        144.0,
+        127.0
+      ],
+      "bounds_mm": [
+        [
+          -71.22,
+          -72.0,
+          0.0
+        ],
+        [
+          71.22,
+          72.0,
+          127.0
+        ]
+      ],
+      "facets_count": 1748,
+      "vertices_count": 844,
+      "euler_characteristic": -30
+    },
+    {
+      "id": "capillary_column",
+      "file": "aerospire_capillary_column.stl",
+      "status": "PASS",
+      "verified": true,
+      "role": "Perforated wicking core containing porous media",
+      "material": "PP_polypropylene",
+      "is_watertight": true,
+      "volume_cm3": 5.59,
+      "calculated_mass_g": 5.06,
+      "surface_area_cm2": 65.92,
+      "extents_mm": [
+        28.0,
+        28.0,
+        42.0
+      ],
+      "bounds_mm": [
+        [
+          -14.0,
+          -14.0,
+          0.0
+        ],
+        [
+          14.0,
+          14.0,
+          42.0
+        ]
+      ],
+      "facets_count": 3840,
+      "vertices_count": 1880,
+      "euler_characteristic": -40
+    },
+    {
+      "id": "water_level_gauge",
+      "file": "aerospire_water_level_gauge.stl",
+      "status": "PASS",
+      "verified": true,
+      "role": "Buoyant float bobber and graduated level stem",
+      "material": "PP_polypropylene",
+      "is_watertight": true,
+      "volume_cm3": 6.56,
+      "calculated_mass_g": 5.94,
+      "surface_area_cm2": 54.11,
+      "extents_mm": [
+        50.75,
+        19.0,
+        161.0
+      ],
+      "bounds_mm": [
+        [
+          -6.25,
+          -9.5,
+          0.0
+        ],
+        [
+          44.5,
+          9.5,
+          161.0
+        ]
+      ],
+      "facets_count": 2828,
+      "vertices_count": 1416,
+      "euler_characteristic": 2
+    },
+    {
+      "id": "full_assembly",
+      "file": "aerospire_planter_full_assembly.stl",
+      "status": "PASS",
+      "verified": true,
+      "role": "Integrated sub-irrigation planter assembly cutaway",
+      "material": "PP_polypropylene",
+      "is_watertight": true,
+      "volume_cm3": 242.85,
+      "calculated_mass_g": 219.78,
+      "surface_area_cm2": 1976.12,
+      "extents_mm": [
+        166.58,
+        144.0,
+        176.0
+      ],
+      "bounds_mm": [
+        [
+          -74.08,
+          -72.0,
+          0.0
+        ],
+        [
+          92.5,
+          72.0,
+          176.0
+        ]
+      ],
+      "facets_count": 4866,
+      "vertices_count": 2395,
+      "euler_characteristic": -38
+    }
+  ],
+  "all_watertight": true,
+  "all_within_tolerances": true,
+  "total_part_mass_g": 304.68,
+  "fit_analysis": {
+    "inner_basket_radial_clearance_mm": 0.83,
+    "fit_type": "SLIP_FIT_CIRCULATION_AIR_GAP",
+    "tolerance_verified": true
+  }
+}

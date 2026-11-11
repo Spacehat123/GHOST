@@ -155,7 +155,7 @@ The conversational turn loop is governed by [`GhostAgent`](file:///home/pranc/pr
 ---
 
 ### 2.9 Background Autonomous Runtime
-The [`AutonomyRuntime`](file:///home/pranc/projects/ghost/src/ghost/autonomy/runtime.py) maintains 7 independent background tasks:
+The [`AutonomyRuntime`](file:///home/pranc/projects/ghost/src/ghost/autonomy/runtime.py) maintains 9 independent background tasks:
 1. `heartbeat`: Beats every 15s to `data/heartbeat.json`.
 2. `staleness`: Asserts heartbeat freshness (< 60s); trips kill-switch if heartbeat hangs.
 3. `scheduler`: Evaluates the schedule rhythm (`data/rhythm/`) for recurring jobs.
@@ -163,6 +163,8 @@ The [`AutonomyRuntime`](file:///home/pranc/projects/ghost/src/ghost/autonomy/run
 5. `ladder-evidence`: Evaluates promotion streaks every 60s to advance capabilities (L0–L4).
 6. `microjobs`: Sweeps saved freelance searches when pipeline is idle for > 1 hour.
 7. `queue-worker`: Atomically claims and runs background tasks from `JobQueue` (WAL SQLite).
+8. `system-collector`: Samples host CPU, RAM, GPU, VRAM, and disk metrics every 15s into `EventBus` and `SystemStateManager`.
+9. `git-collector`: Inspects Git repository branch and uncommitted changes every 30s into `EventBus`.
 
 ---
 
@@ -171,3 +173,109 @@ The [`AutonomyRuntime`](file:///home/pranc/projects/ghost/src/ghost/autonomy/run
 - **Capability Revocation:** When `halt` is tripped or suspicious activity occurs, `data/REVOCATION_EPOCH` is incremented. All previously minted single-use grants immediately fail validation.
 - **Job Recovery:** Unhandled exceptions in background workers trigger exponential backoff (2^attempts seconds) up to 300s. Jobs exceeding max attempts (4) transition into `dead` state without crashing the worker process.
 - **QA Gate Fail-Closed:** `VercelDeployer._qa_gate` strictly verifies that real screenshots exist on disk and `qa.json` reports `passed=True`. Builds lacking evidence refuse deployment.
+
+---
+
+### 2.11 Core Foundation & Complete 7-Domain Specialized Intelligence
+Implemented and integrated through Phase 8:
+1. **Universal EventBus (`src/ghost/core/events.py`):**
+   - High-throughput asynchronous event bus backing structured UUIDv7 events with SQLite WAL persistence in `ghost.db` (`events_v2`).
+   - Supports hierarchical topic subscriptions (`system.*`, `dev.*`, `policy.*`), subscriber isolation (exceptions in consumers do not crash publisher), and real-time WebSocket fan-out to the frontend UI.
+2. **SystemStateManager (`src/ghost/core/system_state.py`):**
+   - Thread-safe operational state coordinator capturing active hardware vitals, running agents, active tasks, sustained alerts, operating modes, and focused desktop windows.
+3. **Unified Tool Registry (`src/ghost/core/tool_registry.py`):**
+   - Dynamic declarative registry managing all system tools (now 54 tools including Home Assistant, MQTT, OpenSCAD, and Briefing tools) with JSON schema enforcement, execution timeouts, side-effect annotations, and fail-closed halt enforcement.
+4. **Task Orchestrator (`src/ghost/core/task_orchestrator.py`):**
+   - State machine governing an 11-state task lifecycle (`CREATED`, `PLANNED`, `QUEUED`, `RUNNING`, `VERIFYING`, `COMPLETED`, `FAILED`, `BLOCKED`, `CANCELLED`, `RETRYING`, `WAITING_FOR_APPROVAL`) with lease heartbeat tracking and stale lease reclamation.
+5. **Full 7-Domain Specialized Intelligence Agents (`src/ghost/agents/`):**
+   - Built on `AgentContract` with mandatory `VerificationEvidence` receipts.
+   - `SystemIntelligenceAgent`: Analyzes hardware telemetry, detects anomalous process behavior, and stages recovery plans.
+   - `DevelopmentIntelligenceAgent`: Analyzes test failures, inspects git diffs, isolates regressions, and stages fixes.
+   - `ResearchIntelligenceAgent`: Queries web sources, performs target reconnaissance, and synthesizes structured intelligence dossiers.
+   - `BusinessIntelligenceAgent`: Coordinates prospective client evaluation, verified demo builds, and CRM synchronization.
+   - `PersonalIntelligenceAgent`: Produces daily executive briefings and schedule/priority alignment.
+   - `PhysicalIntelligenceAgent`: Manages smart home devices via Home Assistant and MQTT with physical readback verification.
+   - `CreativeIntelligenceAgent`: Coordinates parametric 3D CAD modeling via OpenSCAD and Blender with geometry verification.
+
+---
+
+### 2.12 Awareness Deepening, Proactive Engine & Autonomous Execution
+1. **Hyprland Compositor IPC (`src/ghost/collectors/hyprland_collector.py`):**
+   - Streams active window changes and workspace focus from Hyprland's UNIX domain socket (`socket2.sock`).
+2. **Rolling Window Anomaly Detection (`src/ghost/collectors/system_collector.py`):**
+   - Evaluates sustained hardware resource thresholds vs transient spikes for CPU, RAM, GPU utilization, VRAM, and Disk free space.
+3. **Proactive Intelligence & Priority Engine (`src/ghost/intelligence/`):**
+   - Deterministic rule matrix evaluating importance, urgency, and objective relevance.
+   - 3 Operating Modes: `AMBIENT` (observe and record), `OBJECTIVE` (work toward goals), and `REACTIVE` (respond to anomalies).
+   - Long-term persistent objectives table in SQLite (`ObjectiveManager`).
+4. **Autonomous Execution Engine (`src/ghost/autonomy/task_worker.py`):**
+   - Background worker with concurrency limits, lease renewal, timeout cancellation, and verification receipt enforcement.
+5. **Cross-Domain Coordinator (`src/ghost/intelligence/coordinator.py`):**
+   - Inter-agent delegation and event cascades connecting development regressions, system pressure, research findings, and physical environment adjustments.
+
+---
+
+### 2.13 Desktop Presentation & Agency Command Deck
+1. **Top Ambient HUD:**
+   - Real-time hardware vitals chip (`#vitals-stats-text`) displaying CPU, RAM, and GPU utilization.
+   - Global Operating Mode Selector (`AMBIENT` / `OBJECTIVE` / `REACTIVE`).
+   - Emergency kill-switch trigger (`#btn-quick-halt`) for immediate operational suspension.
+   - Navigation pills for instant panel toggling.
+2. **Agency Command Deck (10 Operational Domain Panels):**
+   - **Awareness:** Real-time gauges for CPU, RAM, GPU, VRAM, Disk, active desktop window, and Git branch status.
+   - **Intelligence Feed:** Chronological live activity stream categorized by Observe, Analyze, Decide, Execute, and Verify.
+   - **Agents:** Interactive specialized agent cards for all 7 domains with capability badges and Plan/Dispatch controls.
+   - **Objectives & Autonomy:** Live objectives manager with progress bars and 1-click execution triggers.
+   - **Projects & Tasks:** Git commit state, active missions, and an interactive 11-state task lifecycle table with cancellation controls.
+   - **Physical Smart Home:** Entities list, switch toggles, and state readback verification displays.
+   - **Creative 3D CAD:** OpenSCAD parametric code editor, render controls, and STL status.
+   - **Memory:** Searchable knowledge facts and active directive management.
+   - **Control Plane:** Emergency kill-switch status, Approvals Queue for gated tasks, and Operator Integrations Settings panel (Home Assistant, MQTT, OpenSCAD, Blender).
+   - **Pipeline & Demos:** Sales pipeline, CRM client cards, campaigns, and pre-validated demo kits.
+
+---
+
+### 2.14 Deterministic Agent Routing, Capability Registry & Context Isolation
+1. **Agent Capability Registry (`src/ghost/core/agent_registry.py`):**
+   - Central programmatic index of all 7 specialist agents.
+   - Derives permitted tool IDs strictly from `ToolRegistry` with zero hallucinated tool IDs.
+   - Exposes compact markdown capability summary (< 400 tokens) to Central GHOST prompt without tool schema bloat.
+   - Generates scoped JSON tool schemas filtered strictly per agent domain.
+2. **Typed Delegation Contracts (`src/ghost/core/delegation_contract.py`):**
+   - `DelegationTaskContract`: Explicit domain contracts specifying inputs, permission requirements, tool scopes, budget ceilings, and verification criteria.
+   - `DelegationResult`: Structured result encapsulation holding summary, findings, evidence artifacts, and formatted summary string for Central GHOST.
+3. **Deterministic TaskRouter (`src/ghost/core/task_router.py`):**
+   - Deterministic classification for single-domain directives across all 7 agents and multi-agent composite workflows:
+     - `business_reconnaissance` (Research Agent -> Business Agent CRM -> Business Agent Obsidian)
+     - `dev_incident_investigation` (Dev Agent -> System Agent)
+     - `focus_session_activation` (Personal Agent -> Physical Agent)
+     - `creative_asset_pipeline` (Creative Agent -> Research Agent)
+   - Sandboxed execution dispatcher (`dispatch_workflow`) ensuring tasks progress through `TaskOrchestrator` (`QUEUED` -> `RUNNING` -> `COMPLETED`/`FAILED`).
+   - Cross-agent permission boundary enforcement (`validate_delegation_permissions`).
+4. **Context Isolation & UI Visibility:**
+   - Central GHOST intercepts incoming workflows, streaming stage progress and storing only high-level summaries into conversation history.
+   - REST API endpoints:
+     - `GET /api/router/agents`: Catalog of agent descriptors, health status, and scoped tool IDs.
+     - `POST /api/router/classify`: Deterministic intent classification.
+     - `POST /api/router/dispatch`: Sandboxed workflow execution.
+     - `GET /api/router/chains`: Real-time parent-child task hierarchy trees.
+   - Agency Command Deck: Agents panel renders scoped tool pills and health status; Projects panel renders visual Parent-Child Delegation Execution Chains.
+
+---
+
+### 2.15 Input Integrity, Intent Categorization & Anti-Contamination Verification
+1. **Input Integrity Engine (`src/ghost/core/input_integrity.py`):**
+   - Authoritative original request preservation via `InputPayload` dataclass (`raw_text`, `length_chars`, `estimated_tokens`, `sha256`, `is_truncated`, `truncation_reason`, `is_incomplete`, `incomplete_reason`, `cleaned_text`).
+   - Server-side and client-side zero-truncation guarantee (auto-expanding `<textarea>` in HUD and removal of all string slicing in core execution loops).
+   - Incomplete payload / severed token detector (e.g. trailing `ta’...`, unclosed quotes/code fences, hanging conjunctions).
+   - Paragraph-level token budgeting (`budget_prompt_tokens`) with structured truncation/budget notices.
+2. **Strict Intent Categorization (`src/ghost/core/task_router.py`):**
+   - Explicit intent categories (`CAPABILITY_QUERY`, `TASK_PLANNING`, `TASK_EXECUTION`, `TASK_CLARIFICATION`, `GENERAL_CONVERSATION`).
+   - `CAPABILITY_QUERY`: Consults `AgentCapabilityRegistry` and `ToolRegistry` to evaluate tool readiness without dispatching any tasks.
+   - `TASK_PLANNING`: Builds structured multi-stage execution plan and tool scopes in dry-run mode without dispatching live tasks.
+   - `TASK_CLARIFICATION`: Halts execution and prompts user for missing or complete instructions when payload is severed.
+   - Isolation of quoted text, examples, and code blocks before keyword matching (`strip_quotes_and_code`).
+3. **Anti-Contamination & Stage Output Verification (`src/ghost/core/task_router.py`):**
+   - Independent stage output verification (`_validate_stage_receipt`): Rejects mismatched outputs (`INVALID_DISPATCH`) if domain data does not correspond to contract objective (e.g., returning Grasshopper fine-dining venues when task is general topic research).
+   - Stale cache detection: Enforces that artifacts and output records must be created/modified within the execution window, rejecting stale disk scavenging.
+   - Decontamination of specialized agents: `ResearchIntelligenceAgent` isolates venue reconnaissance from general topic research; `BusinessIntelligenceAgent` halts when leads are missing instead of scavenging old dossiers.

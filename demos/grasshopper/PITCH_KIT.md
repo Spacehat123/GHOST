@@ -1,28 +1,56 @@
-# Prospect Pitch Kit — Grasshopper (Bengaluru)
+# PITCH KIT: Grasshopper
 
-### 1. Hosted Live Concept URL
-**URL:** https://grasshopper-concept.vercel.app
+## 1. Concrete Gap Identified
+- **Target:** Grasshopper (45 Kalena Agrahara, Bannerghatta Road, Bengaluru)
+- **Primary Operational Gap:** Your mobile visitors don't have an instant 1-tap booking flow connected directly to your team.
+- **Hosted Concept URL:** https://grasshopper-concept-9uvrlonkc-pranav31207-3309s-projects.vercel.app
 
-### 2. Verified Visual Deliverables
-- Mobile Responsive Viewport (390x844): `demos/grasshopper/screenshots/mobile_390x844.png`
-- Desktop Viewport (1440x900): `demos/grasshopper/screenshots/desktop_1440x900.png`
+## 2. Preview Assets
+- **Live Preview URL:** https://grasshopper-concept-9uvrlonkc-pranav31207-3309s-projects.vercel.app
+- **Mobile Screenshot:** mobile_390x844.jpg
+- **Desktop Screenshot:** desktop_1440x900.jpg
 
----
+## 3. Direct Outreach Scripts
+### WhatsApp:
+```text
+Hi Grasshopper team, noticed your mobile visitors don't have an instant 1-tap booking flow connected directly to your team.
 
-### 3. Direct Outreach Copy (WhatsApp / Instagram DM)
-*Note: Authored strictly under Commander Pranav's persona with zero internal jargon.*
+Put together an interactive mobile concept tailored for your services: https://grasshopper-concept-9uvrlonkc-pranav31207-3309s-projects.vercel.app
 
-**Part 1 — The Friction:**
-Hi Sonali, Pranav here. We noticed guests arriving via your Instagram (@grasshopper_restaurant) currently have to manually dial landlines or dig through third-party food aggregators to book degustation tables. For a farm-to-table sanctuary operating strictly on prior reservations, that creates booking drop-offs.
+(Note: This is an independent concept created for you, not affiliated with Grasshopper.)
 
-**Part 2 — The Solution:**
-I put together a fast, bespoke single-page web concept for Grasshopper that reflects the craft of your Kalena Agrahara bamboo grove:
-https://grasshopper-concept.vercel.app
+Open to taking a look or having this handed over?
+— Pranav
+```
 
-It features your five and seven-course degustation offerings, an unhurried editorial serif layout, and a direct 1-tap WhatsApp reservation concierge that pre-fills party size, date, and dietary notes directly to +91 80501 65130.
+### Instagram DM:
+```text
+Hi Grasshopper! Quick observation: your mobile visitors don't have an instant 1-tap booking flow connected directly to your team.
 
-**Part 3 — The Next Step:**
-Would you like me to hand over the keys and domain routing for this, or set it live for the team? Let me know either way!
+Crafted a bespoke mobile concept for your brand: https://grasshopper-concept-9uvrlonkc-pranav31207-3309s-projects.vercel.app
 
-Best,  
+Open to having this set up for you?
+— Pranav
+```
+
+## 4. Formal Email Pitch Draft
+**Subject:** Digital Concept Preview for Grasshopper
+
+```text
+Hi Grasshopper Team,
+
+I recently spent time reviewing your digital presence in 45 Kalena Agrahara and noticed your mobile visitors don't have an instant 1-tap booking flow connected directly to your team.
+
+I put together a private, interactive web concept tailored specifically for your brand:
+https://grasshopper-concept-9uvrlonkc-pranav31207-3309s-projects.vercel.app
+
+What this concept includes:
+- Dedicated mobile-first service booking flow connected directly to your team
+- High-performance responsive design across all devices
+- Editorial aesthetic tailored to your brand standards
+
+Please note this is an independent concept created to show what is possible. If this aligns with your standards, I would be glad to hand over the files or discuss setting it live on your custom domain.
+
+Best regards,
 Pranav
+```

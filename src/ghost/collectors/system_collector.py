@@ -15,7 +15,8 @@ import os
 import shutil
 import subprocess
 import time
-from typing import Dict, Optional, Tuple
+from collections import deque
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ghost.core.events import Event, EventBus, EventSeverity, get_event_bus
 from ghost.core.system_state import HardwareVitals
@@ -29,14 +30,32 @@ class SystemCollector:
     def __init__(
         self,
         event_bus: Optional[EventBus] = None,
-        alert_cpu_threshold: float = 90.0,
-        alert_ram_threshold: float = 92.0,
-        alert_vram_threshold: float = 95.0,
+        alert_cpu_threshold: float = 85.0,
+        alert_ram_threshold: float = 90.0,
+        alert_gpu_threshold: float = 90.0,
+        alert_vram_threshold: float = 90.0,
+        alert_disk_min_free_gb: float = 5.0,
+        rolling_window_samples: int = 4,
+        sustained_ratio: float = 0.75,
     ):
         self.event_bus = event_bus or get_event_bus()
         self.alert_cpu_threshold = alert_cpu_threshold
         self.alert_ram_threshold = alert_ram_threshold
+        self.alert_gpu_threshold = alert_gpu_threshold
         self.alert_vram_threshold = alert_vram_threshold
+        self.alert_disk_min_free_gb = alert_disk_min_free_gb
+        self.rolling_window_samples = max(2, rolling_window_samples)
+        self.sustained_ratio = sustained_ratio
+
+        # Rolling history buffers
+        self._cpu_history: deque[float] = deque(maxlen=self.rolling_window_samples)
+        self._ram_history: deque[float] = deque(maxlen=self.rolling_window_samples)
+        self._gpu_history: deque[float] = deque(maxlen=self.rolling_window_samples)
+        self._vram_history: deque[float] = deque(maxlen=self.rolling_window_samples)
+        self._disk_history: deque[float] = deque(maxlen=self.rolling_window_samples)
+
+        # Active sustained anomaly tracking
+        self._active_sustained_metrics: Set[str] = set()
 
         self._prev_cpu_times: Optional[Tuple[float, float]] = None  # (total, idle)
         self._running = False
@@ -171,48 +190,158 @@ class SystemCollector:
             gpu_vram_total_mb=vram_total,
         )
 
+    def _evaluate_metric(
+        self,
+        metric_name: str,
+        current_val: float,
+        threshold: float,
+        history: deque[float],
+        is_less_than: bool = False,
+    ) -> Optional[Dict[str, Any]]:
+        """Evaluates whether a metric constitutes a transient spike or sustained anomaly."""
+        history.append(current_val)
+        exceeded = (current_val <= threshold) if is_less_than else (current_val >= threshold)
+
+        exceeded_count = sum(1 for v in history if ((v <= threshold) if is_less_than else (v >= threshold)))
+        ratio = exceeded_count / len(history)
+        is_sustained = (len(history) >= 2 and ratio >= self.sustained_ratio)
+
+        if exceeded:
+            avg_val = sum(history) / len(history)
+            return {
+                "metric": metric_name,
+                "current": current_val,
+                "threshold": threshold,
+                "average": round(avg_val, 1),
+                "is_sustained": is_sustained,
+                "samples_count": len(history),
+                "sustained_ratio": round(ratio, 2),
+            }
+        return None
+
     async def sample_and_publish(self) -> Event:
-        """Samples hardware metrics and publishes events to EventBus."""
+        """Samples hardware metrics, performs rolling window anomaly detection, and publishes events."""
         loop = asyncio.get_running_loop()
         vitals = await loop.run_in_executor(None, self.sample)
 
-        # Check for safety thresholds and publish alert if exceeded
-        alerts: Dict[str, Any] = {}
-        if vitals.cpu_percent >= self.alert_cpu_threshold:
-            alerts["cpu_exceeded"] = {
-                "current": vitals.cpu_percent,
-                "threshold": self.alert_cpu_threshold,
-            }
-        if vitals.ram_percent >= self.alert_ram_threshold:
-            alerts["ram_exceeded"] = {
-                "current": vitals.ram_percent,
-                "threshold": self.alert_ram_threshold,
-            }
+        # 1. Evaluate rolling thresholds
+        sustained_alerts: Dict[str, Any] = {}
+        transient_spikes: Dict[str, Any] = {}
+        current_alert_metrics: Set[str] = set()
+
+        # CPU
+        cpu_res = self._evaluate_metric("cpu", vitals.cpu_percent, self.alert_cpu_threshold, self._cpu_history)
+        if cpu_res:
+            current_alert_metrics.add("cpu")
+            if cpu_res["is_sustained"]:
+                sustained_alerts["cpu"] = cpu_res
+            else:
+                transient_spikes["cpu"] = cpu_res
+
+        # RAM
+        ram_res = self._evaluate_metric("ram", vitals.ram_percent, self.alert_ram_threshold, self._ram_history)
+        if ram_res:
+            current_alert_metrics.add("ram")
+            if ram_res["is_sustained"]:
+                sustained_alerts["ram"] = ram_res
+            else:
+                transient_spikes["ram"] = ram_res
+
+        # Disk
+        disk_res = self._evaluate_metric("disk", vitals.disk_free_gb, self.alert_disk_min_free_gb, self._disk_history, is_less_than=True)
+        if disk_res:
+            current_alert_metrics.add("disk")
+            if disk_res["is_sustained"]:
+                sustained_alerts["disk"] = disk_res
+            else:
+                transient_spikes["disk"] = disk_res
+
+        # GPU utilization & VRAM
+        if vitals.gpu_utilization_percent is not None:
+            gpu_res = self._evaluate_metric("gpu", vitals.gpu_utilization_percent, self.alert_gpu_threshold, self._gpu_history)
+            if gpu_res:
+                current_alert_metrics.add("gpu")
+                if gpu_res["is_sustained"]:
+                    sustained_alerts["gpu"] = gpu_res
+                else:
+                    transient_spikes["gpu"] = gpu_res
+
         if (
             vitals.gpu_vram_used_mb is not None
             and vitals.gpu_vram_total_mb is not None
             and vitals.gpu_vram_total_mb > 0
         ):
-            vram_pct = (vitals.gpu_vram_used_mb / vitals.gpu_vram_total_mb) * 100.0
-            if vram_pct >= self.alert_vram_threshold:
-                alerts["vram_exceeded"] = {
-                    "current": round(vram_pct, 1),
-                    "threshold": self.alert_vram_threshold,
-                }
+            vram_pct = round((vitals.gpu_vram_used_mb / vitals.gpu_vram_total_mb) * 100.0, 1)
+            vram_res = self._evaluate_metric("vram", vram_pct, self.alert_vram_threshold, self._vram_history)
+            if vram_res:
+                current_alert_metrics.add("vram")
+                if vram_res["is_sustained"]:
+                    sustained_alerts["vram"] = vram_res
+                else:
+                    transient_spikes["vram"] = vram_res
 
-        if alerts:
+        # 2. Publish Recoveries for previously sustained metrics that normalized
+        recovered = self._active_sustained_metrics - current_alert_metrics
+        for rec_metric in recovered:
+            self._active_sustained_metrics.discard(rec_metric)
+            rec_event = Event(
+                event_type="system.resource.recovered",
+                source="collector.system",
+                severity=EventSeverity.INFO,
+                payload={"metric": rec_metric, "vitals": vitals.to_dict()},
+            )
+            await self.event_bus.publish(rec_event)
+
+        # 3. Publish Sustained Anomalies
+        if sustained_alerts:
+            self._active_sustained_metrics.update(sustained_alerts.keys())
+            is_critical = (
+                vitals.ram_percent >= 95.0
+                or vitals.cpu_percent >= 96.0
+                or vitals.disk_free_gb <= 2.0
+            )
+            sustained_event = Event(
+                event_type="system.resource.sustained_anomaly",
+                source="collector.system",
+                severity=EventSeverity.CRITICAL if is_critical else EventSeverity.WARNING,
+                payload={
+                    "alerts": sustained_alerts,
+                    "vitals": vitals.to_dict(),
+                    "is_sustained": True,
+                },
+            )
+            await self.event_bus.publish(sustained_event)
+
+        # 4. Publish Transient Spikes (low severity notification)
+        if transient_spikes:
+            spike_event = Event(
+                event_type="system.resource.spike",
+                source="collector.system",
+                severity=EventSeverity.INFO,
+                payload={
+                    "spikes": transient_spikes,
+                    "vitals": vitals.to_dict(),
+                    "is_transient": True,
+                },
+            )
+            await self.event_bus.publish(spike_event)
+
+        # 4b. Publish General system.resource.alert for any threshold breach
+        combined_alerts = {**sustained_alerts, **transient_spikes}
+        if combined_alerts:
             alert_event = Event(
                 event_type="system.resource.alert",
                 source="collector.system",
                 severity=EventSeverity.WARNING if vitals.ram_percent < 96.0 else EventSeverity.CRITICAL,
                 payload={
-                    "alerts": alerts,
+                    "alerts": combined_alerts,
                     "vitals": vitals.to_dict(),
+                    "is_sustained": bool(sustained_alerts),
                 },
             )
             await self.event_bus.publish(alert_event)
 
-        # Publish standard periodic telemetry sample
+        # 5. Standard Periodic Telemetry Sample
         telemetry_event = Event(
             event_type="system.telemetry.sample",
             source="collector.system",

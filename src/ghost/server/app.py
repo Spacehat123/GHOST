@@ -4,6 +4,7 @@ import json
 import os
 import re
 import logging
+import time
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
@@ -637,6 +638,26 @@ async def ws_agency_events(websocket: WebSocket):
             pass
 
     _event_subscribers.append(_on_event)
+
+    from ghost.core.events import get_event_bus
+    bus = get_event_bus()
+
+    def _on_bus_event(evt):
+        try:
+            queue.put_nowait({
+                "type": "universal_event",
+                "event_type": evt.event_type,
+                "source": evt.source,
+                "severity": evt.severity.value,
+                "payload": evt.payload,
+                "timestamp": evt.timestamp,
+                "event_id": evt.event_id,
+            })
+        except Exception:
+            pass
+
+    bus_sub_id = bus.subscribe("*", _on_bus_event)
+
     try:
         while True:
             evt = await queue.get()
@@ -644,8 +665,537 @@ async def ws_agency_events(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("Command Deck disconnected from /ws/events.")
     finally:
+        bus.unsubscribe(bus_sub_id)
         if _on_event in _event_subscribers:
             _event_subscribers.remove(_on_event)
+
+
+# ============================================================ Core Foundation APIs
+# Universal Intelligence APIs for Awareness, Agents, Projects, Memory, Control, and Events
+
+@app.get("/api/system/state")
+async def get_system_state():
+    """Returns real-time snapshot of system vitals, desktop context, and active agents."""
+    from ghost.core.system_state import get_system_state_manager
+    mgr = get_system_state_manager()
+    return mgr.get_snapshot().to_dict()
+
+
+@app.get("/api/awareness/telemetry")
+async def get_awareness_telemetry():
+    """Returns detailed telemetry including hardware vitals, git state, and recent anomalies."""
+    from ghost.core.system_state import get_system_state_manager
+    from ghost.collectors.git_collector import GitCollector
+    from ghost.core.events import get_event_bus, EventSeverity
+    from ghost.paths import repo_root
+
+    mgr = get_system_state_manager()
+    vitals = mgr.get_snapshot().vitals.to_dict()
+
+    git_coll = GitCollector(repo_paths=[repo_root()])
+    repo_state = git_coll.sample_repo(repo_root())
+
+    bus = get_event_bus()
+    alerts = bus.query(limit=10, min_severity=EventSeverity.WARNING)
+
+    return {
+        "vitals": vitals,
+        "desktop": {
+            "focused_window": mgr.get_snapshot().focused_window,
+            "active_workspace": mgr.get_snapshot().active_workspace,
+        },
+        "git": repo_state.to_dict() if repo_state else None,
+        "recent_alerts": [a.to_dict() for a in alerts],
+    }
+
+
+@app.get("/api/agents")
+async def list_agents():
+    """Returns all specialized domain agents with their status and capabilities."""
+    from ghost.agents import get_available_agents
+    from ghost.core.system_state import get_system_state_manager
+    mgr = get_system_state_manager()
+    active = set(mgr.get_snapshot().active_agents)
+    agents = []
+    for a in get_available_agents():
+        agents.append({
+            "agent_id": a.agent_id,
+            "name": a.name,
+            "responsibility": a.responsibility,
+            "supported_tasks": a.supported_tasks,
+            "required_permissions": a.required_permissions,
+            "status": "ACTIVE" if a.name in active else "STANDBY",
+        })
+    return {"agents": agents, "count": len(agents)}
+
+
+@app.post("/api/agents/{agent_id}/plan")
+async def plan_agent_task(agent_id: str, request: Request):
+    """Decomposes an objective into atomic tasks using a specialized agent."""
+    from ghost.agents import get_available_agents
+    body = await request.json()
+    matched = next((a for a in get_available_agents() if a.agent_id == agent_id), None)
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
+    tasks = await matched.plan_task(body)
+    return {"agent_id": agent_id, "tasks": [t.to_dict() for t in tasks]}
+
+
+@app.post("/api/agents/{agent_id}/execute")
+async def execute_agent_task(agent_id: str, request: Request):
+    """Executes a task with a specialized agent and produces verification evidence."""
+    from ghost.agents import get_available_agents
+    from ghost.core.task_orchestrator import Task
+    body = await request.json()
+    matched = next((a for a in get_available_agents() if a.agent_id == agent_id), None)
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
+    task = Task.from_dict(body.get("task", body))
+    context = body.get("context", {})
+    output = await matched.execute_task(task, context)
+    evidence = await matched.verify_outcome(task, output)
+    return {
+        "agent_id": agent_id,
+        "task_id": task.task_id,
+        "output": output,
+        "evidence": evidence.to_dict(),
+    }
+
+
+@app.get("/api/tasks")
+async def list_tasks(status: Optional[str] = None, limit: int = 100):
+    """Returns tasks managed by TaskOrchestrator."""
+    from ghost.core.task_orchestrator import TaskOrchestrator, TaskStatus
+    orch = TaskOrchestrator()
+    st = TaskStatus(status) if status else None
+    tasks = orch.list_tasks(status=st, limit=limit)
+    return {"tasks": [t.to_dict() for t in tasks], "count": len(tasks)}
+
+
+@app.post("/api/tasks")
+async def create_task(request: Request):
+    """Creates a new task in TaskOrchestrator."""
+    from ghost.core.task_orchestrator import TaskOrchestrator, TaskStatus
+    body = await request.json()
+    orch = TaskOrchestrator()
+    task = orch.submit_task(
+        objective_id=body.get("objective_id", "manual"),
+        assigned_agent=body.get("assigned_agent", "general"),
+        title=body.get("title", "Operator Task"),
+        description=body.get("description", ""),
+        input_payload=body.get("input_payload", {}),
+        required_permissions=body.get("required_permissions", []),
+        timeout_s=float(body.get("timeout_s", 300.0)),
+        initial_status=TaskStatus(body.get("status", TaskStatus.QUEUED.value)),
+    )
+    return {"task": task.to_dict()}
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+async def cancel_task(task_id: str):
+    """Cancels an in-progress or queued task."""
+    from ghost.core.task_orchestrator import TaskOrchestrator, TaskStatus
+    orch = TaskOrchestrator()
+    task = orch.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found")
+    try:
+        updated = orch.transition(task_id, TaskStatus.CANCELLED, error_reason="Operator cancelled")
+        return {"task_id": task_id, "cancelled": True, "status": updated.status.value}
+    except Exception as e:
+        return {"task_id": task_id, "cancelled": False, "error": str(e)}
+
+
+@app.get("/api/projects")
+async def list_projects():
+    """Returns workspace git status, active missions, and queue jobs."""
+    from ghost.collectors.git_collector import GitCollector
+    from ghost.core.mission import MissionStore
+    from ghost.core.jobqueue import JobQueue
+    from ghost.paths import repo_root
+
+    git_coll = GitCollector(repo_paths=[repo_root()])
+    git_state = git_coll.sample_repo(repo_root())
+
+    missions = []
+    try:
+        mstore = MissionStore.get_instance()
+        active = mstore.active_mission()
+        if active:
+            missions.append({
+                "id": active.id,
+                "goal": active.goal,
+                "status": active.status,
+                "tasks_count": len(active.tasks),
+            })
+    except Exception:
+        pass
+
+    q_stats = {}
+    try:
+        q_stats = JobQueue().stats()
+    except Exception:
+        pass
+
+    return {
+        "repository": {
+            "path": repo_root(),
+            "branch": git_state.branch if git_state else "unknown",
+            "commit": git_state.head_commit if git_state else "unknown",
+            "is_dirty": git_state.is_dirty if git_state else False,
+            "modified_files": git_state.modified_files if git_state else [],
+            "untracked_files": git_state.untracked_files if git_state else [],
+        },
+        "active_missions": missions,
+        "queue_stats": q_stats,
+    }
+
+
+@app.get("/api/memory/search")
+async def search_memory(q: str = Query("")):
+    """Searches memory directives and facts."""
+    from ghost.core.memory import CoreMemoryStore
+    from ghost.core.follow import DirectiveManager
+
+    results = {
+        "query": q,
+        "directives": [],
+        "facts": [],
+    }
+    try:
+        dirs = DirectiveManager.list_all()
+        if q:
+            results["directives"] = [d for d in dirs if q.lower() in d.get("text", "").lower()]
+        else:
+            results["directives"] = dirs
+    except Exception:
+        pass
+
+    try:
+        mem = CoreMemoryStore()
+        data = mem.load()
+        facts = data.get("facts", [])
+        if q:
+            results["facts"] = [f for f in facts if q.lower() in str(f).lower()]
+        else:
+            results["facts"] = facts
+    except Exception:
+        pass
+
+    return results
+
+
+@app.get("/api/memory/directives")
+async def list_directives():
+    from ghost.core.follow import DirectiveManager
+    return {"directives": DirectiveManager.list_all()}
+
+
+@app.post("/api/memory/directives")
+async def add_directive(request: Request):
+    from ghost.core.follow import DirectiveManager
+    body = await request.json()
+    text = body.get("text", "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Directive text required")
+    res = DirectiveManager.add_directive(text)
+    return {"status": "added", "directive": res}
+
+
+@app.get("/api/tools")
+async def list_tools():
+    """Returns registered tools and parameter schemas."""
+    from ghost.core.tool_registry import get_tool_registry
+    reg = get_tool_registry()
+    tools = []
+    for t in reg.list_tools():
+        tools.append({
+            "name": t.name,
+            "description": t.description,
+            "is_side_effect": t.is_side_effect,
+            "timeout_s": t.timeout_s,
+            "parameters": t.parameters_schema,
+        })
+    return {"tools": tools, "count": len(tools)}
+
+
+@app.get("/api/universal/events")
+async def query_universal_events(
+    prefix: Optional[str] = Query(None),
+    min_severity: Optional[str] = Query(None),
+    limit: int = Query(50),
+):
+    """Queries chronological events from Universal EventBus."""
+    from ghost.core.events import get_event_bus, EventSeverity
+    bus = get_event_bus()
+    sev = EventSeverity.from_str(min_severity) if min_severity else None
+    events = bus.query(limit=limit, event_type_prefix=prefix, min_severity=sev)
+    return {"events": [e.to_dict() for e in events], "count": len(events)}
+
+
+# ============================================================
+# Phase 5-8: Proactive Intelligence, Objectives & Cross-Domain API
+# ============================================================
+
+@app.get("/api/objectives")
+async def list_objectives(status: Optional[str] = None, domain: Optional[str] = None):
+    """Lists high-level operator objectives across all 7 intelligence domains."""
+    from ghost.intelligence.objective_manager import get_objective_manager
+    mgr = get_objective_manager()
+    objs = mgr.list_objectives(status=status, domain=domain)
+    return {"objectives": [o.to_dict() for o in objs], "count": len(objs)}
+
+
+@app.post("/api/objectives")
+async def create_objective(request: Request):
+    """Creates a new long-term objective in ObjectiveManager."""
+    from ghost.intelligence.objective_manager import get_objective_manager
+    body = await request.json()
+    mgr = get_objective_manager()
+    obj = mgr.create_objective(
+        title=body.get("title", "Operator Objective"),
+        domain=body.get("domain", "system"),
+        target_agent=body.get("target_agent", "system_agent"),
+        description=body.get("description", ""),
+        priority=int(body.get("priority", 3)),
+        criteria=body.get("criteria", []),
+    )
+    return {"status": "created", "objective": obj.to_dict()}
+
+
+@app.post("/api/objectives/{objective_id}/execute")
+async def execute_objective(objective_id: str):
+    """Decomposes an objective and submits tasks for autonomous background execution."""
+    from ghost.autonomy.task_worker import get_autonomous_execution_engine
+    engine = get_autonomous_execution_engine()
+    res = await engine.execute_objective(objective_id)
+    return res
+
+
+@app.get("/api/intelligence/mode")
+async def get_operating_mode():
+    """Returns the current GHOST Operating Mode (AMBIENT, OBJECTIVE, REACTIVE)."""
+    from ghost.core.system_state import get_system_state_manager
+    mgr = get_system_state_manager()
+    return {"mode": mgr.get_snapshot().operating_mode}
+
+
+@app.post("/api/intelligence/mode")
+async def set_operating_mode(request: Request):
+    """Sets GHOST Operating Mode (AMBIENT, OBJECTIVE, REACTIVE)."""
+    from ghost.core.system_state import get_system_state_manager
+    body = await request.json()
+    mode = body.get("mode", "AMBIENT")
+    mgr = get_system_state_manager()
+    mgr.set_operating_mode(mode)
+    return {"status": "ok", "mode": mgr.get_snapshot().operating_mode}
+
+
+@app.get("/api/intelligence/decisions")
+async def get_proactive_decisions():
+    """Returns recent proactive prioritization decisions and evidence."""
+    from ghost.intelligence.proactive_orchestrator import get_proactive_orchestrator
+    orch = get_proactive_orchestrator()
+    decisions = orch.get_recent_decisions()
+    return {"decisions": [d.to_dict() for d in decisions], "count": len(decisions)}
+
+
+@app.post("/api/tasks/{task_id}/approve")
+async def approve_task(task_id: str):
+    """Approves a high-risk task waiting in WAITING_FOR_APPROVAL status."""
+    from ghost.core.task_orchestrator import get_task_orchestrator, TaskStatus
+    orch = get_task_orchestrator()
+    try:
+        updated = orch.transition(task_id, TaskStatus.QUEUED)
+        return {"task_id": task_id, "approved": True, "status": updated.status.value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/tasks/{task_id}/reject")
+async def reject_task(task_id: str, request: Request):
+    """Rejects a task waiting for approval."""
+    from ghost.core.task_orchestrator import get_task_orchestrator, TaskStatus
+    body = await request.json() if request.headers.get("content-type") == "application/json" else {}
+    reason = body.get("reason", "Operator rejected task")
+    orch = get_task_orchestrator()
+    try:
+        updated = orch.transition(task_id, TaskStatus.CANCELLED, error_reason=reason)
+        return {"task_id": task_id, "rejected": True, "status": updated.status.value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/physical/states")
+async def get_physical_states():
+    """Queries smart home entities and sensors from Home Assistant."""
+    from ghost.integrations.homeassistant import HomeAssistantClient
+    client = HomeAssistantClient()
+    states = await client.get_states()
+    return {"states": states, "configured": client.is_configured}
+
+
+@app.post("/api/physical/call")
+async def call_physical_service(request: Request):
+    """Calls a Home Assistant service with state verification."""
+    from ghost.integrations.homeassistant import HomeAssistantClient
+    body = await request.json()
+    client = HomeAssistantClient()
+    domain = body.get("domain", "switch")
+    service = body.get("service", "toggle")
+    data = body.get("data", {})
+    res = await client.call_service(domain, service, data)
+    return res
+
+
+@app.post("/api/creative/scad")
+async def render_scad_model(request: Request):
+    """Generates and renders an OpenSCAD 3D model."""
+    from ghost.agents.creative_agent import CreativeIntelligenceAgent
+    from ghost.core.task_orchestrator import Task, TaskStatus
+    body = await request.json()
+    agent = CreativeIntelligenceAgent()
+    mock_task = Task(
+        task_id="tsk-api-scad",
+        objective_id="obj-api",
+        assigned_agent="creative_agent",
+        title="API CAD Render",
+        description="",
+        status=TaskStatus.RUNNING,
+        input_payload={
+            "action": "generate_scad_model",
+            "model_name": body.get("model_name", "model"),
+            "parameters": body.get("parameters", {}),
+        },
+    )
+    result = await agent.execute_task(mock_task, {})
+    evidence = await agent.verify_outcome(mock_task, result)
+    return {"result": result, "evidence": evidence.to_dict()}
+
+
+@app.get("/api/settings/operator")
+async def get_operator_settings():
+    """Returns configuration status of external services with masked secrets."""
+    from ghost.core import secrets
+    keys = [
+        "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN",
+        "MQTT_BROKER_HOST", "MQTT_BROKER_PORT", "MQTT_USERNAME", "MQTT_PASSWORD",
+        "OPENSCAD_BINARY_PATH", "BLENDER_BINARY_PATH",
+    ]
+    settings = {}
+    for k in keys:
+        val = secrets.get(k)
+        if not val:
+            settings[k] = {"configured": False, "masked": None}
+        else:
+            if "TOKEN" in k or "PASSWORD" in k:
+                masked = val[:3] + "..." + val[-3:] if len(val) > 6 else "***"
+            else:
+                masked = val
+            settings[k] = {"configured": True, "masked": masked}
+    return {"settings": settings}
+
+
+@app.post("/api/settings/operator")
+async def update_operator_settings(request: Request):
+    """Updates external service configuration in secrets vault."""
+    from ghost.core import secrets
+    body = await request.json()
+    updated = []
+    for k, v in body.items():
+        if k in secrets.SETTABLE_SECRETS:
+            if secrets.set_secret(k, str(v)):
+                updated.append(k)
+    return {"status": "ok", "updated": updated}
+
+
+# --------------------- Deterministic Agent Routing & Context Isolation APIs ---------------------
+
+@app.get("/api/router/agents")
+async def get_router_agents():
+    """Returns canonical agent descriptors, capabilities, and health status for all 7 domains."""
+    from ghost.core.agent_registry import get_agent_registry
+    registry = get_agent_registry()
+    return {
+        "agents": [d.to_dict() for d in registry.list_descriptors()],
+        "count": len(registry.list_descriptors()),
+    }
+
+
+@app.post("/api/router/classify")
+async def classify_router_intent(request: Request):
+    """Deterministically classifies user intent and returns a structured RoutingDecision."""
+    from ghost.core.task_router import get_task_router
+    body = await request.json()
+    query = body.get("query", "")
+    router = get_task_router()
+    decision = router.classify_and_route(query, context=body.get("context"))
+    return decision.to_dict()
+
+
+@app.post("/api/router/dispatch")
+async def dispatch_routed_workflow(request: Request):
+    """Dispatches a multi-agent or single-agent routed workflow in isolated context."""
+    from ghost.core.task_router import get_task_router, IntentCategory
+    body = await request.json()
+    query = body.get("query", "")
+    router = get_task_router()
+    decision = router.classify_and_route(query, context=body.get("context"))
+
+    if decision.intent_category == IntentCategory.CAPABILITY_QUERY:
+        return {
+            "status": "CAPABILITY_EXPLAINED",
+            "decision": decision.to_dict(),
+            "events": [{"type": "capability_explanation", "explanation": decision.capability_explanation}],
+        }
+    elif decision.intent_category == IntentCategory.TASK_PLANNING:
+        return {
+            "status": "PLAN_GENERATED",
+            "decision": decision.to_dict(),
+            "events": [{"type": "execution_plan", "plan": decision.execution_plan}],
+        }
+    elif decision.intent_category == IntentCategory.TASK_CLARIFICATION:
+        return {
+            "status": "CLARIFICATION_REQUIRED",
+            "decision": decision.to_dict(),
+            "events": [{"type": "clarification_question", "question": decision.clarification_question}],
+        }
+
+    events = []
+    async for evt in router.dispatch_workflow(decision, context=body.get("context")):
+        events.append(evt)
+
+    return {
+        "status": "COMPLETED" if any(e.get("status") == "COMPLETED" for e in events) else "INCOMPLETE",
+        "decision": decision.to_dict(),
+        "events": events,
+    }
+
+
+@app.get("/api/router/chains")
+async def get_delegation_chains():
+    """Returns active and recent parent-child delegation chains for UI visualization."""
+    from ghost.core.task_orchestrator import get_task_orchestrator
+    orch = get_task_orchestrator()
+    tasks = orch.list_tasks(limit=50)
+
+    # Group tasks by parent_task_id or objective_id
+    chains: Dict[str, List[Dict[str, Any]]] = {}
+    for t in tasks:
+        parent_id = t.input_payload.get("parent_task_id") or t.objective_id or "root"
+        if parent_id not in chains:
+            chains[parent_id] = []
+        chains[parent_id].append({
+            "task_id": t.task_id,
+            "title": t.title,
+            "status": t.status.value,
+            "assigned_agent": t.assigned_agent,
+            "created_at": t.created_at,
+            "output": t.output_payload,
+            "verification": (t.output_payload or {}).get("verification", {}),
+        })
+
+    return {"chains": chains, "total_tasks": len(tasks)}
 
 
 # ============================================================ Autonomy routes

@@ -22,6 +22,9 @@ from ghost.core.audit import audit
 from ghost.core import heartbeat
 from ghost.core.halt import is_halted
 from ghost.core.jobqueue import JobQueue
+from ghost.core.events import get_event_bus
+from ghost.collectors.system_collector import SystemCollector
+from ghost.collectors.git_collector import GitCollector
 from ghost.autonomy.scheduler import TelemetryProvider, run_scheduler
 from ghost.autonomy.digest import build_digest, write_digest_file
 
@@ -40,6 +43,8 @@ class AutonomyRuntime:
         self.queue_poll_s = queue_poll_s
         self.with_lead_hunt = with_lead_hunt
         self.queue: Optional[JobQueue] = None
+        self.system_collector: Optional[SystemCollector] = None
+        self.git_collector: Optional[GitCollector] = None
         self._tasks: list = []
         self.stopped = False
 
@@ -264,6 +269,21 @@ class AutonomyRuntime:
             return self
         self.queue = JobQueue()
         heartbeat.beat("runtime-start")
+        bus = get_event_bus()
+        from ghost.collectors import SystemCollector, GitCollector, HyprlandCollector
+        from ghost.intelligence.proactive_orchestrator import get_proactive_orchestrator
+        from ghost.intelligence.coordinator import get_cross_domain_coordinator
+        from ghost.autonomy.task_worker import get_autonomous_execution_engine
+
+        self.system_collector = SystemCollector(event_bus=bus)
+        self.git_collector = GitCollector(event_bus=bus)
+        self.hyprland_collector = HyprlandCollector(event_bus=bus)
+        self.proactive_orchestrator = get_proactive_orchestrator(event_bus=bus)
+        self.proactive_orchestrator.start()
+        self.coordinator = get_cross_domain_coordinator(event_bus=bus)
+        self.coordinator.start()
+        self.task_worker = get_autonomous_execution_engine(event_bus=bus)
+
         self._tasks = [
             asyncio.create_task(self._heartbeat_loop(), name="heartbeat"),
             asyncio.create_task(self._staleness_enforcer_loop(), name="staleness"),
@@ -275,6 +295,10 @@ class AutonomyRuntime:
                 self.queue.run_worker(self._build_handlers(),
                                       poll_interval=self.queue_poll_s),
                 name="queue-worker"),
+            asyncio.create_task(self.system_collector.run_loop(interval_s=15.0), name="system-collector"),
+            asyncio.create_task(self.git_collector.run_loop(interval_s=30.0), name="git-collector"),
+            asyncio.create_task(self.hyprland_collector.run_loop(), name="hyprland-collector"),
+            asyncio.create_task(self.task_worker.run_worker_loop(poll_interval_s=2.0), name="task-worker"),
         ]
         audit("runtime.started", tasks=[t.get_name() for t in self._tasks])
         logger.info("AutonomyRuntime started: %s", [t.get_name() for t in self._tasks])
@@ -282,6 +306,18 @@ class AutonomyRuntime:
 
     async def stop(self) -> None:
         self.stopped = True
+        if hasattr(self, "system_collector") and self.system_collector:
+            self.system_collector.stop()
+        if hasattr(self, "git_collector") and self.git_collector:
+            self.git_collector.stop()
+        if hasattr(self, "hyprland_collector") and self.hyprland_collector:
+            self.hyprland_collector.stop()
+        if hasattr(self, "proactive_orchestrator") and self.proactive_orchestrator:
+            self.proactive_orchestrator.stop()
+        if hasattr(self, "coordinator") and self.coordinator:
+            self.coordinator.stop()
+        if hasattr(self, "task_worker") and self.task_worker:
+            self.task_worker.stop()
         for t in self._tasks:
             t.cancel()
         for t in self._tasks:

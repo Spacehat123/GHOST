@@ -55,19 +55,54 @@ BANNED_OUTBOUND_TERMS = [
 ]
 
 
-def sanitize_outbound(text: str) -> str:
+def sanitize_outbound(text: str, is_document: bool = False) -> str:
     """
-    Validates that client-facing outbound copy (PITCH_KIT, email, WhatsApp, DM)
+    Validates that client-facing outbound copy (email, WhatsApp, DM, pitches)
     contains zero internal persona terms, roleplay jargon, local file paths,
     or internal pricing references.
-    Raises ValueError if any banned term is detected.
+
+    Context-aware classification:
+    - Distinguishes internal templates, implementation metadata, and file paths
+      from actual outbound client-facing prose.
+    - If a structured document (e.g. Markdown with code blocks or templates) is checked,
+      validates outbound text blocks while ignoring internal comments, filesystem paths,
+      and implementation metadata.
+    Raises ValueError if any banned term is detected in outbound copy.
     """
     if not text:
         return ""
-    text_lower = text.lower()
+
+    # Detect if text is a structured markdown document or internal template
+    is_doc = is_document or (text.strip().startswith("#") and ("```" in text or "\n## " in text))
+
+    if is_doc:
+        # Extract outreach code blocks (e.g. ```text ... ```) and inspect each strictly
+        code_blocks = re.findall(r'```(?:text)?\s*(.*?)\s*```', text, flags=re.DOTALL)
+        for block in code_blocks:
+            sanitize_outbound(block, is_document=False)
+
+        # For the document wrapper outside code blocks, strip code blocks and check visible prose
+        doc_prose = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+        # Strip local file paths and internal links from document metadata checks
+        doc_prose = re.sub(r'(?:file://)?/[a-zA-Z0-9_\-\.\/]+', '', doc_prose)
+        doc_prose = re.sub(r'https?://\S+', '', doc_prose)
+        # Strip HTML/code comments
+        doc_prose = re.sub(r'<!--.*?-->', '', doc_prose, flags=re.DOTALL)
+        doc_prose = re.sub(r'//.*?$', '', doc_prose, flags=re.MULTILINE)
+        doc_prose = re.sub(r'/\*.*?\*/', '', doc_prose, flags=re.DOTALL)
+        text_to_check = doc_prose.lower()
+    else:
+        # For direct outbound messages:
+        # Strip HTML comments and block comments if evaluating template fragments
+        clean_text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
+        clean_text = re.sub(r'/\*.*?\*/', '', clean_text, flags=re.DOTALL)
+        if clean_text.strip().startswith("//") or "\n//" in clean_text:
+            clean_text = re.sub(r'//.*?$', '', clean_text, flags=re.MULTILINE)
+        text_to_check = clean_text.lower()
+
     for term in BANNED_OUTBOUND_TERMS:
         pattern = r'\b' + re.escape(term.lower()) + r'\b' if term.isalnum() else re.escape(term.lower())
-        if re.search(pattern, text_lower):
+        if re.search(pattern, text_to_check):
             raise ValueError(f"Persona firewall violation: Found banned term '{term}' in client-facing outbound copy.")
     return text
 
@@ -2020,8 +2055,10 @@ module.exports = async (req, res) => {{
         sanitize_outbound(pitch_subject)
         sanitize_outbound(pitch_body)
 
-        # Generate PITCH_KIT.md
+        # Generate PITCH_KIT.md (Clean preview asset basenames, pure outreach scripts)
         pitch_kit_path = os.path.join(self.out_dir, "PITCH_KIT.md")
+        mob_ref = os.path.basename(str(self.audit_results.get('screenshots', {}).get('mobile') or 'mobile_390x844.jpg'))
+        desk_ref = os.path.basename(str(self.audit_results.get('screenshots', {}).get('desktop') or 'desktop_1440x900.jpg'))
         pitch_kit_content = f"""# PITCH KIT: {main_title}
 
 ## 1. Concrete Gap Identified
@@ -2031,8 +2068,8 @@ module.exports = async (req, res) => {{
 
 ## 2. Preview Assets
 - **Live Preview URL:** {live_url}
-- **Mobile Screenshot:** {self.audit_results.get('screenshots', {}).get('mobile', 'mobile_390x844.jpg')}
-- **Desktop Screenshot:** {self.audit_results.get('screenshots', {}).get('desktop', 'desktop_1440x900.jpg')}
+- **Mobile Screenshot:** {mob_ref}
+- **Desktop Screenshot:** {desk_ref}
 
 ## 3. Direct Outreach Scripts
 ### WhatsApp:

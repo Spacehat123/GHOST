@@ -121,7 +121,7 @@ class ThreeSiteBuilder:
                     "commercial_use_allowed": True
                 }
             ],
-            "disclosure": "Concept design and 3D visual concept presented by Ghost."
+            "disclosure": "Concept design and 3D visual concept preview."
         }
         with open(sources_path, "w", encoding="utf-8") as sf:
             json.dump(sources_data, sf, indent=2)

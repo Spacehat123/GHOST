@@ -145,7 +145,7 @@ class EventBus:
         dedup_window_s: float = 60.0,
     ):
         self.db_path = db_path or ghost_db_path()
-        self.enable_persistence = enable_persistence
+        self.enable_persistence = enable_persistence if self.db_path != ":memory:" else False
         self.dedup_window_s = dedup_window_s
 
         self._subscriptions: Dict[str, _Subscription] = {}

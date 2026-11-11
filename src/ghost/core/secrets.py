@@ -79,6 +79,11 @@ SETTABLE_SECRETS = (
     # configured from the UI, never a config file the operator must edit
     "GHOST_INBOX_EMAIL", "GHOST_IMAP_HOST", "GHOST_IMAP_PORT",
     "GHOST_IMAP_USER", "GHOST_IMAP_PASSWORD",
+    # Physical Intelligence / Smart Home
+    "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN",
+    "MQTT_BROKER_HOST", "MQTT_BROKER_PORT", "MQTT_USERNAME", "MQTT_PASSWORD",
+    # Creative Intelligence Tooling Paths
+    "OPENSCAD_BINARY_PATH", "BLENDER_BINARY_PATH",
 )
 
 

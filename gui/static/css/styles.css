@@ -13,23 +13,26 @@
 }
 
 :root {
-  --bg: #08090c;
-  --hairline: rgba(255, 255, 255, 0.07);
-  --hairline-strong: rgba(255, 255, 255, 0.14);
-  --surface: rgba(255, 255, 255, 0.025);
+  --bg: #000000;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+  --surface: rgba(255, 255, 255, 0.03);
   --text: #e9ebf1;
   --text-mid: #9aa0ae;
   --text-dim: #5d6472;
+  --cyan-neon: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.45);
+  --red-arc: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.45);
   --rose: #ff2e63;
   --rose-soft: rgba(255, 46, 99, 0.55);
-  --amber: #e5b567;
-  --green: #3ecf8e;
+  --amber: #f59e0b;
+  --green: #10b981;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 body {
-  background:
-    radial-gradient(120% 90% at 50% 0%, #0b0c11 0%, var(--bg) 55%, #060709 100%);
+  background: #000000;
   color: var(--text);
   min-height: 100vh;
   width: 100vw;
@@ -249,6 +252,263 @@ body {
   color: var(--text);
 }
 
+/* -------------------------------------------------- cybernetic viewport -- */
+.cyber-viewport {
+  position: absolute;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cyber-nav-left {
+  width: 220px;
+  height: 100%;
+  padding: 1.25rem 0.85rem 6.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.cyber-stage-center {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.cyber-telemetry-right {
+  width: 285px;
+  height: 100%;
+  padding: 1.25rem 1.25rem 6.5rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow-y: auto;
+}
+
+/* Nav vertical styling */
+.nav-section-label {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.hud-pill-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  width: 100%;
+}
+
+.hud-pill-vertical .hud-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  width: 100%;
+  border-radius: 6px;
+  background: rgba(10, 12, 16, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  text-align: left;
+}
+
+.hud-pill-vertical .hud-pill-btn:hover {
+  border-color: var(--cyan-neon);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.22);
+  color: #fff;
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.hud-pill-vertical .hud-pill-btn.active {
+  border-color: var(--cyan-neon);
+  color: #fff;
+  background: rgba(0, 229, 255, 0.14);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pill-dot.green { background: #10b981; box-shadow: 0 0 6px #10b981; }
+.pill-dot.cyan { background: var(--cyan-neon); box-shadow: 0 0 6px var(--cyan-neon); }
+.pill-dot.amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.pill-dot.purple { background: #c084fc; box-shadow: 0 0 6px #c084fc; }
+.pill-dot.dim { background: var(--text-dim); }
+
+/* Right Telemetry Panels */
+.telemetry-panel {
+  background: rgba(8, 9, 12, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+}
+
+.telemetry-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.panel-tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  color: var(--text-mid);
+}
+.panel-tag.cyan { color: var(--cyan-neon); }
+
+.panel-status-val {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.panel-status-val.green { color: #10b981; }
+
+.active-mission-box .mission-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.15rem;
+}
+.active-mission-box .mission-subtext {
+  font-size: 0.65rem;
+  color: var(--text-mid);
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+}
+.mission-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.mission-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan-neon), var(--red-arc));
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--cyan-neon);
+}
+
+.agents-status-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.66rem;
+}
+.agent-indicator.ready {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 5px #10b981;
+}
+.agent-name {
+  color: var(--text);
+  font-weight: 500;
+  flex: 1;
+}
+.agent-spec {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+}
+
+.vitals-mini-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.v-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+}
+.v-lbl {
+  width: 65px;
+  color: var(--text-dim);
+}
+.v-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.v-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+.v-fill.cyan { background: var(--cyan-neon); box-shadow: 0 0 6px var(--cyan-neon); }
+.v-fill.amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.v-fill.red { background: var(--red-arc); box-shadow: 0 0 6px var(--red-arc); }
+.v-num {
+  width: 32px;
+  text-align: right;
+  color: var(--text-mid);
+}
+
+/* Core Reticle Banner */
+.core-reticle-banner {
+  position: absolute;
+  top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  pointer-events: none;
+}
+.reticle-core-id {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--cyan-neon);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+  font-weight: 700;
+}
+.reticle-line-left,
+.reticle-line-right {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-neon));
+}
+.reticle-line-right {
+  background: linear-gradient(90deg, var(--cyan-neon), transparent);
+}
+
 /* ------------------------------------------------------------------ orb ---- */
 /* The only light in the room: a compact ring, bottom-right, like the
    reference's ROSE presence. The canvas owns its box; orb.js sizes to it. */
@@ -383,7 +643,8 @@ body {
   width: 100%;
 }
 
-.action-bar input {
+.action-bar input,
+.action-bar textarea {
   flex: 1;
   background: transparent;
   border: none;
@@ -391,9 +652,14 @@ body {
   color: var(--text);
   font-size: 0.88rem;
   letter-spacing: 0.02em;
+  font-family: inherit;
+  resize: none;
+  line-height: 1.4;
+  max-height: 120px;
 }
 
-.action-bar input::placeholder {
+.action-bar input::placeholder,
+.action-bar textarea::placeholder {
   color: var(--text-dim);
 }
 
@@ -617,7 +883,9 @@ body {
 body.clean-focus .top-hud,
 body.clean-focus .bottom-hud-bar,
 body.clean-focus #transcript-bubble,
-body.clean-focus .bottom-bar {
+body.clean-focus .bottom-bar,
+body.clean-focus .cyber-nav-left,
+body.clean-focus .cyber-telemetry-right {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;

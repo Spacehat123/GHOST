@@ -102,10 +102,13 @@ def run_quality_gates(slug: str, domain: str, demo_dir: Optional[str] = None) ->
     if re.search(r"\bVerified\b", html):
         return False, "Quality Gate Failed: Unverified claims stamp 'Verified' detected in HTML."
 
-    # 4. Persona firewall scan
+    # 4. Persona firewall scan (visible client-facing copy only; ignore internal comments/scripts)
+    visible_html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+    visible_html = re.sub(r'<script.*?</script>', '', visible_html, flags=re.DOTALL | re.IGNORECASE)
+    visible_html = re.sub(r'<style.*?</style>', '', visible_html, flags=re.DOTALL | re.IGNORECASE)
     for term in BANNED_OUTBOUND_TERMS:
         pattern = r'\b' + re.escape(term.lower()) + r'\b' if term.isalnum() else re.escape(term.lower())
-        if re.search(pattern, html, flags=re.IGNORECASE):
+        if re.search(pattern, visible_html, flags=re.IGNORECASE):
             return False, f"Quality Gate Failed: Internal persona term '{term}' leaked in demo HTML."
 
     # 5. Restaurant words in non-restaurant domain

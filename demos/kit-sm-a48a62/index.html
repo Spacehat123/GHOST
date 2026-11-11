@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>&lt;script&gt;x&lt;/script&gt; Studio — Test kitchen</title>
+  
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@400;600&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Anime.js (Staggered Motion) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['"Playfair Display"', '"Cormorant Garamond"', 'serif'],
+              display: ['"Cinzel"', '"Syne"', 'sans-serif'],
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+              mono: ['"Space Grotesk"', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+
+  <style>
+/* _base/tokens.css — the design-token layer (rendered with the archetype's
+   values by section_kit.compose_page; Builder-owned data, not dossier data).
+   Extracted verbatim from the demo state machine's monolithic <style>. */
+:root {
+  --canvas: #f8f9fa;
+  --surface: #ffffff;
+  --surface-card: #ffffffee;
+  --raised: #ffffff;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --bg-color: #f8f9fa;
+  --surface-color: #ffffff;
+  --accent-color: #0f766e;
+  --accent-secondary: #0284c7;
+  --on-accent: #ffffff;
+  --text-color: #0f172a;
+  --muted-color: #475569;
+  --border-color: #e2e8f0;
+  --line: rgba(29, 27, 32, .08);
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, .06);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, .10);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, .16);
+  --accent-alpha15: #0f766e26;
+  --accent-alpha30: #0f766e4d;
+}
+html.dark {
+  --canvas: #0b1120;
+  --surface: #1e293b;
+  --surface-card: #1e293bee;
+  --raised: #2A2A2A;
+  --ink: #f8fafc;
+  --ink-2: #94a3b8;
+  --bg-color: #0b1120;
+  --surface-color: #1e293b;
+  --accent-color: #14b8a6;
+  --accent-secondary: #38bdf8;
+  --on-accent: #1D1B20;
+  --text-color: #f8fafc;
+  --muted-color: #94a3b8;
+  --border-color: #334155;
+  --line: rgba(255, 255, 255, .08);
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, .4);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, .6);
+  --accent-alpha15: #14b8a626;
+  --accent-alpha30: #14b8a64d;
+}
+.glass-panel {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+}
+@supports not (backdrop-filter: blur(24px)) {
+  .glass-panel { background: var(--surface-color); }
+}
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.spring-card {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+.spring-card:hover {
+  transform: translateY(-6px) scale(1.008);
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 24px 48px -18px var(--accent-alpha30);
+}
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 28s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+/* Hand-drawn divider (svg.js decor — the ONE allowed drawn element) */
+.kit-divider {
+  display: block;
+  width: min(560px, 72%);
+  margin: 0 auto;
+  height: 24px;
+  opacity: 0.35;
+}
+.kit-divider path {
+  fill: none;
+  stroke: var(--muted-color);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spring-card, body { transition: none !important; }
+  .animate-marquee { animation: none; }
+  .kit-divider path { stroke-dashoffset: 0 !important; }
+}
+  </style>
+</head>
+<body class="antialiased selection:bg-teal-500 selection:text-white relative">
+  <div class="pointer-events-none fixed inset-0 opacity-[0.03] z-50 bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+  <!-- NAVIGATION -->
+<header class="fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300">
+  <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3 rounded-full backdrop-blur-xl"
+       style="background: var(--surface-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-resting);">
+    <a href="#" class="font-bold tracking-tight text-sm md:text-base" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif; color: var(--text-color);">
+      &lt;script&gt;x&lt;/script&gt; Studio
+    </a>
+    <div class="hidden md:flex items-center gap-8 text-xs uppercase tracking-wider font-mono" style="color: var(--muted-color);">
+      <a href="#services" class="hover:opacity-70 transition-opacity">Services</a>
+      <a href="#philosophy" class="hover:opacity-70 transition-opacity">Standards</a>
+      <a href="#gallery" class="hover:opacity-70 transition-opacity">Facility</a>
+      <a href="#reserve" class="hover:opacity-70 transition-opacity">Booking</a>
+      <a href="#contact" class="hover:opacity-70 transition-opacity">Contact</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="theme-toggle" aria-label="Toggle Theme" class="p-2 rounded-full border transition-transform active:scale-90"
+              style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">
+        <span id="theme-icon-sun" class="hidden text-xs">☀️</span>
+        <span id="theme-icon-moon" class="block text-xs">🌙</span>
+      </button>
+      <a href="#reserve" class="px-5 py-2 rounded-full text-xs font-mono uppercase tracking-wider font-semibold transition-all hover:opacity-90"
+         style="background: var(--accent-color); color: var(--on-accent);">
+        Book a Table
+      </a>
+    </div>
+  </div>
+</header>
+<!-- HERO SECTION -->
+<section class="min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 relative overflow-hidden">
+  
+  <div class="absolute inset-0 -z-20 overflow-hidden">
+    <img src="assets/photos/photo-01.jpg" alt="&lt;script&gt;x&lt;/script&gt; Studio Atmosphere"
+         class="w-full h-full object-cover object-center filter brightness-[0.94] dark:brightness-[0.40] scale-105 transition-transform duration-1000 ease-out" />
+    <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/70 to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-[var(--bg-color)]/80 via-transparent to-[var(--bg-color)]"></div>
+  </div>
+  
+
+  <div class="max-w-4xl mx-auto relative z-10">
+    <div class="reveal-el inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs uppercase tracking-widest font-mono mb-6 backdrop-blur-md"
+         style="background: var(--surface-card); border: 1px solid var(--border-color); color: var(--accent-color);">
+      <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background: var(--accent-color);"></span>
+      Serving Mumbai • 4.5★ Public Acclaim
+    </div>
+    
+    <h1 class="reveal-el text-4xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-tight mb-6" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">
+      &lt;script&gt;x&lt;/script&gt; Studio
+    </h1>
+    <p class="reveal-el text-base md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style="color: var(--text-color); opacity: 0.9;">
+      Test kitchen
+    </p>
+
+    <div class="reveal-el flex flex-col sm:flex-row items-center justify-center gap-5">
+      <a href="#reserve" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-transform active:scale-95 shadow-lg"
+         style="background: var(--accent-color); color: var(--on-accent);">
+        Book a Table
+      </a>
+      
+      <a href="#services" class="px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-all backdrop-blur-md" style="border: 1px solid var(--border-color); color: var(--text-color); background: var(--surface-card);">View Services</a>
+      
+    </div>
+  </div>
+</section>
+<!-- VALUE BANNER -->
+<section class="py-10 px-6 md:px-16 relative" style="background: var(--surface-card); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="flex items-center gap-4 text-left">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: var(--accent-alpha15); color: var(--accent-color);">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div>
+        <h3 class="text-base font-bold" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif; color: var(--text-color);">Open Late</h3>
+        <p class="text-xs" style="color: var(--muted-color);">Walk-ins welcome</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 text-xs font-mono">
+      <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--accent-color); background: var(--bg-color);">Direct Coordination</span>
+      <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--text-color); background: var(--bg-color);">1-Tap Booking</span>
+      <span class="px-3.5 py-1.5 rounded-full border backdrop-blur-md" style="border-color: var(--border-color); color: var(--muted-color); background: var(--bg-color);">Certified Standards</span>
+    </div>
+  </div>
+</section>
+<!-- PHILOSOPHY & STANDARDS -->
+<section id="philosophy" class="py-24 px-6 md:px-16 relative">
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+    <div>
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-3" style="color: var(--accent-color);">Our Standard</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">
+        Fire &amp; Season
+      </h2>
+      <p class="text-sm md:text-base leading-relaxed mb-6" style="color: var(--text-color); opacity: 0.9;">
+        &lt;script&gt;x&lt;/script&gt; Studio cooks for Mumbai.
+      </p>
+      <p class="text-xs md:text-sm leading-relaxed mb-8" style="color: var(--muted-color);">
+        Second para.
+      </p>
+    </div>
+    <div class="relative rounded-3xl overflow-hidden glass-panel p-3">
+      
+      <div class="relative h-80 md:h-[420px] rounded-2xl overflow-hidden">
+        <img src="assets/photos/photo-02.jpg" alt="&lt;script&gt;x&lt;/script&gt; Studio Craft" class="w-full h-full object-cover filter brightness-[0.95] dark:brightness-[0.8] hover:scale-105 transition-transform duration-700 ease-out" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-color)]/70 via-transparent to-transparent"></div>
+        <div class="absolute bottom-6 left-6 right-6 p-4 rounded-xl backdrop-blur-md" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+          <p class="text-xs italic" style="color: var(--text-color);">"Best table"</p>
+          <p class="text-[10px] font-mono mt-1 font-bold" style="color: var(--accent-color);">— Local Review</p>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+<!-- SERVICES BENTO GRID -->
+
+<section id="services" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Menu</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">What We Serve</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <div class="spring-card backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden group flex flex-col justify-between"
+           style="background: var(--surface-card); border: 1px solid var(--border-color);">
+        <div>
+          <div class="flex justify-between items-baseline mb-3 gap-2 flex-wrap">
+            <h4 class="text-lg font-bold" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif; color: var(--text-color);">Tasting</h4>
+          </div>
+          <p class="text-xs leading-relaxed mb-6" style="color: var(--muted-color);">d</p>
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t font-mono text-xs" style="border-color: var(--border-color);">
+          <span class="font-bold" style="color: var(--accent-color);">₹100</span>
+          <span style="color: var(--muted-color);">Dinner</span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+
+<section class="py-20 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-12">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Client Feedback</p>
+      <h2 class="text-3xl md:text-4xl font-bold" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">What customers say</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <div class="p-8 rounded-3xl backdrop-blur-xl" style="background: var(--surface-card); border: 1px solid var(--border-color);">
+        <p class="text-sm italic leading-relaxed mb-4" style="color: var(--text-color);">"q"</p>
+        <div class="flex items-center justify-between text-xs font-mono" style="color: var(--muted-color);">
+          <span class="font-bold" style="color: var(--accent-color);">a</span>
+          <span>s</span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- SPACE & FACILITY GALLERY -->
+<section id="gallery" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+      <div>
+        <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Room</p>
+        <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">The Space</h2>
+      </div>
+      <p class="text-xs md:text-sm font-mono mt-4 md:mt-0" style="color: var(--muted-color);">&lt;script&gt;x&lt;/script&gt; Studio Facility</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      
+      
+      <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden group glass-panel">
+        <img src="assets/photos/photo-03.jpg" alt="Consultation Suite" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95] dark:brightness-[0.75]" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        <span class="absolute bottom-4 left-4 text-xs font-mono text-white tracking-widest uppercase">Consultation Suite</span>
+      </div>
+      
+      
+      
+      
+      <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center glass-panel"
+           style="border: 1px dashed var(--border-color);">
+        <div class="text-center px-6">
+          <p class="text-xs uppercase tracking-[0.3em] font-mono mb-2" style="color: var(--accent-color);">The pass</p>
+          <p class="text-[11px] font-mono" style="color: var(--muted-color);">[Inquire for quotation: photography]</p>
+        </div>
+      </div>
+      
+      
+      
+      
+      <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center glass-panel"
+           style="border: 1px dashed var(--border-color);">
+        <div class="text-center px-6">
+          <p class="text-xs uppercase tracking-[0.3em] font-mono mb-2" style="color: var(--accent-color);">Bar</p>
+          <p class="text-[11px] font-mono" style="color: var(--muted-color);">[Inquire for quotation: photography]</p>
+        </div>
+      </div>
+      
+      
+    </div>
+  </div>
+</section>
+<!-- HOW IT WORKS -->
+<section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Direct Engagement Protocol</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">How It Works</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      
+      <div class="glass-panel p-8 rounded-3xl relative">
+        <span class="text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider" style="background: var(--accent-alpha15); color: var(--accent-color);">01</span>
+        <h3 class="text-xl font-bold mt-4 mb-2" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif; color: var(--text-color);">Call</h3>
+        <p class="text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">You ring</p>
+      </div>
+      
+    </div>
+  </div>
+</section>
+<div class="py-10 text-center" aria-hidden="true"><svg id="kit-divider-svg" class="kit-divider" viewBox="0 0 560 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><path d="M 4 12 Q 15.0 15.6 26.0 12.7 Q 46.0 3.0 66.0 10.2 Q 85.5 17.4 105.0 13.1 Q 124.0 1.2 143.0 9.8 Q 161.5 19.2 180.0 13.4 Q 198.0 8.4 216.0 11.3 Q 233.5 21.0 251.0 13.8 Q 268.0 6.6 285.0 10.9 Q 301.5 22.8 318.0 14.2 Q 334.0 4.8 350.0 10.6 Q 365.5 15.6 381.0 12.7 Q 396.0 3.0 411.0 10.2 Q 425.5 17.4 440.0 13.1 Q 454.0 1.2 468.0 9.8 Q 481.5 19.2 495.0 13.4 Q 508.0 8.4 521.0 11.3 Q 533.5 21.0 546.0 13.8 Q 558.0 6.6 570.0 10.9"/></svg></div>
+<!-- INTERACTIVE BOOKING MODULE -->
+<section id="reserve" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color); background: var(--surface-color);">
+  <div class="max-w-4xl mx-auto glass-panel p-8 md:p-14 rounded-3xl text-center relative overflow-hidden">
+    <div class="inline-block px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase mb-4" style="background: var(--accent-alpha15); color: var(--accent-color); border: 1px solid var(--border-color);">
+      Direct Inquiries
+    </div>
+    <h2 class="text-3xl md:text-5xl font-bold mb-4" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">Reserve</h2>
+    <p class="text-xs md:text-sm max-w-lg mx-auto mb-10 leading-relaxed" style="color: var(--muted-color);">
+      Direct
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8 text-left">
+      
+      <div>
+        <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Seating / Table</label>
+        <input id="booking-service" type="text" placeholder="e.g. Standard / Counter / Private" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Party Size</label>
+        <input id="booking-detail" type="text" placeholder="e.g. 2 Guests" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--muted-color);">Preferred Date &amp; Time</label>
+        <input id="booking-date" type="text" placeholder="e.g. Tomorrow 19:30" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+      </div>
+      
+    </div>
+
+    <a id="whatsapp-direct-btn" href="https://wa.me/919876543210"
+       target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full font-semibold text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+       style="background: #25D366; color: #000;">
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+      <span id="booking-btn-text">Instant WhatsApp Direct</span>
+    </a>
+    <p class="text-[10px] font-mono mt-3" style="color: var(--muted-color);">Direct communication with team. Zero booking commissions.</p>
+  </div>
+</section>
+<!-- FAQ (ANSWER-FIRST) -->
+<section class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Clarity &amp; Access</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">Frequently Asked Questions</h2>
+    </div>
+    <div class="space-y-4">
+      
+      <details class="glass-panel rounded-2xl p-6 group cursor-pointer">
+        <summary class="font-bold text-base md:text-lg flex justify-between items-center list-none" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif; color: var(--text-color);">
+          <span>Walk-ins?</span>
+          <span class="text-xs font-mono transition-transform group-open:rotate-180" style="color: var(--accent-color);">▼</span>
+        </summary>
+        <p class="mt-4 text-xs md:text-sm leading-relaxed" style="color: var(--muted-color);">
+          Yes.
+        </p>
+      </details>
+      
+    </div>
+  </div>
+</section>
+<!-- VISIT & CONTACT (NAP) -->
+<section class="pt-16 pb-4 text-center relative" >
+  <div class="max-w-4xl mx-auto">
+    <p class="text-xs uppercase tracking-[0.3em] font-mono mb-3" style="color: var(--accent-color);">Visit &amp; Contact</p>
+    <h3 class="text-3xl md:text-4xl font-bold mb-6" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">&lt;script&gt;x&lt;/script&gt; Studio</h3>
+    <div class="text-xs font-mono space-y-1.5 mb-8" style="color: var(--muted-color);">
+      <p>12 Test Ln, Mumbai</p>
+      <p>Tu-Su 18-23</p>
+      <p>Direct Telephone: <a href="tel:+91 98765 43210" class="underline hover:opacity-80">+91 98765 43210</a></p>
+    </div>
+  </div>
+</section>
+<!-- LEAD CAPTURE (THE LEADS INBOX) -->
+<section id="contact" class="py-24 px-6 md:px-16 relative" style="border-top: 1px solid var(--border-color);">
+  <div class="max-w-2xl mx-auto glass-panel p-8 md:p-12 rounded-3xl">
+    <div class="text-center mb-8">
+      <p class="text-xs uppercase tracking-[0.25em] font-mono mb-2" style="color: var(--accent-color);">Send an Inquiry</p>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight" style="font-family: &#39;Plus Jakarta Sans&#39;, sans-serif;">Tell &lt;script&gt;x&lt;/script&gt; Studio what you need</h2>
+      <p class="text-xs md:text-sm mt-3 leading-relaxed" style="color: var(--muted-color);">No forms lost in spam — your message goes straight to the team.</p>
+    </div>
+    <form data-lead-inbox="/api/leads/kit-sm-a48a62/contact" class="space-y-4 text-left">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" for="lead-name" style="color: var(--muted-color);">Your Name</label>
+          <input id="lead-name" name="name" type="text" required placeholder="e.g. Priya" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" for="lead-contact" style="color: var(--muted-color);">Phone or Email</label>
+          <input id="lead-contact" name="contact" type="text" required placeholder="How should we reach you?" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-mono tracking-wider mb-1.5" for="lead-message" style="color: var(--muted-color);">Message</label>
+        <textarea id="lead-message" name="message" rows="4" required placeholder="What do you need?" class="w-full text-xs rounded-xl p-3 border outline-none font-sans" style="background: var(--bg-color); border-color: var(--border-color); color: var(--text-color);"></textarea>
+      </div>
+      <!-- honeypot: humans never see this field; bots fill it and get swallowed -->
+      <input name="company_website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute opacity-0 pointer-events-none" style="left:-9999px;" />
+      <button type="submit" class="w-full px-8 py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold transition-transform active:scale-95 shadow-lg"
+              style="background: var(--accent-color); color: var(--on-accent);">
+        Send Inquiry
+      </button>
+      <p class="lead-status text-center text-[11px] font-mono min-h-[1.2em]" style="color: var(--muted-color);" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+<!-- FOOTER -->
+<footer class="pt-16 pb-12 text-center relative overflow-hidden">
+  <div class="w-full text-center select-none pointer-events-none opacity-10 mb-8">
+    <div class="text-[12vw] font-bold leading-none tracking-tighter uppercase font-serif" style="color: var(--text-color);">
+      &lt;script&gt;x&lt;/script&gt; Studio
+    </div>
+  </div>
+
+  <div class="pt-8 text-xs font-mono flex flex-col sm:flex-row justify-between items-center gap-4 px-6"
+       style="border-top: 1px solid var(--border-color); color: var(--muted-color);">
+    <div>Independent concept preview presented for &lt;script&gt;x&lt;/script&gt; Studio. All rights reserved.</div>
+    <div>Crafted with Modern Web Standards.</div>
+  </div>
+</footer>
+
+  <script src="assets/vendor/svg.min.js"></script>
+  <script>
+// _base/reveal.js — the ONE behavior layer. Sections are markup+styles only;
+// everything interactive lives here (theme, booking, lead form, decor).
+(function () {
+  // ---- Theme Switcher -----------------------------------------------------
+  var toggleBtn = document.getElementById('theme-toggle');
+  var sunIcon = document.getElementById('theme-icon-sun');
+  var moonIcon = document.getElementById('theme-icon-moon');
+
+  function applyTheme(isDark) {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      if (sunIcon) { sunIcon.classList.remove('hidden'); sunIcon.classList.add('block'); }
+      if (moonIcon) { moonIcon.classList.remove('block'); moonIcon.classList.add('hidden'); }
+    } else {
+      document.documentElement.classList.remove('dark');
+      if (sunIcon) { sunIcon.classList.remove('block'); sunIcon.classList.add('hidden'); }
+      if (moonIcon) { moonIcon.classList.remove('hidden'); moonIcon.classList.add('block'); }
+    }
+  }
+
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('theme-pref'); } catch (e) { /* private mode */ }
+  applyTheme(savedTheme === 'dark');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function () {
+      var isDark = document.documentElement.classList.toggle('dark');
+      try { localStorage.setItem('theme-pref', isDark ? 'dark' : 'light'); } catch (e) { /* ignore */ }
+      applyTheme(isDark);
+    });
+  }
+
+  // ---- Interactive Booking Module (ids are a QA/deploy-gate contract) -----
+  var BUSINESS = {"cleanPhone": "919876543210", "hasPhone": true, "isLandline": false, "name": "\u003cscript\u003ex\u003c/script\u003e Studio", "phone": "+91 98765 43210"};
+
+  function initBookingModule() {
+    var serviceEl = document.getElementById('booking-service');
+    var detailEl = document.getElementById('booking-detail');
+    var dateEl = document.getElementById('booking-date');
+    var bookBtn = document.getElementById('whatsapp-direct-btn');
+    var btnText = document.getElementById('booking-btn-text');
+    if (!bookBtn) return;
+
+    function updateBookingLink() {
+      if (!BUSINESS.hasPhone) {
+        bookBtn.href = '#contact';
+        if (btnText) btnText.innerText = 'Contact Directly';
+        return;
+      }
+      var s = serviceEl ? serviceEl.value : '';
+      var d = detailEl ? detailEl.value : '';
+      var t = dateEl ? dateEl.value : '';
+      if (BUSINESS.isLandline) {
+        bookBtn.href = 'tel:' + BUSINESS.phone;
+        if (btnText) btnText.innerText = 'Call Directly: ' + BUSINESS.phone;
+        return;
+      }
+      var msg = 'Hello ' + BUSINESS.name + ', I would like to inquire about booking:';
+      if (s) msg += '\n- Service: ' + s;
+      if (d) msg += '\n- Details: ' + d;
+      if (t) msg += '\n- Preferred Date: ' + t;
+      bookBtn.href = 'https://wa.me/' + BUSINESS.cleanPhone + '?text=' + encodeURIComponent(msg);
+    }
+
+    if (serviceEl) serviceEl.addEventListener('change', updateBookingLink);
+    if (detailEl) detailEl.addEventListener('input', updateBookingLink);
+    if (dateEl) dateEl.addEventListener('change', updateBookingLink);
+    updateBookingLink();
+  }
+  initBookingModule();
+
+  // ---- Lead capture form (the leads inbox) ---------------------------------
+  // Same-origin (local preview): POST to the site's lead endpoint, show honest status.
+  // Hosted (Vercel): the builder cannot receive public webhooks — fall back to the
+  // business's own WhatsApp/phone, which is where the reply would come from anyway.
+  function initLeadForm() {
+    var form = document.querySelector('form[data-lead-inbox]');
+    if (!form) return;
+    var statusEl = form.querySelector('.lead-status');
+    function say(msg) { if (statusEl) statusEl.textContent = msg; }
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      if (form.querySelector('input[name="company_website"]') &&
+          form.querySelector('input[name="company_website"]').value) {
+        return; // honeypot: silently swallowed
+      }
+      var name = (form.querySelector('input[name="name"]') || {}).value || '';
+      var contact = (form.querySelector('input[name="contact"]') || {}).value || '';
+      var message = (form.querySelector('textarea[name="message"]') || {}).value || '';
+      var onLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+
+      if (!onLocal) {
+        // Hosted (Vercel / Netlify): POST to serverless api/contact endpoint, fallback to WhatsApp
+        say('Recording inquiry...');
+        fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, contact: contact, message: message })
+        }).then(function (r) {
+          if (r.ok) {
+            say('Thank you — your inquiry was recorded. ' + (BUSINESS.name || 'The team') + ' will get back to you.');
+            form.reset();
+          } else {
+            fallbackOutbound();
+          }
+        }).catch(function () {
+          fallbackOutbound();
+        });
+
+        function fallbackOutbound() {
+          if (BUSINESS.hasPhone && !BUSINESS.isLandline) {
+            var msg = 'Hello ' + BUSINESS.name + ', I found your website. ';
+            if (message) msg += message + ' ';
+            msg += '— ' + (name || 'a visitor') + (contact ? ' (' + contact + ')' : '');
+            window.open('https://wa.me/' + BUSINESS.cleanPhone + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+            say('Opening WhatsApp — your message is ready to send.');
+            return;
+          }
+          say('Please reach us directly' + (BUSINESS.phone ? ': ' + BUSINESS.phone : '.') );
+        }
+        return;
+      }
+
+      var endpoint = form.getAttribute('data-lead-inbox');
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ name: name, contact: contact, message: message }).toString()
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (res.ok) { say('Thank you — your inquiry was recorded. ' + (BUSINESS.name || 'The team') + ' will get back to you.'); form.reset(); }
+          else { say(res.j && res.j.detail ? String(res.j.detail) : 'Could not record the inquiry — please call us directly.'); }
+        })
+        .catch(function () { say('Could not record the inquiry — please call us directly.'); });
+    });
+  }
+  initLeadForm();
+
+  // ---- Entrance motion (anime.js) -----------------------------------------
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof anime === 'undefined') return;
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
+    if (reduce) return;
+    anime.timeline({ easing: 'easeOutExpo' })
+      .add({ targets: '.reveal-el', translateY: [35, 0], opacity: [0, 1], delay: anime.stagger(140), duration: 1000 })
+      .add({ targets: '.spring-card', translateY: [25, 0], opacity: [0, 1], delay: anime.stagger(90), duration: 900 }, '-=600');
+  });
+
+  // ---- The ONE svg.js decor: hand-drawn divider, drawn once on view -------
+  // The static stroke is IN the markup (page is complete with JS disabled);
+  // svg.js only performs the draw-in when motion is allowed.
+  function initKitDivider() {
+    var holder = document.getElementById('kit-divider-svg');
+    var raw = holder ? holder.querySelector('path') : null;
+    if (!raw || typeof SVG === 'undefined') return;
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
+    if (reduce || !('IntersectionObserver' in window)) return; // static stroke is the no-motion default
+    var path = SVG(raw);
+    var len = path.length();
+    path.attr('stroke-dasharray', len + ' ' + len).attr('stroke-dashoffset', len);
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !seen) {
+          seen = true;
+          path.animate(1100, 0, 'now').ease('-').attr('stroke-dashoffset', 0);
+          io.disconnect();
+        }
+      });
+    }, { threshold: 0.4 });
+    io.observe(holder);
+  }
+  initKitDivider();
+})();
+  </script>
+</body>
+</html>

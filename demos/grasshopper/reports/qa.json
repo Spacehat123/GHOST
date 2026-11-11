@@ -19,7 +19,12 @@
       "390x844 (Mobile)",
       "1440x900 (Desktop)"
     ],
-    "note": ""
+    "note": "",
+    "vocabulary_lint": {
+      "passed": true,
+      "domain": "restaurants_cafes",
+      "terms_sanitized": 0
+    }
   },
   "sections": [
     "nav_floating",

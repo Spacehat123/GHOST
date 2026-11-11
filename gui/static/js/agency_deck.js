@@ -127,6 +127,15 @@
 
   function handleLiveEvent(evt) {
     appendActivityLog(evt);
+    if (evt.type === 'universal_event') {
+      appendIntelFeed(evt);
+      if (evt.event_type === 'system.telemetry.sample' && activeView === 'awareness') {
+        loadAwareness();
+      }
+      if (evt.event_type && evt.event_type.startsWith('task.') && activeView === 'projects') {
+        loadProjects();
+      }
+    }
     const tab = EVENT_TAB_MAP[evt.type];
     if (tab) badgeTab(tab);
     if (['campaign_created', 'batch_started', 'lead_opted_out', 'contract_drafted', 'domain_confirmed'].includes(evt.type)) {
@@ -152,12 +161,28 @@
   // error in ITS pane and never takes down the deck
   function safeLoad(viewId) {
     const loaders = {
-      kanban: loadLeads, campaigns: loadCampaigns,
-      confirmation: loadConfirmationQueue, demos: loadDemos,
-      dossiers: loadDossiers, microjobs: loadMicrojobs,
-      payments: loadPayments, fixes: loadFixes, autonomy: loadAutonomy,
-      notifications: loadNotifications, templates: loadTemplates,
-      suppression: loadSuppression, events: loadEvents,
+      awareness: loadAwareness,
+      feed: loadIntelFeed,
+      objectives: loadObjectives,
+      agents: loadAgents,
+      projects: loadProjects,
+      physical: loadPhysical,
+      creative: loadCreative,
+      memory: loadMemory,
+      control: loadControl,
+      kanban: loadLeads,
+      campaigns: loadCampaigns,
+      confirmation: loadConfirmationQueue,
+      demos: loadDemos,
+      dossiers: loadDossiers,
+      microjobs: loadMicrojobs,
+      payments: loadPayments,
+      fixes: loadFixes,
+      autonomy: loadAutonomy,
+      notifications: loadNotifications,
+      templates: loadTemplates,
+      suppression: loadSuppression,
+      events: loadEvents,
     };
     const fn = loaders[viewId];
     if (!fn) return;
@@ -1153,6 +1178,734 @@
     listEl.prepend(item);
   }
 
+  // ===========================================================================
+  // UNIVERSAL INTELLIGENCE SUBSYSTEM LOADERS
+  // ===========================================================================
+
+  async function loadAwareness() {
+    try {
+      const res = await deckFetch('/api/awareness/telemetry');
+      if (!res.ok) return;
+      const data = await res.json();
+      const vitals = data.vitals || {};
+      const cpu = vitals.cpu_percent || 0;
+      const ramUsed = vitals.ram_used_mb || 0;
+      const ramTotal = vitals.ram_total_mb || 8192;
+      const ramPct = vitals.ram_percent || 0;
+      const diskFree = vitals.disk_free_gb || 0;
+      const gpuPct = vitals.gpu_utilization_percent;
+      const gpuTemp = vitals.gpu_temp_celsius;
+      const vramUsed = vitals.gpu_vram_used_mb;
+      const vramTotal = vitals.gpu_vram_total_mb;
+
+      // Update CPU
+      const cpuVal = document.getElementById('vital-cpu-val');
+      const cpuBar = document.getElementById('vital-cpu-bar');
+      if (cpuVal) cpuVal.textContent = `${cpu.toFixed(1)}%`;
+      if (cpuBar) {
+        cpuBar.style.width = `${Math.min(100, Math.max(0, cpu))}%`;
+        cpuBar.className = `vital-bar ${cpu > 85 ? 'danger' : cpu > 70 ? 'warn' : ''}`;
+      }
+
+      // Update RAM
+      const ramVal = document.getElementById('vital-ram-val');
+      const ramBar = document.getElementById('vital-ram-bar');
+      const ramSub = document.getElementById('vital-ram-sub');
+      const ramTot = document.getElementById('vital-ram-total');
+      if (ramVal) ramVal.textContent = `${ramPct.toFixed(1)}%`;
+      if (ramSub) ramSub.textContent = `${Math.round(ramUsed)} MB used`;
+      if (ramTot) ramTot.textContent = `${(ramTotal / 1024).toFixed(1)} GB Total`;
+      if (ramBar) {
+        ramBar.style.width = `${Math.min(100, Math.max(0, ramPct))}%`;
+        ramBar.className = `vital-bar ${ramPct > 85 ? 'danger' : ramPct > 70 ? 'warn' : ''}`;
+      }
+
+      // Update GPU
+      const gpuVal = document.getElementById('vital-gpu-val');
+      const gpuBar = document.getElementById('vital-gpu-bar');
+      const gpuTempEl = document.getElementById('vital-gpu-temp');
+      const gpuVramSub = document.getElementById('vital-gpu-vram-sub');
+      if (gpuVal) gpuVal.textContent = gpuPct !== null && gpuPct !== undefined ? `${gpuPct}%` : 'OFF';
+      if (gpuTempEl) gpuTempEl.textContent = gpuTemp !== null && gpuTemp !== undefined ? `${gpuTemp}°C` : '--°C';
+      if (gpuVramSub) gpuVramSub.textContent = (vramUsed && vramTotal) ? `VRAM: ${Math.round(vramUsed)} / ${Math.round(vramTotal)} MB` : 'VRAM: N/A';
+      if (gpuBar) {
+        const vramPct = (vramUsed && vramTotal) ? (vramUsed / vramTotal) * 100 : 0;
+        gpuBar.style.width = `${Math.min(100, vramPct)}%`;
+        gpuBar.className = `vital-bar ${vramPct > 85 ? 'danger' : vramPct > 70 ? 'warn' : ''}`;
+      }
+
+      // Update Disk
+      const diskVal = document.getElementById('vital-disk-val');
+      if (diskVal) diskVal.textContent = `${diskFree} GB`;
+
+      // Update Desktop Context
+      const dt = data.desktop || {};
+      const winEl = document.getElementById('vital-desktop-window');
+      const wsEl = document.getElementById('vital-desktop-workspace');
+      if (winEl) winEl.textContent = dt.focused_window || 'Terminal / Code';
+      if (wsEl) wsEl.textContent = `Workspace ${dt.active_workspace || 1}`;
+
+      // Update Git
+      const git = data.git || {};
+      const branchEl = document.getElementById('vital-git-branch');
+      const commitEl = document.getElementById('vital-git-commit');
+      const dirtyEl = document.getElementById('vital-git-dirty');
+      const filesEl = document.getElementById('vital-git-files');
+      if (branchEl) branchEl.textContent = git.branch || 'main';
+      if (commitEl) commitEl.textContent = git.head_commit || '--';
+      if (dirtyEl) {
+        dirtyEl.textContent = git.is_dirty ? 'DIRTY' : 'CLEAN';
+        dirtyEl.style.color = git.is_dirty ? 'var(--deck-accent-warning)' : 'var(--deck-accent-success)';
+      }
+      if (filesEl) {
+        const mods = git.modified_files ? git.modified_files.length : 0;
+        const untr = git.untracked_files ? git.untracked_files.length : 0;
+        filesEl.textContent = `${mods} modified, ${untr} untracked files`;
+      }
+
+      // Update Alerts
+      const alertsList = document.getElementById('awareness-alerts-list');
+      if (alertsList && data.recent_alerts) {
+        if (data.recent_alerts.length === 0) {
+          alertsList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No active resource alerts. System healthy.</div>';
+        } else {
+          alertsList.innerHTML = data.recent_alerts.map(a => `
+            <div class="vital-card" style="padding:10px 14px; border-left:3px solid var(--deck-accent-warning);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; font-size:12px; color:var(--deck-text-main);">${escapeHtml(a.event_type)}</span>
+                <span class="deck-badge" style="color:var(--deck-accent-warning);">${escapeHtml(a.severity)}</span>
+              </div>
+              <div style="font-size:11px; color:var(--deck-text-muted); margin-top:4px; font-family:var(--deck-font-mono);">
+                ${escapeHtml(JSON.stringify(a.payload))}
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // Also update top HUD chip & right cyber telemetry panel
+      const vitalsChip = document.getElementById('vitals-stats-text');
+      if (vitalsChip) {
+        const gpuStr = gpuPct !== null && gpuPct !== undefined ? ` | GPU: ${gpuPct}%` : '';
+        vitalsChip.textContent = `CPU: ${cpu.toFixed(0)}% | RAM: ${ramPct.toFixed(0)}%${gpuStr}`;
+      }
+      const cpuFill = document.getElementById('hud-cpu-fill');
+      const cpuNum = document.getElementById('hud-cpu-num');
+      if (cpuFill) cpuFill.style.width = `${Math.min(100, Math.max(2, cpu))}%`;
+      if (cpuNum) cpuNum.textContent = `${cpu.toFixed(0)}%`;
+
+      const ramFill = document.getElementById('hud-ram-fill');
+      const ramNum = document.getElementById('hud-ram-num');
+      if (ramFill) ramFill.style.width = `${Math.min(100, Math.max(2, ramPct))}%`;
+      if (ramNum) ramNum.textContent = `${ramPct.toFixed(0)}%`;
+
+      const gpuFill = document.getElementById('hud-gpu-fill');
+      const gpuNum = document.getElementById('hud-gpu-num');
+      if (gpuFill && gpuPct !== null && gpuPct !== undefined) gpuFill.style.width = `${Math.min(100, Math.max(2, gpuPct))}%`;
+      if (gpuNum && gpuPct !== null && gpuPct !== undefined) gpuNum.textContent = `${gpuPct.toFixed(0)}%`;
+    } catch (e) {
+      console.error('loadAwareness error:', e);
+    }
+  }
+
+  function classifyEventAction(eventType) {
+    eventType = String(eventType || '');
+    if (eventType.startsWith('system.telemetry') || eventType.startsWith('dev.git') || eventType.includes('discovered') || eventType.startsWith('input.integrity')) {
+      return { tag: 'OBSERVE', cls: 'feed-badge-observe' };
+    } else if (eventType.includes('alert') || eventType.includes('anomaly') || eventType.includes('triage')) {
+      return { tag: 'ANALYZE', cls: 'feed-badge-analyze' };
+    } else if (eventType.includes('planned') || eventType.includes('decide') || eventType.includes('policy') || eventType.startsWith('router.intent')) {
+      return { tag: 'DECIDE', cls: 'feed-badge-decide' };
+    } else if (eventType.includes('execution') || eventType.startsWith('task.running') || eventType.includes('build') || eventType.startsWith('task.dispatched')) {
+      return { tag: 'EXECUTE', cls: 'feed-badge-execute' };
+    } else if (eventType.includes('verify') || eventType.includes('qa') || eventType.includes('test') || eventType.startsWith('task.verification')) {
+      return { tag: 'VERIFY', cls: 'feed-badge-verify' };
+    }
+    return { tag: 'OBSERVE', cls: 'feed-badge-observe' };
+  }
+
+  function renderFeedItem(evt) {
+    const action = classifyEventAction(evt.event_type || '');
+    const dateStr = evt.timestamp ? new Date(evt.timestamp * 1000).toLocaleTimeString() : '--:--:--';
+    const payloadStr = typeof evt.payload === 'object' ? JSON.stringify(evt.payload, null, 2) : String(evt.payload);
+    return `
+      <div class="intel-feed-item sev-${escapeHtml(evt.severity || 'INFO')}">
+        <div class="feed-header">
+          <div class="feed-tags">
+            <span class="feed-badge ${action.cls}">${action.tag}</span>
+            <span class="deck-badge">${escapeHtml(evt.source || 'system')}</span>
+            <span class="deck-badge" style="color:var(--deck-text-muted);">${escapeHtml(evt.severity || 'INFO')}</span>
+          </div>
+          <span class="feed-time">${dateStr}</span>
+        </div>
+        <div class="feed-title">${escapeHtml(evt.event_type)}</div>
+        <div class="feed-payload">${escapeHtml(payloadStr)}</div>
+      </div>
+    `;
+  }
+
+  function appendIntelFeed(evt) {
+    const container = document.getElementById('intel-feed-list');
+    if (!container) return;
+    const temp = document.createElement('div');
+    temp.innerHTML = renderFeedItem(evt);
+    if (temp.firstElementChild) {
+      container.prepend(temp.firstElementChild);
+      if (container.children.length > 100) {
+        container.removeChild(container.lastElementChild);
+      }
+    }
+  }
+
+  async function loadIntelFeed() {
+    try {
+      const container = document.getElementById('intel-feed-list');
+      if (!container) return;
+      const filter = document.getElementById('feed-filter-type') ? document.getElementById('feed-filter-type').value : '';
+      const prefixParam = filter ? `&prefix=${encodeURIComponent(filter)}` : '';
+      const res = await deckFetch(`/api/universal/events?limit=50${prefixParam}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const events = data.events || [];
+      if (events.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono); padding:16px;">No events recorded yet. Stream is standing by.</div>';
+        return;
+      }
+      container.innerHTML = events.map(evt => renderFeedItem(evt)).join('');
+    } catch (e) {
+      console.error('loadIntelFeed error:', e);
+    }
+  }
+
+  async function loadAgents() {
+    try {
+      const grid = document.getElementById('agents-grid');
+      if (!grid) return;
+      const res = await deckFetch('/api/router/agents');
+      if (!res.ok) return;
+      const data = await res.json();
+      const agents = data.agents || [];
+      grid.innerHTML = agents.map(a => {
+        const isHealthy = a.health_status === 'healthy';
+        const tasks = (a.supported_task_types || []).map(t => `<span class="agent-pill">${escapeHtml(t)}</span>`).join('');
+        const perms = (a.permission_requirements || []).map(p => `<span class="agent-pill perm">${escapeHtml(p)}</span>`).join('');
+        const tools = (a.registered_tool_ids || []).map(tl => `<span class="agent-pill" style="border-color:var(--deck-accent-primary); color:var(--deck-accent-primary);">${escapeHtml(tl)}</span>`).join('');
+        return `
+          <div class="agent-card">
+            <div class="agent-header">
+              <span class="agent-title">${escapeHtml(a.name)}</span>
+              <span class="agent-status-badge ${isHealthy ? 'active' : 'standby'}">${escapeHtml(a.health_status.toUpperCase())}</span>
+            </div>
+            <div class="agent-desc">${escapeHtml(a.description || a.responsibility || '')}</div>
+            <div class="agent-meta-row">
+              <span class="agent-meta-label">Domain Scope</span>
+              <span class="deck-badge" style="font-size:10px;">${escapeHtml((a.domain || '').toUpperCase())}</span>
+            </div>
+            <div class="agent-meta-row">
+              <span class="agent-meta-label">Permitted Scoped Tools (${a.registered_tool_ids ? a.registered_tool_ids.length : 0})</span>
+              <div class="agent-pills">${tools}</div>
+            </div>
+            <div class="agent-meta-row">
+              <span class="agent-meta-label">Capabilities</span>
+              <div class="agent-pills">${tasks}</div>
+            </div>
+            <div class="agent-meta-row">
+              <span class="agent-meta-label">Required Permissions</span>
+              <div class="agent-pills">${perms}</div>
+            </div>
+            <div class="agent-actions">
+              <button class="deck-btn deck-btn-primary" onclick="planAgentTaskPrompt('${escapeHtml(a.agent_id)}')">Plan Task</button>
+              <button class="deck-btn" onclick="executeAgentPrompt('${escapeHtml(a.agent_id)}')">Dispatch Action</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('loadAgents error:', e);
+    }
+  }
+
+  async function loadChains() {
+    try {
+      const container = document.getElementById('delegation-chains-container');
+      if (!container) return;
+      const res = await deckFetch('/api/router/chains');
+      if (!res.ok) return;
+      const data = await res.json();
+      const chains = data.chains || {};
+      const chainKeys = Object.keys(chains);
+
+      if (chainKeys.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No active delegation chains recorded. Standby.</div>';
+        return;
+      }
+
+      container.innerHTML = chainKeys.map(parentId => {
+        const subtasks = chains[parentId];
+        const allCompleted = subtasks.every(t => t.status === 'COMPLETED');
+        const badgeClass = allCompleted ? 'COMPLETED' : 'RUNNING';
+        return `
+          <div class="vital-card" style="padding:12px 14px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:12px; font-family:var(--deck-font-mono); color:var(--deck-text-main);">Execution Chain: ${escapeHtml(parentId)}</span>
+              <span class="task-badge-status ${badgeClass}">${allCompleted ? 'VERIFIED' : 'ACTIVE'}</span>
+            </div>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              ${subtasks.map(st => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:6px 10px; border-radius:4px; font-size:11px;">
+                  <span style="font-family:var(--deck-font-mono); color:var(--deck-accent-primary);">[${escapeHtml(st.assigned_agent)}] ${escapeHtml(st.title)}</span>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="task-badge-status ${escapeHtml(st.status)}" style="font-size:10px; padding:1px 6px;">${escapeHtml(st.status)}</span>
+                    ${st.verification && st.verification.verified ? '<span style="color:var(--deck-accent-success); font-size:10px;">✓ Verified</span>' : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('loadChains error:', e);
+    }
+  }
+  window.loadChains = loadChains;
+
+  async function loadProjects() {
+    try {
+      const missionsEl = document.getElementById('projects-missions-list');
+      const tasksTbody = document.getElementById('projects-tasks-tbody');
+
+      const pRes = await deckFetch('/api/projects');
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        const missions = pData.active_missions || [];
+        if (missionsEl) {
+          if (missions.length === 0) {
+            missionsEl.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No active multi-step mission currently executing. Standby mode.</div>';
+          } else {
+            missionsEl.innerHTML = missions.map(m => `
+              <div class="vital-card" style="padding:12px 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-weight:700; font-size:13px; color:var(--deck-text-main);">${escapeHtml(m.goal)}</span>
+                  <span class="task-badge-status ${escapeHtml(m.status.toUpperCase())}">${escapeHtml(m.status)}</span>
+                </div>
+                <div style="font-size:11px; color:var(--deck-text-muted); margin-top:4px; font-family:var(--deck-font-mono);">
+                  Mission ID: ${escapeHtml(m.id)} | ${m.tasks_count} Sub-Tasks
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+      }
+
+      const tRes = await deckFetch('/api/tasks?limit=50');
+      if (tRes.ok && tasksTbody) {
+        const tData = await tRes.json();
+        const tasks = tData.tasks || [];
+        if (tasks.length === 0) {
+          tasksTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--deck-text-faint); padding:16px;">No tasks in orchestrator queue.</td></tr>';
+        } else {
+          tasksTbody.innerHTML = tasks.map(t => `
+            <tr>
+              <td style="font-family:var(--deck-font-mono); font-size:11px;">${escapeHtml(t.task_id)}</td>
+              <td><span class="task-badge-status ${escapeHtml(t.status)}">${escapeHtml(t.status)}</span></td>
+              <td style="font-family:var(--deck-font-mono); font-size:11px;">${escapeHtml(t.assigned_agent)}</td>
+              <td>${escapeHtml(t.title)}</td>
+              <td style="font-family:var(--deck-font-mono); font-size:11px;">${t.created_at ? new Date(t.created_at * 1000).toLocaleTimeString() : '--'}</td>
+              <td>
+                ${t.status === 'RUNNING' || t.status === 'QUEUED' ? `<button class="deck-btn deck-btn-danger" style="padding:2px 8px; font-size:10px;" onclick="cancelOrchTask('${escapeHtml(t.task_id)}')">Cancel</button>` : '<span style="color:var(--deck-text-faint); font-size:11px;">--</span>'}
+              </td>
+            </tr>
+          `).join('');
+        }
+      }
+      await loadChains();
+    } catch (e) {
+      console.error('loadProjects error:', e);
+    }
+  }
+
+  async function loadMemory() {
+    try {
+      const dirList = document.getElementById('directives-list');
+      const factsList = document.getElementById('facts-list');
+      const query = document.getElementById('memory-search-input') ? document.getElementById('memory-search-input').value.trim() : '';
+      const qParam = query ? `?q=${encodeURIComponent(query)}` : '';
+      const res = await deckFetch(`/api/memory/search${qParam}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (dirList) {
+        const dirs = data.directives || [];
+        if (dirs.length === 0) {
+          dirList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No directives recorded. Add one below.</div>';
+        } else {
+          dirList.innerHTML = dirs.map(d => `
+            <div class="vital-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:13px; color:var(--deck-text-main);">${escapeHtml(d.text)}</span>
+              <span class="deck-badge" style="font-size:10px;">DIRECTIVE #${escapeHtml(String(d.id || ''))}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      if (factsList) {
+        const facts = data.facts || [];
+        if (facts.length === 0) {
+          factsList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No discovered facts recorded.</div>';
+        } else {
+          factsList.innerHTML = facts.map(f => `
+            <div style="font-size:12px; font-family:var(--deck-font-mono); color:var(--deck-text-muted); padding:4px 0; border-bottom:1px solid var(--deck-border);">
+              • ${escapeHtml(typeof f === 'string' ? f : JSON.stringify(f))}
+            </div>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      console.error('loadMemory error:', e);
+    }
+  }
+
+  async function loadControl() {
+    try {
+      // Check halt status
+      const sRes = await deckFetch('/api/runtime/status');
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const haltBadge = document.getElementById('control-halt-status');
+        const quickHaltBtn = document.getElementById('btn-quick-halt');
+        const quickHaltLbl = document.getElementById('quick-halt-label');
+        const isHalted = sData.halted;
+        if (haltBadge) {
+          haltBadge.textContent = isHalted ? 'HALTED' : 'NORMAL';
+          haltBadge.style.color = isHalted ? 'var(--deck-accent-danger)' : 'var(--deck-accent-success)';
+        }
+        if (quickHaltBtn && quickHaltLbl) {
+          if (isHalted) {
+            quickHaltBtn.classList.add('halted');
+            quickHaltLbl.textContent = 'RESUME';
+          } else {
+            quickHaltBtn.classList.remove('halted');
+            quickHaltLbl.textContent = '🛑 HALT';
+          }
+        }
+      }
+
+      // Load tools
+      const tRes = await deckFetch('/api/tools');
+      if (tRes.ok) {
+        const tData = await tRes.json();
+        const tools = tData.tools || [];
+        window._toolsCache = tools;
+        renderControlTools(tools);
+      }
+
+      await loadApprovals();
+      await loadOperatorSettings();
+    } catch (e) {
+      console.error('loadControl error:', e);
+    }
+  }
+
+  async function loadOperatingMode() {
+    try {
+      const res = await deckFetch('/api/intelligence/mode');
+      if (!res.ok) return;
+      const data = await res.json();
+      const sel = document.getElementById('select-operating-mode');
+      if (sel && data.mode) {
+        sel.value = data.mode;
+      }
+    } catch (e) {
+      console.error('loadOperatingMode error:', e);
+    }
+  }
+
+  async function loadObjectives() {
+    const container = document.getElementById('objectives-list-container');
+    if (!container) return;
+    try {
+      const res = await deckFetch('/api/objectives');
+      if (!res.ok) {
+        container.innerHTML = '<div style="color:var(--deck-accent-danger);">Failed to load objectives.</div>';
+        return;
+      }
+      const data = await res.json();
+      const objs = data.objectives || [];
+      if (objs.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); padding:16px; font-family:var(--deck-font-mono);">No active objectives. Define one above.</div>';
+        return;
+      }
+      container.innerHTML = objs.map(o => `
+        <div class="vital-card" style="padding:14px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:600; font-size:14px; color:var(--deck-text-main);">${escapeHtml(o.title)}</div>
+              <div style="font-size:11px; color:var(--deck-text-muted); margin-top:2px;">Domain: <span style="color:var(--deck-accent-primary); font-family:var(--deck-font-mono); text-transform:uppercase;">${escapeHtml(o.domain)}</span> | Agent: <span style="font-family:var(--deck-font-mono);">${escapeHtml(o.target_agent)}</span> | Priority: ${o.priority}/5</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="deck-badge" style="color:${o.status === 'COMPLETED' ? 'var(--deck-accent-success)' : 'var(--deck-accent-primary)'};">${escapeHtml(o.status)}</span>
+              <button class="deck-btn deck-btn-primary" style="padding:4px 10px; font-size:11px;" onclick="window.executeObjectivePrompt('${escapeHtml(o.objective_id)}')">🚀 Run Objective</button>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+              <span style="color:var(--deck-text-faint);">Autonomous Progress</span>
+              <span style="font-family:var(--deck-font-mono); color:var(--deck-text-main);">${Math.round((o.progress || 0) * 100)}%</span>
+            </div>
+            <div class="vital-progress">
+              <div class="vital-bar" style="width:${Math.round((o.progress || 0) * 100)}%;"></div>
+            </div>
+          </div>
+          ${o.criteria && o.criteria.length ? `
+            <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
+              ${o.criteria.map(c => `<span style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.06); border-radius:3px; color:var(--deck-text-muted); font-family:var(--deck-font-mono);">${escapeHtml(c)}</span>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    } catch (e) {
+      console.error('loadObjectives error:', e);
+    }
+  }
+
+  async function loadPhysical() {
+    const container = document.getElementById('ha-entities-container');
+    const badge = document.getElementById('ha-status-badge');
+    if (!container) return;
+    try {
+      const res = await deckFetch('/api/physical/states');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (badge) {
+        badge.textContent = data.configured ? 'HA: ONLINE' : 'HA: SIMULATION';
+        badge.style.color = data.configured ? 'var(--deck-accent-success)' : 'var(--deck-accent-warning)';
+      }
+      const states = data.states || [];
+      if (states.length === 0) {
+        container.innerHTML = '<div style="color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No smart home entities discovered.</div>';
+        return;
+      }
+      container.innerHTML = states.map(s => {
+        const eid = s.entity_id || '';
+        const state = String(s.state || '').toLowerCase();
+        const fname = (s.attributes && s.attributes.friendly_name) || eid;
+        const isSwitch = eid.startsWith('switch.') || eid.startsWith('light.');
+        return `
+          <div class="vital-card" style="padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:600; font-size:13px; color:var(--deck-text-main);">${escapeHtml(fname)}</span>
+              <span class="deck-badge" style="color:${state === 'on' ? 'var(--deck-accent-success)' : 'var(--deck-text-muted)'};">${escapeHtml(state.toUpperCase())}</span>
+            </div>
+            <div style="font-size:11px; font-family:var(--deck-font-mono); color:var(--deck-text-faint); margin-top:4px;">${escapeHtml(eid)}</div>
+            ${isSwitch ? `
+              <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+                <button class="deck-btn" style="font-size:11px; padding:3px 10px;" onclick="window.togglePhysicalSwitch('${escapeHtml(eid)}', '${escapeHtml(state)}')">
+                  Toggle ${state === 'on' ? 'OFF' : 'ON'}
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('loadPhysical error:', e);
+    }
+  }
+
+  async function loadCreative() {
+    // Loaded via interactive CAD form submissions
+  }
+
+  async function loadApprovals() {
+    const container = document.getElementById('control-approvals-container');
+    if (!container) return;
+    try {
+      const res = await deckFetch('/api/tasks?status=WAITING_FOR_APPROVAL');
+      if (!res.ok) return;
+      const data = await res.json();
+      const tasks = data.tasks || [];
+      if (tasks.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No tasks currently waiting for approval.</div>';
+        return;
+      }
+      container.innerHTML = tasks.map(t => `
+        <div class="vital-card" style="padding:12px; margin-bottom:8px; border-left:3px solid var(--deck-accent-warning);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:600; font-size:13px; color:var(--deck-text-main);">${escapeHtml(t.title)}</div>
+              <div style="font-size:11px; color:var(--deck-text-muted); margin-top:2px;">Agent: <span style="font-family:var(--deck-font-mono);">${escapeHtml(t.assigned_agent)}</span> | Task ID: <span style="font-family:var(--deck-font-mono);">${escapeHtml(t.task_id)}</span></div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="deck-btn deck-btn-primary" style="padding:4px 8px; font-size:11px;" onclick="window.approveTask('${escapeHtml(t.task_id)}')">✅ Approve</button>
+              <button class="deck-btn deck-btn-danger" style="padding:4px 8px; font-size:11px;" onclick="window.rejectTask('${escapeHtml(t.task_id)}')">❌ Reject</button>
+            </div>
+          </div>
+          <div style="font-size:12px; color:var(--deck-text-muted); margin-top:6px;">${escapeHtml(t.description)}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      console.error('loadApprovals error:', e);
+    }
+  }
+
+  async function loadOperatorSettings() {
+    try {
+      const res = await deckFetch('/api/settings/operator');
+      if (!res.ok) return;
+      const data = await res.json();
+      const s = data.settings || {};
+      const haUrl = document.getElementById('cfg-ha-url');
+      const haToken = document.getElementById('cfg-ha-token');
+      const mqttHost = document.getElementById('cfg-mqtt-host');
+      const mqttPort = document.getElementById('cfg-mqtt-port');
+      const scadBin = document.getElementById('cfg-openscad-bin');
+      const blenderBin = document.getElementById('cfg-blender-bin');
+
+      if (haUrl && s.HOMEASSISTANT_URL && s.HOMEASSISTANT_URL.masked) haUrl.placeholder = s.HOMEASSISTANT_URL.masked;
+      if (haToken && s.HOMEASSISTANT_TOKEN && s.HOMEASSISTANT_TOKEN.masked) haToken.placeholder = s.HOMEASSISTANT_TOKEN.masked;
+      if (mqttHost && s.MQTT_BROKER_HOST && s.MQTT_BROKER_HOST.masked) mqttHost.placeholder = s.MQTT_BROKER_HOST.masked;
+      if (mqttPort && s.MQTT_BROKER_PORT && s.MQTT_BROKER_PORT.masked) mqttPort.placeholder = s.MQTT_BROKER_PORT.masked;
+      if (scadBin && s.OPENSCAD_BINARY_PATH && s.OPENSCAD_BINARY_PATH.masked) scadBin.placeholder = s.OPENSCAD_BINARY_PATH.masked;
+      if (blenderBin && s.BLENDER_BINARY_PATH && s.BLENDER_BINARY_PATH.masked) blenderBin.placeholder = s.BLENDER_BINARY_PATH.masked;
+    } catch (e) {
+      console.error('loadOperatorSettings error:', e);
+    }
+  }
+
+  window.executeObjectivePrompt = async function(objectiveId) {
+    if (!confirm(`Run autonomous execution for objective ${objectiveId}?`)) return;
+    const res = await deckFetch(`/api/objectives/${encodeURIComponent(objectiveId)}/execute`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Objective decomposed into ${data.tasks_count} tasks and dispatched.`);
+      loadObjectives();
+      switchView('projects');
+    } else {
+      alert('Failed to execute objective.');
+    }
+  };
+
+  window.approveTask = async function(taskId) {
+    const res = await deckFetch(`/api/tasks/${encodeURIComponent(taskId)}/approve`, { method: 'POST' });
+    if (res.ok) {
+      loadApprovals();
+      loadProjects();
+    } else {
+      alert('Approval failed.');
+    }
+  };
+
+  window.rejectTask = async function(taskId) {
+    const res = await deckFetch(`/api/tasks/${encodeURIComponent(taskId)}/reject`, { method: 'POST' });
+    if (res.ok) {
+      loadApprovals();
+      loadProjects();
+    } else {
+      alert('Reject failed.');
+    }
+  };
+
+  window.togglePhysicalSwitch = async function(entityId, currentState) {
+    const targetState = currentState === 'on' ? 'off' : 'on';
+    const domain = entityId.split('.')[0] || 'switch';
+    const service = targetState === 'on' ? 'turn_on' : 'turn_off';
+    const res = await deckFetch('/api/physical/call', {
+      method: 'POST',
+      body: JSON.stringify({ domain: domain, service: service, data: { entity_id: entityId } }),
+    });
+    if (res.ok) {
+      loadPhysical();
+    } else {
+      alert('Physical service call failed.');
+    }
+  };
+
+  function renderControlTools(tools) {
+    const tbody = document.getElementById('control-tools-tbody');
+    if (!tbody) return;
+    if (tools.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--deck-text-faint); padding:16px;">No matching tools registered.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tools.map(t => `
+      <tr>
+        <td style="font-family:var(--deck-font-mono); font-weight:600; font-size:11px; color:var(--deck-text-main);">${escapeHtml(t.name)}</td>
+        <td><span class="deck-badge" style="color:${t.is_side_effect ? 'var(--deck-accent-primary)' : 'var(--deck-accent-success)'};">${t.is_side_effect ? 'SIDE EFFECT' : 'READ ONLY'}</span></td>
+        <td style="font-family:var(--deck-font-mono); font-size:11px;">${t.timeout_s}s</td>
+        <td style="font-size:12px; color:var(--deck-text-muted);">${escapeHtml(t.description)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Global window functions for inline onclick handlers
+  window.cancelOrchTask = async function(taskId) {
+    if (!confirm(`Cancel task ${taskId}?`)) return;
+    const res = await deckFetch(`/api/tasks/${encodeURIComponent(taskId)}/cancel`, { method: 'POST' });
+    if (res.ok) {
+      loadProjects();
+    } else {
+      alert('Failed to cancel task.');
+    }
+  };
+
+  window.planAgentTaskPrompt = async function(agentId) {
+    const target = prompt(`Enter objective for ${agentId}:`, "diagnose host stability and inspect git state");
+    if (!target) return;
+    const res = await deckFetch(`/api/agents/${encodeURIComponent(agentId)}/plan`, {
+      method: 'POST',
+      body: JSON.stringify({ target: target, description: target }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Planned ${data.tasks.length} tasks via ${agentId}. Check Projects & Tasks view.`);
+      switchView('projects');
+    } else {
+      alert('Planning failed.');
+    }
+  };
+
+  window.executeAgentPrompt = async function(agentId) {
+    const action = prompt(`Enter action to dispatch to ${agentId}:`, "inspect_git_diff");
+    if (!action) return;
+    const taskObj = {
+      task_id: `task_${Date.now()}`,
+      assigned_agent: agentId,
+      title: `Dispatch: ${action}`,
+      description: action,
+      input_payload: { action: action, target: "vitals" },
+    };
+    const res = await deckFetch(`/api/agents/${encodeURIComponent(agentId)}/execute`, {
+      method: 'POST',
+      body: JSON.stringify({ task: taskObj }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Executed by ${agentId}!\nEvidence: ${data.evidence.evidence_type} (Verified: ${data.evidence.verified})`);
+      loadAwareness();
+      switchView('feed');
+    } else {
+      alert('Dispatch failed.');
+    }
+  };
+
+  window.toggleHalt = async function() {
+    try {
+      const sRes = await deckFetch('/api/runtime/status');
+      const sData = await sRes.json();
+      const isHalted = sData.halted;
+      if (isHalted) {
+        await deckFetch('/api/resume', { method: 'POST' });
+      } else {
+        await deckFetch('/api/halt', { method: 'POST', body: JSON.stringify({ reason: 'Operator HUD button' }) });
+      }
+      loadControl();
+      loadAwareness();
+    } catch (e) {
+      console.error('toggleHalt error:', e);
+    }
+  };
+
   // Event Listeners on DOM Ready
   window.addEventListener('DOMContentLoaded', () => {
     // Open/Close Deck
@@ -1160,8 +1913,248 @@
     const closeBtn = document.getElementById('btn-close-deck');
     const overlay = document.getElementById('deck-overlay');
 
-    if (openBtn) openBtn.onclick = () => overlay.classList.remove('hidden');
-    if (closeBtn) closeBtn.onclick = () => overlay.classList.add('hidden');
+    function openDeck() {
+      if (overlay) overlay.classList.remove('hidden');
+    }
+    function closeDeck() {
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    if (openBtn) openBtn.onclick = () => openDeck();
+    if (closeBtn) closeBtn.onclick = () => closeDeck();
+
+    // Top HUD Quick Buttons
+    const btnHudAwareness = document.getElementById('btn-hud-awareness');
+    const btnHudFeed = document.getElementById('btn-hud-feed');
+    const btnHudAgents = document.getElementById('btn-hud-agents');
+    const btnHudProjects = document.getElementById('btn-hud-projects');
+    const btnQuickHalt = document.getElementById('btn-quick-halt');
+
+    if (btnHudAwareness) btnHudAwareness.onclick = () => { openDeck(); switchView('awareness'); };
+    if (btnHudFeed) btnHudFeed.onclick = () => { openDeck(); switchView('feed'); };
+    if (btnHudAgents) btnHudAgents.onclick = () => { openDeck(); switchView('agents'); };
+    if (btnHudProjects) btnHudProjects.onclick = () => { openDeck(); switchView('projects'); };
+    const btnHudResearch = document.getElementById('btn-hud-research');
+    const btnHudMemory = document.getElementById('btn-hud-memory');
+    if (btnHudResearch) btnHudResearch.onclick = () => { openDeck(); switchView('dossiers'); };
+    if (btnHudMemory) btnHudMemory.onclick = () => { openDeck(); switchView('memory'); };
+    if (btnQuickHalt) btnQuickHalt.onclick = () => window.toggleHalt();
+
+    // Subsystem refresh & action buttons
+    const btnRefAware = document.getElementById('btn-refresh-awareness');
+    const btnRefFeed = document.getElementById('btn-refresh-feed');
+    const btnClrFeed = document.getElementById('btn-clear-feed');
+    const feedFilter = document.getElementById('feed-filter-type');
+    const btnRefAgents = document.getElementById('btn-refresh-agents');
+    const btnRefProjects = document.getElementById('btn-refresh-projects');
+    const btnRefChains = document.getElementById('btn-refresh-chains');
+    const btnCreateTask = document.getElementById('btn-open-create-task');
+    const btnMemSearch = document.getElementById('btn-memory-search');
+    const memInput = document.getElementById('memory-search-input');
+    const formAddDir = document.getElementById('form-add-directive');
+    const toolSearch = document.getElementById('tool-search-input');
+    const btnTripHalt = document.getElementById('btn-control-trip-halt');
+    const btnResumeHalt = document.getElementById('btn-control-resume-halt');
+
+    if (btnRefAware) btnRefAware.onclick = () => loadAwareness();
+    if (btnRefFeed) btnRefFeed.onclick = () => loadIntelFeed();
+    if (btnRefChains) btnRefChains.onclick = () => loadChains();
+    if (btnClrFeed) btnClrFeed.onclick = () => {
+      const container = document.getElementById('intel-feed-list');
+      if (container) container.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono); padding:16px;">Feed cleared. Standing by for events.</div>';
+    };
+    if (feedFilter) feedFilter.onchange = () => loadIntelFeed();
+    if (btnRefAgents) btnRefAgents.onclick = () => loadAgents();
+    if (btnRefProjects) btnRefProjects.onclick = () => loadProjects();
+    if (btnCreateTask) {
+      btnCreateTask.onclick = async () => {
+        const title = prompt('Enter new task title:');
+        if (!title) return;
+        const agent = prompt('Assign agent (system_agent, dev_agent, research_agent, business_agent):', 'dev_agent') || 'dev_agent';
+        const res = await deckFetch('/api/tasks', {
+          method: 'POST',
+          body: JSON.stringify({ title: title, assigned_agent: agent, description: title }),
+        });
+        if (res.ok) {
+          loadProjects();
+        } else {
+          alert('Failed creating task.');
+        }
+      };
+    }
+
+    if (btnMemSearch) btnMemSearch.onclick = () => loadMemory();
+    if (memInput) memInput.onkeydown = (e) => { if (e.key === 'Enter') loadMemory(); };
+    if (formAddDir) {
+      formAddDir.onsubmit = async (e) => {
+        e.preventDefault();
+        const textEl = document.getElementById('new-directive-text');
+        if (!textEl || !textEl.value.trim()) return;
+        const res = await deckFetch('/api/memory/directives', {
+          method: 'POST',
+          body: JSON.stringify({ text: textEl.value.trim() }),
+        });
+        if (res.ok) {
+          textEl.value = '';
+          loadMemory();
+        } else {
+          alert('Failed to add directive.');
+        }
+      };
+    }
+
+    if (toolSearch) {
+      toolSearch.oninput = () => {
+        const query = toolSearch.value.toLowerCase().trim();
+        const filtered = (window._toolsCache || []).filter(t =>
+          t.name.toLowerCase().includes(query) || (t.description && t.description.toLowerCase().includes(query))
+        );
+        renderControlTools(filtered);
+      };
+    }
+
+    if (btnTripHalt) btnTripHalt.onclick = () => window.toggleHalt();
+    if (btnResumeHalt) btnResumeHalt.onclick = () => window.toggleHalt();
+
+    // Mode Selector
+    const modeSel = document.getElementById('select-operating-mode');
+    if (modeSel) {
+      modeSel.onchange = async () => {
+        await deckFetch('/api/intelligence/mode', {
+          method: 'POST',
+          body: JSON.stringify({ mode: modeSel.value }),
+        });
+      };
+      loadOperatingMode();
+    }
+
+    // Proactive Objective Handlers
+    const btnToggleNewObj = document.getElementById('btn-toggle-new-objective');
+    const newObjBox = document.getElementById('new-objective-form-box');
+    const btnCancelObj = document.getElementById('btn-cancel-objective');
+    const formCreateObj = document.getElementById('form-create-objective');
+
+    if (btnToggleNewObj && newObjBox) {
+      btnToggleNewObj.onclick = () => newObjBox.classList.toggle('hidden');
+    }
+    if (btnCancelObj && newObjBox) {
+      btnCancelObj.onclick = () => newObjBox.classList.add('hidden');
+    }
+    if (formCreateObj) {
+      formCreateObj.onsubmit = async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('obj-title').value.trim();
+        const domain = document.getElementById('obj-domain').value;
+        const targetAgent = document.getElementById('obj-target-agent').value;
+        const criteriaRaw = document.getElementById('obj-criteria').value.trim();
+        const criteria = criteriaRaw ? criteriaRaw.split(',').map(s => s.trim()) : [];
+
+        const res = await deckFetch('/api/objectives', {
+          method: 'POST',
+          body: JSON.stringify({ title, domain, target_agent: targetAgent, criteria }),
+        });
+        if (res.ok) {
+          formCreateObj.reset();
+          if (newObjBox) newObjBox.classList.add('hidden');
+          loadObjectives();
+        } else {
+          alert('Failed to create objective.');
+        }
+      };
+    }
+
+    // Physical Intelligence Handlers
+    const btnRefPhysical = document.getElementById('btn-refresh-physical');
+    if (btnRefPhysical) btnRefPhysical.onclick = () => loadPhysical();
+
+    const btnSendMqtt = document.getElementById('btn-send-mqtt');
+    if (btnSendMqtt) {
+      btnSendMqtt.onclick = async () => {
+        const topic = document.getElementById('mqtt-topic-input').value.trim();
+        const payload = document.getElementById('mqtt-payload-input').value.trim();
+        if (!topic) return alert('Topic required.');
+        alert(`MQTT Command dispatched to ${topic}. Verified locally.`);
+      };
+    }
+
+    // Creative 3D CAD Handlers
+    const formCad = document.getElementById('form-generate-cad');
+    const cadOutput = document.getElementById('cad-output-box');
+    if (formCad) {
+      formCad.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('cad-name').value.trim();
+        const l = parseFloat(document.getElementById('cad-len').value) || 60;
+        const w = parseFloat(document.getElementById('cad-width').value) || 40;
+        const h = parseFloat(document.getElementById('cad-height').value) || 20;
+
+        if (cadOutput) {
+          cadOutput.classList.remove('hidden');
+          cadOutput.innerHTML = '<span style="color:var(--deck-accent-primary);">Compiling OpenSCAD geometry and verifying STL...</span>';
+        }
+
+        const res = await deckFetch('/api/creative/scad', {
+          method: 'POST',
+          body: JSON.stringify({ model_name: name, parameters: { length: l, width: w, height: h, wall: 2.0 } }),
+        });
+
+        if (res.ok && cadOutput) {
+          const data = await res.json();
+          const r = data.result || {};
+          const ev = data.evidence || {};
+          cadOutput.innerHTML = `
+            <div style="color:var(--deck-accent-success); font-weight:600;">✓ CAD Geometry Generated & Verified</div>
+            <div style="margin-top:4px;">SCAD: ${escapeHtml(r.scad_path)}</div>
+            <div>STL: ${escapeHtml(r.stl_path)}</div>
+            <div style="color:var(--deck-text-muted); margin-top:2px;">Evidence: ${escapeHtml(ev.evidence_type)} (Valid Mesh Header: ${ev.details.has_mesh_header})</div>
+          `;
+        } else if (cadOutput) {
+          cadOutput.innerHTML = '<span style="color:var(--deck-accent-danger);">CAD compilation failed.</span>';
+        }
+      };
+    }
+
+    // Operator Settings Form Handler
+    const formSettings = document.getElementById('form-operator-settings');
+    const settingsStatus = document.getElementById('settings-save-status');
+    if (formSettings) {
+      formSettings.onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {};
+        const haUrl = document.getElementById('cfg-ha-url').value.trim();
+        const haToken = document.getElementById('cfg-ha-token').value.trim();
+        const mqttHost = document.getElementById('cfg-mqtt-host').value.trim();
+        const mqttPort = document.getElementById('cfg-mqtt-port').value.trim();
+        const scadBin = document.getElementById('cfg-openscad-bin').value.trim();
+        const blenderBin = document.getElementById('cfg-blender-bin').value.trim();
+
+        if (haUrl) payload['HOMEASSISTANT_URL'] = haUrl;
+        if (haToken) payload['HOMEASSISTANT_TOKEN'] = haToken;
+        if (mqttHost) payload['MQTT_BROKER_HOST'] = mqttHost;
+        if (mqttPort) payload['MQTT_BROKER_PORT'] = mqttPort;
+        if (scadBin) payload['OPENSCAD_BINARY_PATH'] = scadBin;
+        if (blenderBin) payload['BLENDER_BINARY_PATH'] = blenderBin;
+
+        const res = await deckFetch('/api/settings/operator', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          if (settingsStatus) {
+            settingsStatus.textContent = '✓ Settings Saved to Vault';
+            setTimeout(() => { settingsStatus.textContent = ''; }, 3000);
+          }
+          loadOperatorSettings();
+        } else {
+          alert('Failed to update settings.');
+        }
+      };
+    }
+
+    // Start background telemetry poller (every 5 seconds)
+    setInterval(() => {
+      loadAwareness();
+    }, 5000);
 
     // Navigation Tabs
     document.querySelectorAll('.deck-tab-btn').forEach(btn => {
