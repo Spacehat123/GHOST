@@ -100,7 +100,7 @@
     followup_drafted: 'kanban', reply_complaint: 'kanban',
     reply_quarantined: 'kanban', health_incident: 'autonomy',
     intake_unmatched: 'notifications', ladder_unlock_available: 'autonomy',
-    lead_form_submission: 'kanban',
+    lead_form_submission: 'kanban', market_alert: 'market', 'market.alert': 'market',
   };
 
   function badgeTab(viewId, count = 1) {
@@ -127,14 +127,33 @@
 
   function handleLiveEvent(evt) {
     appendActivityLog(evt);
-    if (evt.type === 'universal_event') {
+    if (evt.type === 'initial_state' && evt.payload) {
+      if (typeof window.applyActiveState === 'function') {
+        window.applyActiveState(evt.payload);
+      }
+      if (activeView === 'projects') loadProjects();
+    } else if (evt.type === 'universal_event') {
       appendIntelFeed(evt);
       if (evt.event_type === 'system.telemetry.sample' && activeView === 'awareness') {
         loadAwareness();
       }
-      if (evt.event_type && evt.event_type.startsWith('task.') && activeView === 'projects') {
-        loadProjects();
+      if (evt.event_type && (evt.event_type.startsWith('task.') || evt.event_type.startsWith('mission.'))) {
+        badgeTab('projects');
+        if (activeView === 'projects') loadProjects();
+        if (activeView === 'agents') loadAgents();
       }
+      if (evt.event_type && evt.event_type.startsWith('agent.') && activeView === 'agents') {
+        loadAgents();
+      }
+      if (evt.event_type && evt.event_type.startsWith('market.') && activeView === 'market') {
+        loadMarket();
+      }
+    } else if (evt.type === 'agent_start' || evt.type === 'agent_end') {
+      if (activeView === 'agents') loadAgents();
+    } else if (evt.type === 'mission_event' || evt.type === 'mission') {
+      badgeTab('projects');
+      if (activeView === 'projects') loadProjects();
+      if (activeView === 'agents') loadAgents();
     }
     const tab = EVENT_TAB_MAP[evt.type];
     if (tab) badgeTab(tab);
@@ -168,6 +187,7 @@
       projects: loadProjects,
       physical: loadPhysical,
       creative: loadCreative,
+      market: loadMarket,
       memory: loadMemory,
       control: loadControl,
       kanban: loadLeads,
@@ -1387,6 +1407,7 @@
       const agents = data.agents || [];
       grid.innerHTML = agents.map(a => {
         const isHealthy = a.health_status === 'healthy';
+        const isWorking = a.operational_state === 'WORKING' || a.is_active;
         const tasks = (a.supported_task_types || []).map(t => `<span class="agent-pill">${escapeHtml(t)}</span>`).join('');
         const perms = (a.permission_requirements || []).map(p => `<span class="agent-pill perm">${escapeHtml(p)}</span>`).join('');
         const tools = (a.registered_tool_ids || []).map(tl => `<span class="agent-pill" style="border-color:var(--deck-accent-primary); color:var(--deck-accent-primary);">${escapeHtml(tl)}</span>`).join('');
@@ -1394,7 +1415,10 @@
           <div class="agent-card">
             <div class="agent-header">
               <span class="agent-title">${escapeHtml(a.name)}</span>
-              <span class="agent-status-badge ${isHealthy ? 'active' : 'standby'}">${escapeHtml(a.health_status.toUpperCase())}</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span class="agent-status-tag ${isWorking ? 'working' : 'idle'}">${isWorking ? '⚡ WORKING' : 'IDLE'}</span>
+                <span class="agent-status-badge ${isHealthy ? 'active' : 'standby'}">${escapeHtml(a.health_status.toUpperCase())}</span>
+              </div>
             </div>
             <div class="agent-desc">${escapeHtml(a.description || a.responsibility || '')}</div>
             <div class="agent-meta-row">
@@ -1483,17 +1507,75 @@
           if (missions.length === 0) {
             missionsEl.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No active multi-step mission currently executing. Standby mode.</div>';
           } else {
-            missionsEl.innerHTML = missions.map(m => `
-              <div class="vital-card" style="padding:12px 14px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-weight:700; font-size:13px; color:var(--deck-text-main);">${escapeHtml(m.goal)}</span>
-                  <span class="task-badge-status ${escapeHtml(m.status.toUpperCase())}">${escapeHtml(m.status)}</span>
+            missionsEl.innerHTML = missions.map(m => {
+              const tasks = m.tasks || [];
+              const tasksListHtml = tasks.length === 0 ? '' : `
+                <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+                  <div style="font-size:11px; font-weight:600; color:var(--deck-text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Mission Execution Tasks (${tasks.length})</div>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${tasks.map(t => {
+                      const st = (t.status || 'pending').toLowerCase();
+                      let badgeClass = 'PENDING';
+                      let badgeColor = 'var(--deck-text-muted)';
+                      if (st === 'done') { badgeClass = 'COMPLETED'; badgeColor = '#10b981'; }
+                      else if (st === 'in_progress') { badgeClass = 'RUNNING'; badgeColor = '#00ffcc'; }
+                      else if (st === 'blocked' || st === 'failed') { badgeClass = 'FAILED'; badgeColor = '#ef4444'; }
+                      else if (st === 'waiting_for_approval' || t.task_type === 'approval') { badgeClass = 'APPROVAL'; badgeColor = '#f59e0b'; }
+
+                      const hasEvidence = t.evidence && t.evidence.length > 0;
+                      const evidenceHtml = hasEvidence ? `
+                        <div style="margin-top:4px; font-size:10px; color:#10b981; font-family:var(--deck-font-mono);">
+                          ✓ Verified Evidence: ${t.evidence.map(e => escapeHtml(e.evidence_type || 'proof')).join(', ')}
+                        </div>
+                      ` : '';
+                      const summaryHtml = t.result_summary ? `
+                        <div style="margin-top:2px; font-size:11px; color:var(--deck-text-muted);">
+                          ${escapeHtml(t.result_summary)}
+                        </div>
+                      ` : '';
+
+                      const approveBtn = (st === 'waiting_for_approval' || (m.status === 'paused_for_approval' && st === 'in_progress')) ? `
+                        <button class="deck-btn deck-btn-primary" style="padding:2px 8px; font-size:10px; margin-left:8px;" onclick="approveMissionTask('${escapeHtml(m.id)}', '${escapeHtml(t.id)}')">Approve Task</button>
+                      ` : '';
+
+                      return `
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:4px; padding:6px 10px;">
+                          <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:12px; font-weight:600; color:var(--deck-text-main);">#${escapeHtml(t.id)}: ${escapeHtml(t.title)}</span>
+                            <div>
+                              <span class="task-badge-status ${badgeClass}" style="color:${badgeColor}; font-size:10px;">${escapeHtml(st.toUpperCase())}</span>
+                              ${approveBtn}
+                            </div>
+                          </div>
+                          ${summaryHtml}
+                          ${evidenceHtml}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
                 </div>
-                <div style="font-size:11px; color:var(--deck-text-muted); margin-top:4px; font-family:var(--deck-font-mono);">
-                  Mission ID: ${escapeHtml(m.id)} | ${m.tasks_count} Sub-Tasks
+              `;
+
+              const unblockBtn = (m.status === 'blocked' || m.status === 'paused') ? `
+                <button class="deck-btn deck-btn-warning" style="padding:2px 8px; font-size:10px; margin-left:8px;" onclick="unblockMission('${escapeHtml(m.id)}')">Unblock Mission</button>
+              ` : '';
+
+              return `
+                <div class="vital-card" style="padding:12px 14px; margin-bottom:10px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; font-size:13px; color:var(--deck-text-main);">${escapeHtml(m.goal)}</span>
+                    <div style="display:flex; align-items:center;">
+                      <span class="task-badge-status ${escapeHtml(m.status.toUpperCase())}">${escapeHtml(m.status)}</span>
+                      ${unblockBtn}
+                    </div>
+                  </div>
+                  <div style="font-size:11px; color:var(--deck-text-muted); margin-top:4px; font-family:var(--deck-font-mono);">
+                    Mission ID: ${escapeHtml(m.id)} | ${m.tasks_count || tasks.length} Sub-Tasks | Skill: ${escapeHtml(m.skill || 'universal')}
+                  </div>
+                  ${tasksListHtml}
                 </div>
-              </div>
-            `).join('');
+              `;
+            }).join('');
           }
         }
       }
@@ -1525,45 +1607,251 @@
     }
   }
 
+  window.unblockMission = async function(missionId) {
+    try {
+      const res = await deckFetch(`/api/missions/${encodeURIComponent(missionId)}/unblock`, { method: 'POST' });
+      if (res.ok) {
+        loadProjects();
+      }
+    } catch (e) {
+      console.error('Failed to unblock mission:', e);
+    }
+  };
+
+  window.approveMissionTask = async function(missionId, taskId) {
+    try {
+      const res = await deckFetch(`/api/tasks/${encodeURIComponent(taskId)}/approve`, { method: 'POST' });
+      if (res.ok) {
+        loadProjects();
+      }
+    } catch (e) {
+      console.error('Failed to approve task:', e);
+    }
+  };
+
+  let activeMemoryCategory = 'all';
+
   async function loadMemory() {
     try {
+      const pmList = document.getElementById('personal-memories-list');
       const dirList = document.getElementById('directives-list');
       const factsList = document.getElementById('facts-list');
-      const query = document.getElementById('memory-search-input') ? document.getElementById('memory-search-input').value.trim() : '';
-      const qParam = query ? `?q=${encodeURIComponent(query)}` : '';
-      const res = await deckFetch(`/api/memory/search${qParam}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const searchInput = document.getElementById('memory-search-input');
+      const inferredFilter = document.getElementById('select-memory-inferred-filter');
 
-      if (dirList) {
-        const dirs = data.directives || [];
-        if (dirs.length === 0) {
-          dirList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No directives recorded. Add one below.</div>';
-        } else {
-          dirList.innerHTML = dirs.map(d => `
-            <div class="vital-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:13px; color:var(--deck-text-main);">${escapeHtml(d.text)}</span>
-              <span class="deck-badge" style="font-size:10px;">DIRECTIVE #${escapeHtml(String(d.id || ''))}</span>
-            </div>
-          `).join('');
+      const query = searchInput ? searchInput.value.trim() : '';
+      const filterVal = inferredFilter ? inferredFilter.value : 'all';
+
+      // 1. Fetch categories summary
+      try {
+        const catRes = await deckFetch('/api/personal_intelligence/categories');
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          const cats = catData.categories || {};
+          const setBadge = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+          };
+          setBadge('count-cat-all', catData.total_memories || 0);
+          setBadge('count-cat-profile', cats.profile ? cats.profile.count : 0);
+          setBadge('count-cat-procedural', cats.procedural ? cats.procedural.count : 0);
+          setBadge('count-cat-project', cats.project ? cats.project.count : 0);
+          setBadge('count-cat-goal', cats.goal ? cats.goal.count : 0);
+          setBadge('count-cat-knowledge', cats.knowledge ? cats.knowledge.count : 0);
+          setBadge('count-cat-episodic', cats.episodic ? cats.episodic.count : 0);
+        }
+      } catch (e) {
+        console.warn('Failed to load memory categories summary:', e);
+      }
+
+      // 2. Fetch personal memories
+      if (pmList) {
+        const params = new URLSearchParams();
+        if (activeMemoryCategory && activeMemoryCategory !== 'all') {
+          params.set('category', activeMemoryCategory);
+        }
+        if (filterVal === 'confirmed') {
+          params.set('is_inferred', 'false');
+        } else if (filterVal === 'inferred') {
+          params.set('is_inferred', 'true');
+        }
+        if (query) {
+          params.set('search', query);
+        }
+
+        const pmRes = await deckFetch(`/api/personal_intelligence/memories?${params.toString()}`);
+        if (pmRes.ok) {
+          const pmData = await pmRes.json();
+          const mems = pmData.memories || [];
+          if (mems.length === 0) {
+            pmList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono); padding:16px; text-align:center;">No personal memories match your current category/filter. Click "+ Add Memory" to create one.</div>';
+          } else {
+            pmList.innerHTML = mems.map(m => {
+              const confPct = Math.round((m.confidence || 1.0) * 100);
+              const catColors = {
+                profile: 'rgba(0, 240, 255, 0.15)',
+                procedural: 'rgba(0, 255, 170, 0.15)',
+                project: 'rgba(251, 191, 36, 0.15)',
+                goal: 'rgba(192, 132, 252, 0.15)',
+                knowledge: 'rgba(56, 189, 248, 0.15)',
+                episodic: 'rgba(244, 114, 182, 0.15)'
+              };
+              const catBorder = {
+                profile: '#00f0ff',
+                procedural: '#00ffaa',
+                project: '#fbbf24',
+                goal: '#c084fc',
+                knowledge: '#38bdf8',
+                episodic: '#f472b6'
+              };
+              const col = catBorder[m.category] || '#00f0ff';
+              const bg = catColors[m.category] || 'rgba(0,240,255,0.1)';
+              const isInferred = Boolean(m.is_inferred);
+
+              const createdDate = m.created_at ? new Date(m.created_at * 1000).toLocaleDateString() : '';
+              const confirmedDate = m.last_confirmed ? new Date(m.last_confirmed * 1000).toLocaleDateString() : '';
+
+              return `
+                <div class="vital-card pm-card" data-id="${escapeHtml(m.id)}" style="padding:14px; border-left:4px solid ${col}; background:rgba(15,23,42,0.6);">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="deck-badge" style="background:${bg}; color:${col}; font-weight:700; font-size:10px;">${escapeHtml(m.category.toUpperCase())}</span>
+                      <span style="font-size:14px; font-weight:600; color:#fff;">${escapeHtml(m.subject)}</span>
+                      <span class="deck-badge" style="background:${isInferred ? 'rgba(251,191,36,0.15)' : 'rgba(0,255,170,0.15)'}; color:${isInferred ? '#fbbf24' : '#00ffaa'}; font-size:10px;">
+                        ${isInferred ? '⚡ INFERRED PREFERENCE' : '✓ CONFIRMED FACT'}
+                      </span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:10px; font-family:var(--deck-font-mono); color:var(--deck-text-muted);">CONFIDENCE: ${confPct}%</span>
+                      <button class="deck-btn pm-btn-edit" data-id="${escapeHtml(m.id)}" style="padding:3px 8px; font-size:10px;">✏️ Edit / Correct</button>
+                      ${isInferred ? `<button class="deck-btn deck-btn-primary pm-btn-confirm" data-id="${escapeHtml(m.id)}" style="padding:3px 8px; font-size:10px;">✓ Confirm</button>` : ''}
+                      <button class="deck-btn deck-btn-danger pm-btn-delete" data-id="${escapeHtml(m.id)}" style="padding:3px 8px; font-size:10px;">🗑️</button>
+                    </div>
+                  </div>
+
+                  <div style="font-size:13px; color:var(--deck-text-main); margin-top:8px; line-height:1.5;">
+                    ${escapeHtml(m.content)}
+                  </div>
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:10px; font-family:var(--deck-font-mono); color:var(--deck-text-muted);">
+                    <div>
+                      <span>Source: ${escapeHtml(m.source || 'user_confirmed')}</span>
+                      <span style="margin:0 6px;">•</span>
+                      <span>Created: ${createdDate}</span>
+                      <span style="margin:0 6px;">•</span>
+                      <span>Last Confirmed: ${confirmedDate}</span>
+                    </div>
+                    <div>
+                      <span>Attributed: ${m.influence_count || 0} times</span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+            // Wire action buttons
+            pmList.querySelectorAll('.pm-btn-edit').forEach(btn => {
+              btn.onclick = () => {
+                const id = btn.getAttribute('data-id');
+                const mem = mems.find(x => x.id === id);
+                if (mem) openPersonalMemoryModal(mem);
+              };
+            });
+
+            pmList.querySelectorAll('.pm-btn-confirm').forEach(btn => {
+              btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                await deckFetch(`/api/personal_intelligence/memories/${id}/confirm`, { method: 'POST' });
+                loadMemory();
+              };
+            });
+
+            pmList.querySelectorAll('.pm-btn-delete').forEach(btn => {
+              btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                if (confirm('Delete this personal memory item?')) {
+                  await deckFetch(`/api/personal_intelligence/memories/${id}`, { method: 'DELETE' });
+                  loadMemory();
+                }
+              };
+            });
+          }
         }
       }
 
-      if (factsList) {
-        const facts = data.facts || [];
-        if (facts.length === 0) {
-          factsList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No discovered facts recorded.</div>';
-        } else {
-          factsList.innerHTML = facts.map(f => `
-            <div style="font-size:12px; font-family:var(--deck-font-mono); color:var(--deck-text-muted); padding:4px 0; border-bottom:1px solid var(--deck-border);">
-              • ${escapeHtml(typeof f === 'string' ? f : JSON.stringify(f))}
-            </div>
-          `).join('');
+      // 3. Legacy Directives & Facts
+      const qParam = query ? `?q=${encodeURIComponent(query)}` : '';
+      const res = await deckFetch(`/api/memory/search${qParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (dirList) {
+          const dirs = data.directives || [];
+          if (dirs.length === 0) {
+            dirList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No directives recorded.</div>';
+          } else {
+            dirList.innerHTML = dirs.map(d => `
+              <div class="vital-card" style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; color:var(--deck-text-main);">${escapeHtml(d.text)}</span>
+                <span class="deck-badge" style="font-size:10px;">DIRECTIVE #${escapeHtml(String(d.id || ''))}</span>
+              </div>
+            `).join('');
+          }
+        }
+
+        if (factsList) {
+          const facts = data.facts || [];
+          if (facts.length === 0) {
+            factsList.innerHTML = '<div style="font-size:12px; color:var(--deck-text-faint); font-family:var(--deck-font-mono);">No discovered facts recorded.</div>';
+          } else {
+            factsList.innerHTML = facts.map(f => `
+              <div style="font-size:11px; font-family:var(--deck-font-mono); color:var(--deck-text-muted); padding:3px 0; border-bottom:1px solid var(--deck-border);">
+                • ${escapeHtml(typeof f === 'string' ? f : JSON.stringify(f))}
+              </div>
+            `).join('');
+          }
         }
       }
     } catch (e) {
       console.error('loadMemory error:', e);
     }
+  }
+
+  function openPersonalMemoryModal(mem = null) {
+    const modal = document.getElementById('personal-memory-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('pm-modal-title');
+    const idEl = document.getElementById('pm-memory-id');
+    const catEl = document.getElementById('pm-category');
+    const subEl = document.getElementById('pm-subject');
+    const contEl = document.getElementById('pm-content');
+    const confEl = document.getElementById('pm-confidence');
+    const infEl = document.getElementById('pm-inferred');
+
+    if (mem) {
+      titleEl.textContent = 'Edit / Correct Personal Memory';
+      idEl.value = mem.id;
+      catEl.value = mem.category;
+      subEl.value = mem.subject;
+      contEl.value = mem.content;
+      confEl.value = mem.confidence || 1.0;
+      infEl.value = mem.is_inferred ? '1' : '0';
+    } else {
+      titleEl.textContent = 'Create New Personal Memory';
+      idEl.value = '';
+      catEl.value = activeMemoryCategory !== 'all' ? activeMemoryCategory : 'profile';
+      subEl.value = '';
+      contEl.value = '';
+      confEl.value = '1.0';
+      infEl.value = '0';
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function closePersonalMemoryModal() {
+    const modal = document.getElementById('personal-memory-modal');
+    if (modal) modal.classList.add('hidden');
   }
 
   async function loadControl() {
@@ -1716,6 +2004,228 @@
   async function loadCreative() {
     // Loaded via interactive CAD form submissions
   }
+
+  // ---- Market Intelligence View ---------------------------------------------
+
+  async function loadMarket() {
+    try {
+      const res = await deckFetch('/api/market/overview');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Update daemon status badge
+      const daemonBadge = document.getElementById('market-daemon-badge');
+      if (daemonBadge && data.daemon_status) {
+        daemonBadge.textContent = data.daemon_status.running ? 'DAEMON: ACTIVE (POLLING)' : 'DAEMON: IDLE';
+        daemonBadge.style.color = data.daemon_status.running ? '#00ffcc' : '#ffaa00';
+      }
+
+      // Render Benchmarks & Macro Ribbon
+      const benchGrid = document.getElementById('market-benchmarks-grid');
+      if (benchGrid && data.benchmarks) {
+        benchGrid.innerHTML = data.benchmarks.map(b => {
+          const chg = b.change || 0;
+          const chgPct = b.change_pct || 0;
+          const isPos = chg >= 0;
+          const color = isPos ? '#00ff88' : '#ff4444';
+          const sign = isPos ? '+' : '';
+          const name = b.symbol === '^NSEI' ? 'NIFTY 50' :
+                       b.symbol === '^BSESN' ? 'SENSEX' :
+                       b.symbol === '^NSEBANK' ? 'BANK NIFTY' :
+                       b.symbol === 'USDINR=X' ? 'USD / INR' :
+                       b.symbol === 'BZ=F' ? 'BRENT CRUDE' :
+                       b.symbol === '^TNX' ? 'US 10Y YIELD' : b.symbol;
+
+          return `
+            <div class="deck-card" style="padding:10px 12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:6px; cursor:pointer;" onclick="deckAnalyzeSymbol('${b.symbol}')">
+              <div style="font-size:11px; opacity:0.6; text-transform:uppercase;">${escapeHtml(name)}</div>
+              <div style="font-size:16px; font-weight:bold; font-family:var(--deck-font-mono); margin:4px 0;">${b.price != null ? b.price.toLocaleString() : '--'}</div>
+              <div style="font-size:11px; font-family:var(--deck-font-mono); color:${color};">
+                ${sign}${chg} (${sign}${chgPct}%)
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render ADR Table
+      const adrTbody = document.getElementById('market-adr-tbody');
+      const phaseBadge = document.getElementById('market-adr-phase');
+      if (adrTbody && data.adrs) {
+        if (data.adrs.length === 0) {
+          adrTbody.innerHTML = '<tr><td colspan="8" style="padding:10px; opacity:0.5; text-align:center;">No ADR pairs tracked.</td></tr>';
+        } else {
+          adrTbody.innerHTML = data.adrs.map(a => {
+            const prem = a.premium_discount_pct != null ? a.premium_discount_pct : 0;
+            const isPrem = prem >= 0;
+            const premColor = isPrem ? '#00ff88' : '#ff4444';
+            const premSign = isPrem ? '+' : '';
+            const signal = prem > 1.5 ? '<span style="color:#00ff88;">PREMIUM LEAD</span>' :
+                           prem < -1.5 ? '<span style="color:#ff4444;">DISCOUNT DRAG</span>' :
+                           '<span style="opacity:0.6;">PARITY</span>';
+
+            return `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer;" onclick="deckAnalyzeSymbol('${a.domestic_symbol}')">
+                <td style="padding:8px; font-weight:bold; color:#00ffcc;">${escapeHtml(a.adr_symbol)}</td>
+                <td style="padding:8px;">${escapeHtml(a.domestic_symbol)}</td>
+                <td style="padding:8px; opacity:0.7;">1:${a.adr_ratio}</td>
+                <td style="padding:8px;">$${a.adr_price_usd != null ? a.adr_price_usd.toFixed(2) : '--'}</td>
+                <td style="padding:8px;">₹${a.domestic_price_inr != null ? a.domestic_price_inr.toFixed(2) : '--'}</td>
+                <td style="padding:8px; font-weight:600;">₹${a.implied_inr != null ? a.implied_inr.toFixed(2) : '--'}</td>
+                <td style="padding:8px; font-weight:bold; color:${premColor};">${premSign}${prem}%</td>
+                <td style="padding:8px; font-size:11px;">${signal}</td>
+              </tr>
+            `;
+          }).join('');
+
+          if (phaseBadge && data.adrs[0]) {
+            phaseBadge.textContent = `US SESSION: ${data.adrs[0].session_phase || 'REGULAR'}`;
+          }
+        }
+      }
+
+      // Render Directional Opportunities
+      const oppGrid = document.getElementById('market-opportunities-grid');
+      if (oppGrid && data.recent_analyses) {
+        if (data.recent_analyses.length === 0) {
+          oppGrid.innerHTML = '<div class="deck-card" style="padding:12px; opacity:0.6;">No recent directional analyses generated. Click "Force Surveillance Scan" or enter a symbol to analyze.</div>';
+        } else {
+          oppGrid.innerHTML = data.recent_analyses.map(ana => {
+            const isBull = ana.direction === 'BULLISH';
+            const isBear = ana.direction === 'BEARISH';
+            const dirColor = isBull ? '#00ff88' : isBear ? '#ff4444' : '#ffaa00';
+            const levels = ana.key_levels || {};
+
+            return `
+              <div class="deck-card" style="padding:14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:6px; cursor:pointer;" onclick="deckAnalyzeSymbol('${ana.symbol}')">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-weight:bold; font-size:14px; color:#fff;">${escapeHtml(ana.symbol)}</span>
+                  <span class="deck-badge" style="background:${dirColor}22; border:1px solid ${dirColor}; color:${dirColor}; font-weight:bold; font-size:11px;">
+                    ${escapeHtml(ana.direction)} (${escapeHtml(ana.confidence)})
+                  </span>
+                </div>
+                <div style="font-size:11px; opacity:0.7; margin-bottom:8px;">Horizon: <b style="color:#00ffcc;">${escapeHtml(ana.horizon)}</b> · Catalyst: ${escapeHtml(ana.catalyst || 'Trend evaluation')}</div>
+                <div style="font-size:12px; opacity:0.85; margin-bottom:10px; line-height:1.4;">${escapeHtml((ana.why_it_matters || '').slice(0, 160))}...</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; font-size:11px; font-family:var(--deck-font-mono);">
+                  <div>Support: <span style="color:#00ff88;">₹${levels.support || '--'}</span></div>
+                  <div>Resistance: <span style="color:#00ffcc;">₹${levels.resistance || '--'}</span></div>
+                </div>
+                <div style="font-size:11px; color:#ffaa00; margin-top:6px;">Invalidation: ${escapeHtml(ana.invalidation || '--')}</div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Render News Stream
+      loadMarketNews();
+
+      // Render Alerts History
+      loadMarketAlerts();
+
+    } catch (e) {
+      console.error('loadMarket error:', e);
+    }
+  }
+
+  async function loadMarketNews() {
+    const newsContainer = document.getElementById('market-news-container');
+    const filterSelect = document.getElementById('market-news-filter');
+    if (!newsContainer) return;
+
+    const impact = filterSelect ? filterSelect.value : '';
+    const url = impact ? `/api/market/news?limit=25&impact=${impact}` : '/api/market/news?limit=25';
+
+    try {
+      const res = await deckFetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const news = data.news || [];
+
+      if (news.length === 0) {
+        newsContainer.innerHTML = '<div style="font-size:12px; opacity:0.5; padding:8px;">No news items matching filter.</div>';
+        return;
+      }
+
+      newsContainer.innerHTML = news.map(n => {
+        const imp = n.impact || 'LOW';
+        const impColor = imp === 'CRITICAL' ? '#ff3333' : imp === 'HIGH' ? '#ff9900' : imp === 'MEDIUM' ? '#00ccff' : 'rgba(255,255,255,0.4)';
+        const sent = n.sentiment || 'NEUTRAL';
+        const sentColor = sent === 'BULLISH' ? '#00ff88' : sent === 'BEARISH' ? '#ff4444' : 'rgba(255,255,255,0.6)';
+
+        return `
+          <div style="padding:8px 10px; background:rgba(255,255,255,0.02); border-left:3px solid ${impColor}; border-radius:0 4px 4px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span class="deck-badge" style="font-size:9px; background:${impColor}22; color:${impColor}; border:1px solid ${impColor};">${imp}</span>
+              <span style="font-size:10px; opacity:0.5;">${escapeHtml(n.source)} · ${escapeHtml(n.published_at || '')}</span>
+            </div>
+            <div style="font-weight:600; font-size:12px; color:#fff; line-height:1.3; margin-bottom:3px;">
+              <a href="${escapeHtml(n.url)}" target="_blank" style="color:inherit; text-decoration:none;">${escapeHtml(n.title)}</a>
+            </div>
+            <div style="font-size:11px; opacity:0.75; line-height:1.3;">${escapeHtml((n.summary || '').slice(0, 140))}...</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:10px;">
+              <span style="color:${sentColor}; font-weight:bold;">${sent}</span>
+              <div>${(n.symbols || []).map(s => `<span class="deck-badge" style="font-size:9px; cursor:pointer;" onclick="deckAnalyzeSymbol('${s}')">${escapeHtml(s)}</span>`).join(' ')}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('loadMarketNews error:', e);
+    }
+  }
+
+  async function loadMarketAlerts() {
+    const alertsContainer = document.getElementById('market-alerts-container');
+    if (!alertsContainer) return;
+
+    try {
+      const res = await deckFetch('/api/market/alerts?limit=25');
+      if (!res.ok) return;
+      const data = await res.json();
+      const alerts = data.alerts || [];
+
+      if (alerts.length === 0) {
+        alertsContainer.innerHTML = '<div style="font-size:12px; opacity:0.5; padding:8px;">No desktop alerts recorded yet.</div>';
+        return;
+      }
+
+      alertsContainer.innerHTML = alerts.map(a => {
+        const imp = a.impact || 'HIGH';
+        const impColor = imp === 'CRITICAL' ? '#ff3333' : '#ff9900';
+        const dir = a.direction || 'NEUTRAL';
+        const dirColor = dir === 'BULLISH' ? '#00ff88' : dir === 'BEARISH' ? '#ff4444' : '#ffaa00';
+        const timeStr = a.notified_at ? new Date(a.notified_at * 1000).toLocaleTimeString() : '--';
+
+        return `
+          <div style="padding:10px; background:rgba(255,255,255,0.02); border:1px solid ${impColor}44; border-radius:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span class="deck-badge" style="font-size:10px; background:${impColor}22; color:${impColor}; border:1px solid ${impColor}; font-weight:bold;">
+                ALERT: ${imp} — ${escapeHtml(a.symbol)}
+              </span>
+              <span style="font-size:10px; opacity:0.5; font-family:var(--deck-font-mono);">${timeStr}</span>
+            </div>
+            <div style="font-weight:600; font-size:12px; color:#fff; margin-bottom:4px;">${escapeHtml(a.headline)}</div>
+            <div style="font-size:11px; opacity:0.8; margin-bottom:6px;">${escapeHtml((a.summary || '').slice(0, 160))}</div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.8;">
+              <span>Assessment: <b style="color:${dirColor};">${dir}</b> (${escapeHtml(a.confidence)})</span>
+              <span>Horizon: <b>${escapeHtml(a.horizon)}</b></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('loadMarketAlerts error:', e);
+    }
+  }
+
+  // Global helper for symbol analysis from clicks
+  window.deckAnalyzeSymbol = async function(symbol) {
+    const input = document.getElementById('market-analyze-input');
+    if (input) input.value = symbol;
+    const btn = document.getElementById('btn-market-analyze');
+    if (btn) btn.click();
+  };
 
   async function loadApprovals() {
     const container = document.getElementById('control-approvals-container');
@@ -1985,6 +2495,65 @@
 
     if (btnMemSearch) btnMemSearch.onclick = () => loadMemory();
     if (memInput) memInput.onkeydown = (e) => { if (e.key === 'Enter') loadMemory(); };
+
+    // Personal Intelligence category buttons
+    document.querySelectorAll('.memory-cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.memory-cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeMemoryCategory = btn.getAttribute('data-cat') || 'all';
+        loadMemory();
+      });
+    });
+
+    const infFilter = document.getElementById('select-memory-inferred-filter');
+    if (infFilter) {
+      infFilter.onchange = () => loadMemory();
+    }
+
+    const btnOpenAddMem = document.getElementById('btn-open-add-memory');
+    if (btnOpenAddMem) {
+      btnOpenAddMem.onclick = () => openPersonalMemoryModal();
+    }
+
+    const btnClosePmModal = document.getElementById('btn-close-pm-modal');
+    if (btnClosePmModal) {
+      btnClosePmModal.onclick = () => closePersonalMemoryModal();
+    }
+
+    const btnCancelPmModal = document.getElementById('btn-cancel-pm-modal');
+    if (btnCancelPmModal) {
+      btnCancelPmModal.onclick = () => closePersonalMemoryModal();
+    }
+
+    const formPm = document.getElementById('form-personal-memory');
+    if (formPm) {
+      formPm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('pm-memory-id').value;
+        const category = document.getElementById('pm-category').value;
+        const subject = document.getElementById('pm-subject').value.trim();
+        const content = document.getElementById('pm-content').value.trim();
+        const confidence = parseFloat(document.getElementById('pm-confidence').value) || 1.0;
+        const isInferred = document.getElementById('pm-inferred').value === '1';
+
+        if (id) {
+          // Update / Correction
+          await deckFetch(`/api/personal_intelligence/memories/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ category, subject, content, confidence, is_inferred: isInferred })
+          });
+        } else {
+          // Add new
+          await deckFetch('/api/personal_intelligence/memories', {
+            method: 'POST',
+            body: JSON.stringify({ category, subject, content, confidence, is_inferred: isInferred })
+          });
+        }
+        closePersonalMemoryModal();
+        loadMemory();
+      };
+    }
     if (formAddDir) {
       formAddDir.onsubmit = async (e) => {
         e.preventDefault();
@@ -2196,6 +2765,84 @@
           alert(`Failed: ${err.detail}`);
         }
       };
+    }
+
+    // Market Intelligence Handlers
+    const btnMarketScan = document.getElementById('btn-market-scan');
+    if (btnMarketScan) {
+      btnMarketScan.onclick = async () => {
+        btnMarketScan.disabled = true;
+        btnMarketScan.textContent = '⏳ Scanning...';
+        try {
+          const res = await deckFetch('/api/market/scan', { method: 'POST' });
+          if (res.ok) {
+            await loadMarket();
+          }
+        } catch (e) {
+          console.error('Market scan failed:', e);
+        } finally {
+          btnMarketScan.disabled = false;
+          btnMarketScan.textContent = '⚡ Force Surveillance Scan';
+        }
+      };
+    }
+
+    const btnMarketAnalyze = document.getElementById('btn-market-analyze');
+    const inputMarketAnalyze = document.getElementById('market-analyze-input');
+    const boxMarketResult = document.getElementById('market-analysis-result');
+    if (btnMarketAnalyze && inputMarketAnalyze && boxMarketResult) {
+      btnMarketAnalyze.onclick = async () => {
+        const sym = inputMarketAnalyze.value.trim();
+        if (!sym) return;
+        btnMarketAnalyze.disabled = true;
+        btnMarketAnalyze.textContent = 'Analyzing...';
+        boxMarketResult.style.display = 'block';
+        boxMarketResult.innerHTML = '<div style="font-size:12px; opacity:0.6;">Executing multi-factor technical, ADR, and catalyst analysis...</div>';
+        try {
+          const res = await deckFetch('/api/market/analyze', {
+            method: 'POST',
+            body: JSON.stringify({ symbol: sym })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const ana = data.analysis || {};
+            const isBull = ana.direction === 'BULLISH';
+            const isBear = ana.direction === 'BEARISH';
+            const dirColor = isBull ? '#00ff88' : isBear ? '#ff4444' : '#ffaa00';
+            const lvls = ana.key_levels || {};
+
+            boxMarketResult.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:15px; font-weight:bold; color:#fff;">${escapeHtml(sym)} Directional Assessment</span>
+                <span class="deck-badge" style="background:${dirColor}22; border:1px solid ${dirColor}; color:${dirColor}; font-weight:bold; font-size:12px;">
+                  ${escapeHtml(ana.direction)} (${escapeHtml(ana.confidence)})
+                </span>
+              </div>
+              <div style="font-size:12px; margin-bottom:6px;"><b>Catalyst:</b> ${escapeHtml(ana.catalyst || '--')}</div>
+              <div style="font-size:12px; opacity:0.85; margin-bottom:10px; line-height:1.4;">${escapeHtml(ana.why_it_matters || '--')}</div>
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; background:rgba(0,0,0,0.4); padding:10px; border-radius:4px; font-family:var(--deck-font-mono); font-size:11px; margin-bottom:8px;">
+                <div>Current: <b>₹${lvls.current || '--'}</b></div>
+                <div>Support: <b style="color:#00ff88;">₹${lvls.support || '--'}</b></div>
+                <div>Resistance: <b style="color:#00ffcc;">₹${lvls.resistance || '--'}</b></div>
+              </div>
+              <div style="font-size:11px; color:#ffaa00; margin-bottom:4px;"><b>Invalidation Condition:</b> ${escapeHtml(ana.invalidation || '--')}</div>
+              <div style="font-size:11px; opacity:0.75;"><b>Key Risk:</b> ${escapeHtml(ana.risks || '--')}</div>
+            `;
+          } else {
+            boxMarketResult.innerHTML = '<div style="color:#ff4444; font-size:12px;">Analysis failed for symbol. Check ticker format.</div>';
+          }
+        } catch (e) {
+          boxMarketResult.innerHTML = `<div style="color:#ff4444; font-size:12px;">Error: ${escapeHtml(e.message)}</div>`;
+        } finally {
+          btnMarketAnalyze.disabled = false;
+          btnMarketAnalyze.textContent = 'Analyze Instrument';
+        }
+      };
+    }
+
+    const filterMarketNews = document.getElementById('market-news-filter');
+    if (filterMarketNews) {
+      filterMarketNews.onchange = () => loadMarketNews();
     }
 
     initSession();

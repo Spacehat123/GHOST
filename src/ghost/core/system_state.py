@@ -119,7 +119,7 @@ class SystemStateManager:
             "display": True,
         }
 
-        # Subscribe to EventBus telemetry and resource alert events
+        # Subscribe to EventBus telemetry, resource alert, and agent lifecycle events
         self._sub_id = self._event_bus.subscribe(
             "system.telemetry.sample",
             self._on_telemetry_event,
@@ -127,6 +127,10 @@ class SystemStateManager:
         self._sub_alert_id = self._event_bus.subscribe(
             "system.resource.*",
             self._on_resource_event,
+        )
+        self._sub_agent_id = self._event_bus.subscribe(
+            "agent.*",
+            self._on_agent_lifecycle_event,
         )
 
     def _on_telemetry_event(self, event: Event) -> None:
@@ -167,6 +171,19 @@ class SystemStateManager:
                     self.clear_alert(metric)
         except Exception as e:
             logger.warning(f"Failed to process resource event: {e}")
+
+    def _on_agent_lifecycle_event(self, event: Event) -> None:
+        """Handle agent activation and deactivation events."""
+        try:
+            agent_id = event.payload.get("agent_id") or event.payload.get("name")
+            if not agent_id:
+                return
+            if event.event_type == "agent.activated":
+                self.register_agent(agent_id)
+            elif event.event_type == "agent.deactivated":
+                self.unregister_agent(agent_id)
+        except Exception as e:
+            logger.warning(f"Failed to handle agent lifecycle event: {e}")
 
     def set_vitals(self, vitals: HardwareVitals) -> None:
         with self._lock:

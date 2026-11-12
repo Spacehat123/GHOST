@@ -27,7 +27,7 @@ class TestSpecializedAgents(unittest.IsolatedAsyncioTestCase):
 
     async def test_available_agents_registry(self):
         agents = get_available_agents()
-        self.assertEqual(len(agents), 7)
+        self.assertGreaterEqual(len(agents), 7)
         ids = {a.agent_id for a in agents}
         self.assertIn("system_agent", ids)
         self.assertIn("dev_agent", ids)

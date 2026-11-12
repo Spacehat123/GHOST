@@ -1,3 +1,7 @@
+# GHOST Autonomous Agency Engine
+
+Verified personal intelligence and built-in workspace environment.
+
 # GHOST: Universal AI Operating Environment
 
 [![Architecture Target](https://img.shields.io/badge/Architecture-Universal%20OS-blue)](ARCHITECTURE_TARGET.md)

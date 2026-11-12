@@ -47,7 +47,10 @@ class TestDeterministicAgentRouting(unittest.IsolatedAsyncioTestCase):
         )
 
     async def asyncTearDown(self):
-        self.tmp_dir.cleanup()
+        try:
+            self.tmp_dir.cleanup()
+        except Exception:
+            pass
 
     # 1. Clear requests route to the correct agent
     async def test_clear_single_domain_routing(self):

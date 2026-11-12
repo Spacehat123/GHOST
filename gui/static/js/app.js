@@ -444,9 +444,231 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle Server Events & Pipelined Speech
   let fullSpokenBuffer = '';
 
+  // Live Active State & Sidebar Synchronization
+  function applyActiveState(state) {
+    if (!state) return;
+
+    // 1. Mission / Objective
+    const objStatusEl = document.getElementById('active-objective-status');
+    const missionNameEl = document.getElementById('active-mission-name');
+    const missionSubEl = document.getElementById('active-mission-sub');
+    const barFillEl = document.getElementById('active-mission-bar-fill');
+
+    if (state.active_mission) {
+      const m = state.active_mission;
+      if (missionNameEl) missionNameEl.textContent = m.goal || 'Autonomous Agency Core';
+      if (missionSubEl) missionSubEl.textContent = m.current_task_title || (m.status === 'completed' ? 'All tasks verified.' : `Status: ${m.status}`);
+      if (barFillEl) barFillEl.style.width = `${m.progress_percent || 0}%`;
+
+      if (objStatusEl) {
+        const st = (m.status || '').toLowerCase();
+        if (st === 'in_progress') {
+          objStatusEl.textContent = 'RUNNING';
+          objStatusEl.className = 'panel-status-val cyan';
+        } else if (st === 'completed') {
+          objStatusEl.textContent = 'COMPLETED';
+          objStatusEl.className = 'panel-status-val green';
+        } else if (st === 'blocked' || st === 'failed') {
+          objStatusEl.textContent = 'BLOCKED';
+          objStatusEl.className = 'panel-status-val red';
+        } else if (st === 'paused_for_approval' || st === 'approval') {
+          objStatusEl.textContent = 'APPROVAL REQ';
+          objStatusEl.className = 'panel-status-val amber';
+        } else {
+          objStatusEl.textContent = (m.status || 'ONLINE').toUpperCase();
+          objStatusEl.className = 'panel-status-val';
+        }
+      }
+    } else {
+      if (missionNameEl) missionNameEl.textContent = 'Standby — Universal Core';
+      if (missionSubEl) missionSubEl.textContent = 'Awaiting next directive...';
+      if (barFillEl) barFillEl.style.width = '0%';
+      if (objStatusEl) {
+        objStatusEl.textContent = 'ONLINE';
+        objStatusEl.className = 'panel-status-val green';
+      }
+    }
+
+    // 2. Domain Agents Catalog
+    if (state.agents_catalog) {
+      renderAgentsStack(state.agents_catalog);
+    }
+
+    // 3. Telemetry Vitals
+    if (state.vitals) {
+      updateHudVitals(state.vitals);
+    }
+  }
+  window.applyActiveState = applyActiveState;
+  window.renderAgentsStack = renderAgentsStack;
+  window.setAgentActive = setAgentActive;
+
+  function renderAgentsStack(agents) {
+    const stackEl = document.getElementById('agents-status-stack');
+    const countEl = document.getElementById('active-agents-count');
+    if (!stackEl) return;
+
+    let runningCount = 0;
+    const rowsHtml = agents.map(a => {
+      const isWorking = a.status === 'RUNNING' || a.status === 'WORKING' || a.active;
+      if (isWorking) runningCount++;
+      const indicatorClass = isWorking ? 'working' : 'idle';
+      const rowClass = isWorking ? 'agent-row active' : 'agent-row';
+      const tagClass = isWorking ? 'agent-status-tag working' : 'agent-status-tag idle';
+      const tagText = isWorking ? 'WORKING' : 'IDLE';
+
+      return `
+        <div class="${rowClass}" data-agent="${a.id}" title="${a.spec || ''}">
+          <span class="agent-indicator ${indicatorClass}"></span>
+          <span class="agent-name">${a.name}</span>
+          <span class="${tagClass}">${tagText}</span>
+        </div>
+      `;
+    }).join('');
+
+    stackEl.innerHTML = rowsHtml;
+    if (countEl) {
+      countEl.textContent = runningCount > 0 ? `${runningCount} WORKING` : 'ALL IDLE';
+      countEl.className = runningCount > 0 ? 'panel-status-val cyan' : 'panel-status-val';
+    }
+  }
+
+  function setAgentActive(agentId, isActive, specOverride) {
+    const stackEl = document.getElementById('agents-status-stack');
+    if (!stackEl) return;
+    const cleanId = (agentId || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const row = stackEl.querySelector(`[data-agent="${cleanId}"]`) ||
+                Array.from(stackEl.querySelectorAll('.agent-row')).find(r => (r.textContent || '').toLowerCase().includes(cleanId.replace('_agent', '')));
+    if (!row) return;
+
+    const ind = row.querySelector('.agent-indicator');
+    const tag = row.querySelector('.agent-status-tag') || row.querySelector('.agent-spec');
+
+    if (isActive) {
+      row.classList.add('active');
+      if (ind) { ind.className = 'agent-indicator working'; }
+      if (tag) {
+        tag.className = 'agent-status-tag working';
+        tag.textContent = specOverride || 'WORKING';
+      }
+    } else {
+      row.classList.remove('active');
+      if (ind) { ind.className = 'agent-indicator idle'; }
+      if (tag) {
+        tag.className = 'agent-status-tag idle';
+        tag.textContent = 'IDLE';
+      }
+    }
+
+    const running = stackEl.querySelectorAll('.agent-row.active').length;
+    const countEl = document.getElementById('active-agents-count');
+    if (countEl) {
+      countEl.textContent = running > 0 ? `${running} WORKING` : 'ALL IDLE';
+      countEl.className = running > 0 ? 'panel-status-val cyan' : 'panel-status-val';
+    }
+  }
+
+  function updateHudVitals(vitals) {
+    if (!vitals) return;
+    const cpuFill = document.getElementById('hud-cpu-fill');
+    const cpuNum = document.getElementById('hud-cpu-num');
+    const ramFill = document.getElementById('hud-ram-fill');
+    const ramNum = document.getElementById('hud-ram-num');
+    const gpuFill = document.getElementById('hud-gpu-fill');
+    const gpuNum = document.getElementById('hud-gpu-num');
+
+    if (vitals.cpu_percent != null) {
+      const c = Math.round(vitals.cpu_percent);
+      if (cpuFill) cpuFill.style.width = `${Math.min(100, Math.max(0, c))}%`;
+      if (cpuNum) cpuNum.textContent = `${c}%`;
+    }
+    if (vitals.ram_percent != null) {
+      const r = Math.round(vitals.ram_percent);
+      if (ramFill) ramFill.style.width = `${Math.min(100, Math.max(0, r))}%`;
+      if (ramNum) ramNum.textContent = `${r}%`;
+    }
+    if (vitals.gpu_utilization_percent != null) {
+      const g = Math.round(vitals.gpu_utilization_percent);
+      if (gpuFill) gpuFill.style.width = `${Math.min(100, Math.max(0, g))}%`;
+      if (gpuNum) gpuNum.textContent = `${g}%`;
+    }
+  }
+
   function handleServerEvent(event) {
-    if (event.type === 'state') {
+    if (event.type === 'initial_state') {
+      applyActiveState(event.payload);
+    } else if (event.type === 'agent_start') {
+      setAgentActive(event.agent_id, true, 'WORKING');
+      const objStatusEl = document.getElementById('active-objective-status');
+      if (objStatusEl) {
+        objStatusEl.textContent = 'RUNNING';
+        objStatusEl.className = 'panel-status-val cyan';
+      }
+      const missionSubEl = document.getElementById('active-mission-sub');
+      if (missionSubEl) {
+        missionSubEl.textContent = `[${event.agent_id}] ${event.objective}`;
+      }
+      orb.setState('WORKING');
+    } else if (event.type === 'agent_end') {
+      setAgentActive(event.agent_id, false);
+      if (event.status === 'FAILED') {
+        const objStatusEl = document.getElementById('active-objective-status');
+        if (objStatusEl) {
+          objStatusEl.textContent = 'STAGE FAILED';
+          objStatusEl.className = 'panel-status-val red';
+        }
+      }
+    } else if (event.type === 'mission') {
+      const mSub = document.getElementById('active-mission-sub');
+      const mName = document.getElementById('active-mission-name');
+      const mStatus = document.getElementById('active-objective-status');
+      const mBar = document.getElementById('active-mission-bar-fill');
+
+      if (event.event === 'mission_started' && event.mission) {
+        if (mName) mName.textContent = event.mission.goal;
+        if (mStatus) { mStatus.textContent = 'RUNNING'; mStatus.className = 'panel-status-val cyan'; }
+        if (mBar) mBar.style.width = '0%';
+        orb.setState('WORKING');
+      } else if (event.event === 'task_started' && event.task) {
+        if (mSub) mSub.textContent = `Task ${event.task.id}: ${event.task.title}`;
+        if (mStatus) { mStatus.textContent = 'RUNNING'; mStatus.className = 'panel-status-val cyan'; }
+        if (event.task.assigned_agent) setAgentActive(event.task.assigned_agent, true, 'WORKING');
+        orb.setState('WORKING');
+      } else if (event.event === 'task_completed' && event.task) {
+        if (event.task.assigned_agent) setAgentActive(event.task.assigned_agent, false);
+      } else if (event.event === 'mission_completed') {
+        if (mStatus) { mStatus.textContent = 'COMPLETED'; mStatus.className = 'panel-status-val green'; }
+        if (mSub) mSub.textContent = 'All tasks verified with evidence.';
+        if (mBar) mBar.style.width = '100%';
+        orb.setState('IDLE');
+        document.querySelectorAll('#agents-status-stack .agent-row.active').forEach(r => {
+          const aid = r.dataset.agent;
+          if (aid) setAgentActive(aid, false);
+        });
+      } else if (event.event === 'mission_blocked') {
+        if (mStatus) { mStatus.textContent = 'BLOCKED'; mStatus.className = 'panel-status-val red'; }
+        orb.setState('IDLE');
+      } else if (event.event === 'approval_required') {
+        if (mStatus) { mStatus.textContent = 'APPROVAL REQ'; mStatus.className = 'panel-status-val amber'; }
+        if (mSub && event.task) mSub.textContent = `Awaiting Approval: ${event.task.title}`;
+      }
+    } else if (event.type === 'universal_event') {
+      if (event.event_type === 'system.telemetry.sample' && event.payload) {
+        updateHudVitals(event.payload);
+      } else if (event.event_type === 'agent.activated' && event.payload) {
+        setAgentActive(event.payload.agent_id || event.payload.name, true, 'WORKING');
+      } else if (event.event_type === 'agent.deactivated' && event.payload) {
+        setAgentActive(event.payload.agent_id || event.payload.name, false);
+      } else if (event.event_type && event.event_type.startsWith('mission.')) {
+        fetch('/api/system/active_state')
+          .then(r => r.json())
+          .then(applyActiveState)
+          .catch(() => {});
+      }
+    } else if (event.type === 'state') {
       updateState(event.state);
+      const miniStatus = document.getElementById('mini-core-status');
+      if (miniStatus) miniStatus.textContent = event.state;
       if (event.state === 'INTERRUPTED') {
         stopSpeaking();
         fullSpokenBuffer = '';
@@ -457,6 +679,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Synthesize spoken completion
         speak(fullSpokenBuffer);
         fullSpokenBuffer = '';
+      }
+    } else if (event.type === 'workspace_action') {
+      if (event.action === 'open' && window.GhostWorkspace) {
+        window.GhostWorkspace.openModule(event.module, {
+          file_path: event.file_path,
+          title: event.title,
+          initial_state: event.tab ? event.tab.state : {}
+        });
+      }
+    } else if (event.type === 'personal_intelligence') {
+      const auditEl = document.getElementById('personal-influence-audit');
+      if (auditEl && event.memories && event.memories.length > 0) {
+        const memBadges = event.memories.map(m =>
+          `<span class="deck-badge" style="background:rgba(0,240,255,0.15); color:#00f0ff; margin-right:4px; font-size:10px;">[${m.category.toUpperCase()}] ${m.subject}</span>`
+        ).join('');
+        auditEl.innerHTML = `<div style="font-size:11px; color:#fff; font-family:var(--deck-font-mono); line-height:1.6;">
+          <strong>Retrieved Personal Context:</strong> ${memBadges}
+        </div>`;
       }
     } else if (event.type === 'token') {
       setSubtitle('GHOST', event.text, true);
@@ -784,13 +1024,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnHudHistory) {
     btnHudHistory.addEventListener('click', () => {
-      if (transcriptBubble) {
-        transcriptBubble.scrollIntoView({ behavior: 'smooth' });
-        transcriptBubble.style.borderColor = 'rgba(255, 0, 85, 0.6)';
-        setTimeout(() => {
-          transcriptBubble.style.borderColor = '';
-        }, 1200);
-      }
+      const openBtn = document.getElementById('btn-open-deck');
+      if (openBtn) openBtn.click();
+      const eventsTab = document.querySelector('.deck-tab-btn[data-view="events"]');
+      if (eventsTab) eventsTab.click();
     });
   }
 
@@ -805,8 +1042,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnHudDev) {
     btnHudDev.addEventListener('click', () => {
-      // Replay cinematic intro sequence on DEV click (§9.4)
-      orb.startIntro(true);
+      const openBtn = document.getElementById('btn-open-deck');
+      if (openBtn) openBtn.click();
+      const controlTab = document.querySelector('.deck-tab-btn[data-view="control"]');
+      if (controlTab) controlTab.click();
+    });
+  }
+
+  // Telemetry Chips Click Handlers
+  const vitalsChip = document.getElementById('vitals-telemetry-chip');
+  if (vitalsChip) {
+    vitalsChip.style.cursor = 'pointer';
+    vitalsChip.addEventListener('click', () => {
+      if (window.GHOST_WORKSPACE) {
+        window.GHOST_WORKSPACE.openModule('sysmon', { title: 'Host System Monitor' });
+      }
+    });
+  }
+
+  const tokenChip = document.getElementById('token-telemetry-chip');
+  if (tokenChip) {
+    tokenChip.style.cursor = 'pointer';
+    tokenChip.addEventListener('click', () => {
+      const openBtn = document.getElementById('btn-open-deck');
+      if (openBtn) openBtn.click();
+      const awareTab = document.querySelector('.deck-tab-btn[data-view="awareness"]');
+      if (awareTab) awareTab.click();
     });
   }
 

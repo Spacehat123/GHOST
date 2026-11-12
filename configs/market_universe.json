@@ -1,0 +1,312 @@
+{
+  "version": "1.0.0",
+  "description": "GHOST Permanent Market Intelligence Configurable Instrument Universe",
+  "indices": [
+    {
+      "symbol": "^NSEI",
+      "exchange": "INDEX",
+      "name": "NIFTY 50",
+      "sector": "Broad Market",
+      "is_active": true
+    },
+    {
+      "symbol": "^BSESN",
+      "exchange": "INDEX",
+      "name": "SENSEX",
+      "sector": "Broad Market",
+      "is_active": true
+    },
+    {
+      "symbol": "^NSEBANK",
+      "exchange": "INDEX",
+      "name": "BANK NIFTY",
+      "sector": "Banking & Financial Services",
+      "is_active": true
+    },
+    {
+      "symbol": "^CNXIT",
+      "exchange": "INDEX",
+      "name": "NIFTY IT",
+      "sector": "Information Technology",
+      "is_active": true
+    },
+    {
+      "symbol": "^CNXAUTO",
+      "exchange": "INDEX",
+      "name": "NIFTY AUTO",
+      "sector": "Automobiles",
+      "is_active": true
+    },
+    {
+      "symbol": "^CNXPHARMA",
+      "exchange": "INDEX",
+      "name": "NIFTY PHARMA",
+      "sector": "Pharmaceuticals",
+      "is_active": true
+    }
+  ],
+  "adrs": [
+    {
+      "adr_symbol": "INFY",
+      "domestic_symbol": "INFY.NS",
+      "exchange": "NYSE",
+      "name": "Infosys Ltd ADR",
+      "sector": "Information Technology",
+      "adr_ratio": 1.0,
+      "is_active": true
+    },
+    {
+      "adr_symbol": "HDB",
+      "domestic_symbol": "HDFCBANK.NS",
+      "exchange": "NYSE",
+      "name": "HDFC Bank Ltd ADR",
+      "sector": "Banking & Financial Services",
+      "adr_ratio": 3.0,
+      "is_active": true
+    },
+    {
+      "adr_symbol": "IBN",
+      "domestic_symbol": "ICICIBANK.NS",
+      "exchange": "NYSE",
+      "name": "ICICI Bank Ltd ADR",
+      "sector": "Banking & Financial Services",
+      "adr_ratio": 2.0,
+      "is_active": true
+    },
+    {
+      "adr_symbol": "WIT",
+      "domestic_symbol": "WIPRO.NS",
+      "exchange": "NYSE",
+      "name": "Wipro Ltd ADR",
+      "sector": "Information Technology",
+      "adr_ratio": 1.0,
+      "is_active": true
+    }
+  ],
+  "equities": [
+    {
+      "symbol": "RELIANCE.NS",
+      "exchange": "NSE",
+      "name": "Reliance Industries Ltd",
+      "sector": "Energy & Telecom",
+      "is_active": true
+    },
+    {
+      "symbol": "TCS.NS",
+      "exchange": "NSE",
+      "name": "Tata Consultancy Services Ltd",
+      "sector": "Information Technology",
+      "is_active": true
+    },
+    {
+      "symbol": "HDFCBANK.NS",
+      "exchange": "NSE",
+      "name": "HDFC Bank Ltd",
+      "sector": "Banking & Financial Services",
+      "adr_symbol": "HDB",
+      "adr_ratio": 3.0,
+      "is_active": true
+    },
+    {
+      "symbol": "ICICIBANK.NS",
+      "exchange": "NSE",
+      "name": "ICICI Bank Ltd",
+      "sector": "Banking & Financial Services",
+      "adr_symbol": "IBN",
+      "adr_ratio": 2.0,
+      "is_active": true
+    },
+    {
+      "symbol": "INFY.NS",
+      "exchange": "NSE",
+      "name": "Infosys Ltd",
+      "sector": "Information Technology",
+      "adr_symbol": "INFY",
+      "adr_ratio": 1.0,
+      "is_active": true
+    },
+    {
+      "symbol": "BHARTIARTL.NS",
+      "exchange": "NSE",
+      "name": "Bharti Airtel Ltd",
+      "sector": "Telecommunications",
+      "is_active": true
+    },
+    {
+      "symbol": "SBIN.NS",
+      "exchange": "NSE",
+      "name": "State Bank of India",
+      "sector": "Banking & Financial Services",
+      "is_active": true
+    },
+    {
+      "symbol": "LT.NS",
+      "exchange": "NSE",
+      "name": "Larsen & Toubro Ltd",
+      "sector": "Capital Goods & Engineering",
+      "is_active": true
+    },
+    {
+      "symbol": "TATAMOTORS.NS",
+      "exchange": "NSE",
+      "name": "Tata Motors Ltd",
+      "sector": "Automobiles",
+      "is_active": true
+    },
+    {
+      "symbol": "ITC.NS",
+      "exchange": "NSE",
+      "name": "ITC Ltd",
+      "sector": "FMCG",
+      "is_active": true
+    },
+    {
+      "symbol": "WIPRO.NS",
+      "exchange": "NSE",
+      "name": "Wipro Ltd",
+      "sector": "Information Technology",
+      "adr_symbol": "WIT",
+      "adr_ratio": 1.0,
+      "is_active": true
+    },
+    {
+      "symbol": "MARUTI.NS",
+      "exchange": "NSE",
+      "name": "Maruti Suzuki India Ltd",
+      "sector": "Automobiles",
+      "is_active": true
+    },
+    {
+      "symbol": "BAJFINANCE.NS",
+      "exchange": "NSE",
+      "name": "Bajaj Finance Ltd",
+      "sector": "NBFC",
+      "is_active": true
+    },
+    {
+      "symbol": "SUNPHARMA.NS",
+      "exchange": "NSE",
+      "name": "Sun Pharmaceutical Industries Ltd",
+      "sector": "Pharmaceuticals",
+      "is_active": true
+    },
+    {
+      "symbol": "KOTAKBANK.NS",
+      "exchange": "NSE",
+      "name": "Kotak Mahindra Bank Ltd",
+      "sector": "Banking & Financial Services",
+      "is_active": true
+    },
+    {
+      "symbol": "AXISBANK.NS",
+      "exchange": "NSE",
+      "name": "Axis Bank Ltd",
+      "sector": "Banking & Financial Services",
+      "is_active": true
+    },
+    {
+      "symbol": "TITAN.NS",
+      "exchange": "NSE",
+      "name": "Titan Company Ltd",
+      "sector": "Consumer Discretionary",
+      "is_active": true
+    },
+    {
+      "symbol": "HINDUNILVR.NS",
+      "exchange": "NSE",
+      "name": "Hindustan Unilever Ltd",
+      "sector": "FMCG",
+      "is_active": true
+    }
+  ],
+  "macro": [
+    {
+      "symbol": "USDINR=X",
+      "exchange": "FX",
+      "name": "USD / INR Currency Rate",
+      "sector": "Foreign Exchange",
+      "is_active": true
+    },
+    {
+      "symbol": "BZ=F",
+      "exchange": "COMMODITY",
+      "name": "Brent Crude Oil Futures",
+      "sector": "Commodities",
+      "is_active": true
+    },
+    {
+      "symbol": "^TNX",
+      "exchange": "BOND",
+      "name": "US 10-Year Treasury Yield",
+      "sector": "Fixed Income & Macro",
+      "is_active": true
+    },
+    {
+      "symbol": "^GSPC",
+      "exchange": "INDEX",
+      "name": "S&P 500 Index",
+      "sector": "Global Equities",
+      "is_active": true
+    },
+    {
+      "symbol": "^DJI",
+      "exchange": "INDEX",
+      "name": "Dow Jones Industrial Average",
+      "sector": "Global Equities",
+      "is_active": true
+    }
+  ],
+  "watchlists": [
+    {
+      "id": "wl_core_india",
+      "name": "Core India Bluechips",
+      "description": "High-conviction Nifty heavyweights driving index direction",
+      "symbols": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "BHARTIARTL.NS", "LT.NS"]
+    },
+    {
+      "id": "wl_adr_arbitrage",
+      "name": "US-Listed Indian ADRs",
+      "description": "Track ADR divergence, prem/disc % and overnight foreign lead",
+      "symbols": ["INFY", "HDB", "IBN", "WIT", "USDINR=X"]
+    },
+    {
+      "id": "wl_banking_finance",
+      "name": "Banking & NBFC Leaders",
+      "description": "Credit growth, net interest margins, and asset quality bellwethers",
+      "symbols": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS"]
+    },
+    {
+      "id": "wl_global_macro",
+      "name": "Macro Influencers",
+      "description": "Global interest rates, energy prices, and currency factors",
+      "symbols": ["USDINR=X", "BZ=F", "^TNX", "^GSPC"]
+    }
+  ],
+  "rss_feeds": [
+    {
+      "name": "Economic Times Markets",
+      "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+      "category": "MARKET_NEWS"
+    },
+    {
+      "name": "Economic Times Stocks",
+      "url": "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
+      "category": "STOCK_NEWS"
+    },
+    {
+      "name": "Moneycontrol Latest News",
+      "url": "https://www.moneycontrol.com/rss/latestnews.xml",
+      "category": "GENERAL_FINANCE"
+    },
+    {
+      "name": "Livemint Markets",
+      "url": "https://www.livemint.com/rss/markets",
+      "category": "MARKET_NEWS"
+    },
+    {
+      "name": "RBI Press Releases",
+      "url": "https://rbi.org.in/pressreleases_rss.xml",
+      "category": "REGULATORY"
+    }
+  ]
+}

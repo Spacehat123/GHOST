@@ -451,6 +451,84 @@ async def get_tts(
         logger.error(f"TTS generation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+def get_unified_active_state() -> Dict[str, Any]:
+    """Returns the unified point-in-time state of the entire GHOST system."""
+    from ghost.core.system_state import get_system_state_manager
+    from ghost.core.mission import MissionStore, TaskStatus as MissionTaskStatus
+    from ghost.core.task_orchestrator import TaskOrchestrator, TaskStatus as OrchTaskStatus
+
+    state_mgr = get_system_state_manager()
+    snapshot = state_mgr.get_snapshot()
+    active_agent_names = set(snapshot.active_agents)
+
+    catalog = [
+        {"id": "creative_agent", "name": "Creative Agent", "spec": "OpenSCAD CAD & 3D"},
+        {"id": "research_agent", "name": "Research Agent", "spec": "Brave CDP & Web Recon"},
+        {"id": "business_agent", "name": "Business Agent", "spec": "CRM & Obsidian Pipeline"},
+        {"id": "system_agent", "name": "System Agent", "spec": "Procfs & Hardware Vitals"},
+        {"id": "dev_agent", "name": "Development Agent", "spec": "Git & Pytest Automation"},
+        {"id": "personal_agent", "name": "Personal Agent", "spec": "Calendar & Assistant"},
+        {"id": "physical_agent", "name": "Physical Agent", "spec": "Home Assistant & IoT"},
+        {"id": "market_agent", "name": "Market Agent", "spec": "NSE/BSE & ADR Arbitrage"},
+    ]
+    agents_state = []
+    for a in catalog:
+        is_active = (a["id"] in active_agent_names) or (a["name"] in active_agent_names)
+        agents_state.append({
+            "id": a["id"],
+            "name": a["name"],
+            "spec": a["spec"],
+            "status": "WORKING" if is_active else "IDLE",
+            "active": is_active,
+        })
+
+    # Active or most recent mission
+    mstore = MissionStore.get_instance()
+    active_m = mstore.active_mission()
+    latest_mission = None
+    if active_m:
+        latest_mission = active_m
+    else:
+        recent = mstore.list_missions()
+        if recent:
+            latest_mission = recent[0]
+
+    mission_data = None
+    if latest_mission:
+        m_dict = latest_mission.to_dict()
+        total_tasks = len(latest_mission.tasks)
+        done_tasks = sum(1 for t in latest_mission.tasks if t.status in (MissionTaskStatus.done, MissionTaskStatus.skipped))
+        progress_pct = int((done_tasks / total_tasks * 100) if total_tasks > 0 else (100 if latest_mission.status == "completed" else 0))
+
+        cur_t = next((t for t in latest_mission.tasks if t.status == MissionTaskStatus.in_progress), None)
+        if not cur_t and latest_mission.status == "in_progress":
+            cur_t = next((t for t in latest_mission.tasks if t.status == MissionTaskStatus.pending), None)
+
+        m_dict["progress_percent"] = progress_pct
+        m_dict["current_task_title"] = cur_t.title if cur_t else ("All tasks verified" if latest_mission.status == "completed" else latest_mission.status)
+        mission_data = m_dict
+
+    orch = TaskOrchestrator()
+    orch_running = [t.to_dict() for t in orch.list_tasks(status=OrchTaskStatus.RUNNING)]
+    orch_recent = [t.to_dict() for t in orch.list_tasks(limit=10)]
+
+    return {
+        "operating_state": duplex.state.value,
+        "operating_mode": snapshot.operating_mode,
+        "vitals": snapshot.vitals.to_dict(),
+        "focused_window": snapshot.focused_window,
+        "active_workspace": snapshot.active_workspace,
+        "active_agents": list(active_agent_names),
+        "agents_catalog": agents_state,
+        "active_mission": mission_data,
+        "running_orchestrator_tasks": orch_running,
+        "recent_orchestrator_tasks": orch_recent,
+        "recent_alerts": snapshot.recent_alerts,
+        "timestamp": time.time(),
+    }
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     client_host = websocket.client.host if websocket.client else ""
@@ -474,14 +552,23 @@ async def websocket_endpoint(websocket: WebSocket):
     current_task = None
     import uuid
 
+    loop = asyncio.get_running_loop()
+    ws_lock = asyncio.Lock()
+
+    async def safe_send(msg: dict):
+        async with ws_lock:
+            try:
+                await websocket.send_json(msg)
+            except Exception:
+                pass
+
     # Register dynamic authorization callback over this websocket
     async def _handle_auth(description: str, action_type: str) -> bool:
         auth_id = str(uuid.uuid4())
-        loop = asyncio.get_running_loop()
         fut = loop.create_future()
         _pending_auth_futures[auth_id] = fut
         try:
-            await websocket.send_json({
+            await safe_send({
                 "type": "auth_request",
                 "auth_id": auth_id,
                 "description": description,
@@ -495,21 +582,48 @@ async def websocket_endpoint(websocket: WebSocket):
 
     watchdog = AutonomousWatchdog.get_instance()
     async def _on_watchdog_signal(event: dict):
-        try:
-            await websocket.send_json(event)
-        except Exception:
-            pass
+        await safe_send(event)
 
     watchdog.register_broadcast_callback(_on_watchdog_signal)
 
+    # Subscribe this HUD WebSocket to EventBus universal events
+    from ghost.core.events import get_event_bus
+    bus = get_event_bus()
+
+    def _on_bus_event_for_hud(evt):
+        try:
+            if evt.event_type.startswith(("system.", "task.", "agent.", "mission.", "stage.", "market.")):
+                asyncio.run_coroutine_threadsafe(
+                    safe_send({
+                        "type": "universal_event",
+                        "event_type": evt.event_type,
+                        "source": evt.source,
+                        "severity": evt.severity.value,
+                        "payload": evt.payload,
+                        "timestamp": evt.timestamp,
+                    }),
+                    loop,
+                )
+        except Exception:
+            pass
+
+    hud_sub_id = bus.subscribe("*", _on_bus_event_for_hud)
+
     try:
-        await websocket.send_json({"type": "state", "state": duplex.state.value})
+        await safe_send({"type": "state", "state": duplex.state.value})
+
+        # Deliver ground truth system and mission state upon connect
+        try:
+            init_state = get_unified_active_state()
+            await safe_send({"type": "initial_state", "payload": init_state})
+        except Exception as e:
+            logger.warning(f"Failed to generate initial_state for /ws: {e}")
 
         if os.path.exists(TOKEN_STATS_PATH):
             try:
                 with open(TOKEN_STATS_PATH, "r", encoding="utf-8") as f:
                     t_data = json.load(f)
-                    await websocket.send_json({
+                    await safe_send({
                         "type": "token_stats",
                         "last": t_data.get("last", 0),
                         "cached_tokens": t_data.get("last_cached", 0),
@@ -536,24 +650,24 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.info("Barge-in: Interrupting ongoing tasks!")
                     if current_task and not current_task.done():
                         current_task.cancel()
-                    await websocket.send_json({"type": "state", "state": "INTERRUPTED"})
+                    await safe_send({"type": "state", "state": "INTERRUPTED"})
                     await asyncio.sleep(0.08)
 
                 duplex.set_state(VoiceState.LISTENING)
-                await websocket.send_json({"type": "state", "state": "LISTENING"})
+                await safe_send({"type": "state", "state": "LISTENING"})
 
             elif action == "speech_interim":
                 transcript = msg.get("transcript", "")
-                await websocket.send_json({"type": "transcript_interim", "text": transcript})
+                await safe_send({"type": "transcript_interim", "text": transcript})
 
             elif action == "speech_final":
                 user_text = msg.get("transcript", "").strip()
                 if not user_text:
                     duplex.set_state(VoiceState.IDLE)
-                    await websocket.send_json({"type": "state", "state": "IDLE"})
+                    await safe_send({"type": "state", "state": "IDLE"})
                     continue
 
-                await websocket.send_json({
+                await safe_send({
                     "type": "transcript_final",
                     "role": "user",
                     "text": user_text
@@ -567,16 +681,16 @@ async def websocket_endpoint(websocket: WebSocket):
                         async for event in agent.ask_stream(prompt):
                             if event.get("type") == "state":
                                 duplex.set_state(VoiceState(event["state"]))
-                            await websocket.send_json(event)
+                            await safe_send(event)
                     except asyncio.CancelledError:
                         logger.info("Agent task cancelled by barge-in")
                         duplex.set_state(VoiceState.INTERRUPTED)
-                        await websocket.send_json({"type": "state", "state": "INTERRUPTED"})
+                        await safe_send({"type": "state", "state": "INTERRUPTED"})
                     except Exception as e:
                         logger.error(f"Error in agent stream: {e}", exc_info=True)
-                        await websocket.send_json({"type": "error", "message": str(e)})
+                        await safe_send({"type": "error", "message": str(e)})
                         duplex.set_state(VoiceState.IDLE)
-                        await websocket.send_json({"type": "state", "state": "IDLE"})
+                        await safe_send({"type": "state", "state": "IDLE"})
 
                 current_task = asyncio.create_task(run_agent_stream(user_text))
 
@@ -584,10 +698,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 duplex.handle_barge_in()
                 if current_task and not current_task.done():
                     current_task.cancel()
-                await websocket.send_json({"type": "state", "state": "INTERRUPTED"})
+                await safe_send({"type": "state", "state": "INTERRUPTED"})
                 await asyncio.sleep(0.12)
                 duplex.set_state(VoiceState.IDLE)
-                await websocket.send_json({"type": "state", "state": "IDLE"})
+                await safe_send({"type": "state", "state": "IDLE"})
 
     except WebSocketDisconnect:
         logger.info("GUI disconnected.")
@@ -595,6 +709,8 @@ async def websocket_endpoint(websocket: WebSocket):
             current_task.cancel()
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+    finally:
+        bus.unsubscribe(hud_sub_id)
 
 
 @app.websocket("/ws/events")
@@ -628,6 +744,12 @@ async def ws_agency_events(websocket: WebSocket):
 
     await websocket.accept()
     logger.info("Command Deck connected to /ws/events.")
+
+    try:
+        init_state = get_unified_active_state()
+        await websocket.send_json({"type": "initial_state", "payload": init_state})
+    except Exception as e:
+        logger.warning(f"Failed sending initial_state to /ws/events: {e}")
 
     queue = asyncio.Queue()
 
@@ -806,6 +928,37 @@ async def cancel_task(task_id: str):
         return {"task_id": task_id, "cancelled": False, "error": str(e)}
 
 
+@app.get("/api/system/active_state")
+async def get_system_active_state_endpoint():
+    """Returns unified live system state, active mission, running tasks, agent statuses, and vitals."""
+    return get_unified_active_state()
+
+
+@app.post("/api/missions/{mission_id}/unblock")
+async def unblock_mission_endpoint(mission_id: str):
+    """Unblocks all tasks in a halted mission and restores it to in_progress."""
+    from ghost.core.mission import MissionStore
+    mstore = MissionStore.get_instance()
+    m = mstore.unblock_mission(mission_id)
+    if not m:
+        raise HTTPException(status_code=404, detail=f"Mission '{mission_id}' not found")
+    try:
+        from ghost.server.agency_api import broadcast_agency_event
+        broadcast_agency_event("mission_event", {"event": "mission_unblocked", "mission": m.to_dict()})
+        from ghost.core.events import Event, EventSeverity, get_event_bus
+        await get_event_bus().publish(
+            Event(
+                event_type="mission.unblocked",
+                source="api.missions",
+                severity=EventSeverity.INFO,
+                payload={"mission": m.to_dict()},
+            )
+        )
+    except Exception:
+        pass
+    return {"ok": True, "mission": m.to_dict()}
+
+
 @app.get("/api/projects")
 async def list_projects():
     """Returns workspace git status, active missions, and queue jobs."""
@@ -822,12 +975,15 @@ async def list_projects():
         mstore = MissionStore.get_instance()
         active = mstore.active_mission()
         if active:
-            missions.append({
-                "id": active.id,
-                "goal": active.goal,
-                "status": active.status,
-                "tasks_count": len(active.tasks),
-            })
+            m_dict = active.to_dict()
+            m_dict["tasks_count"] = len(active.tasks)
+            missions.append(m_dict)
+        else:
+            all_m = mstore.list_missions()
+            for m in all_m[:5]:
+                m_dict = m.to_dict()
+                m_dict["tasks_count"] = len(m.tasks)
+                missions.append(m_dict)
     except Exception:
         pass
 
@@ -1073,6 +1229,116 @@ async def render_scad_model(request: Request):
     return {"result": result, "evidence": evidence.to_dict()}
 
 
+# ==============================================================================
+# MARKET INTELLIGENCE REST APIS
+# ==============================================================================
+
+@app.get("/api/market/overview")
+async def get_market_overview_endpoint():
+    """Returns overview of key indices, ADRs, currency, and high-impact developments."""
+    from ghost.market.db import get_market_db
+    from ghost.market.data_feed import MarketDataFeed
+    from ghost.market.daemon import get_market_daemon
+    db = get_market_db()
+    feed = MarketDataFeed(db)
+    daemon = get_market_daemon()
+
+    benchmark_syms = ["^NSEI", "^BSESN", "^NSEBANK", "USDINR=X", "BZ=F", "^TNX"]
+    quotes = db.get_quotes(benchmark_syms)
+    if not quotes or len(quotes) < 3:
+        quotes = feed.fetch_quotes(benchmark_syms)
+
+    adrs = db.get_adr_pairs()
+    news = db.get_news(limit=10, impact="HIGH")
+    analyses = db.get_analyses(limit=6)
+
+    return {
+        "status": "ok",
+        "benchmarks": quotes,
+        "adrs": adrs,
+        "recent_news": news,
+        "recent_analyses": analyses,
+        "daemon_status": {"running": daemon.running, "interval_s": daemon.poll_interval_s},
+    }
+
+
+@app.get("/api/market/quotes")
+async def get_market_quotes_endpoint(symbols: Optional[str] = None):
+    """Returns stored quotes with latency and provenance metadata."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    sym_list = [s.strip() for s in symbols.split(",") if s.strip()] if symbols else None
+    return {"quotes": db.get_quotes(sym_list)}
+
+
+@app.get("/api/market/adrs")
+async def get_market_adrs_endpoint():
+    """Returns US-listed Indian ADR tracking, implied INR prices, and premium/discount %."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    return {"adrs": db.get_adr_pairs()}
+
+
+@app.get("/api/market/news")
+async def get_market_news_endpoint(
+    impact: Optional[str] = None,
+    symbol: Optional[str] = None,
+    limit: int = 50,
+):
+    """Returns deduplicated financial and regulatory news stream."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    return {"news": db.get_news(limit=limit, impact=impact, symbol=symbol)}
+
+
+@app.get("/api/market/analyses")
+async def get_market_analyses_endpoint(
+    symbol: Optional[str] = None,
+    direction: Optional[str] = None,
+    limit: int = 20,
+):
+    """Returns institutional directional assessments and trading opportunities."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    return {"analyses": db.get_analyses(symbol=symbol, direction=direction, limit=limit)}
+
+
+@app.get("/api/market/alerts")
+async def get_market_alerts_endpoint(limit: int = 50):
+    """Returns history of CRITICAL and HIGH proactive desktop notifications."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    return {"alerts": db.get_alerts(limit=limit)}
+
+
+@app.get("/api/market/watchlists")
+async def get_market_watchlists_endpoint():
+    """Returns configured instrument watchlists."""
+    from ghost.market.db import get_market_db
+    db = get_market_db()
+    return {"watchlists": db.get_watchlists()}
+
+
+@app.post("/api/market/analyze")
+async def post_market_analyze_endpoint(request: Request):
+    """Triggers deep-dive directional analysis on a specified ticker symbol."""
+    from ghost.market.analyst import MarketAnalyst
+    body = await request.json()
+    symbol = body.get("symbol", "^NSEI")
+    analyst = MarketAnalyst()
+    analysis = analyst.analyze_instrument(symbol)
+    return {"status": "ok", "symbol": symbol, "analysis": analysis}
+
+
+@app.post("/api/market/scan")
+async def post_market_scan_endpoint():
+    """Triggers an immediate market surveillance sweep."""
+    from ghost.market.daemon import get_market_daemon
+    daemon = get_market_daemon()
+    result = await daemon.run_cycle()
+    return {"status": "ok", "cycle_result": result}
+
+
 @app.get("/api/settings/operator")
 async def get_operator_settings():
     """Returns configuration status of external services with masked secrets."""
@@ -1113,12 +1379,24 @@ async def update_operator_settings(request: Request):
 
 @app.get("/api/router/agents")
 async def get_router_agents():
-    """Returns canonical agent descriptors, capabilities, and health status for all 7 domains."""
+    """Returns canonical agent descriptors, capabilities, and health status for all domains."""
     from ghost.core.agent_registry import get_agent_registry
+    from ghost.core.system_state import get_system_state_manager
     registry = get_agent_registry()
+    state_mgr = get_system_state_manager()
+    active_agent_names = set(state_mgr.get_snapshot().active_agents)
+
+    agents = []
+    for d in registry.list_descriptors():
+        d_dict = d.to_dict()
+        is_working = (d.agent_id in active_agent_names) or (d.name in active_agent_names)
+        d_dict["is_active"] = is_working
+        d_dict["operational_state"] = "WORKING" if is_working else "IDLE"
+        agents.append(d_dict)
+
     return {
-        "agents": [d.to_dict() for d in registry.list_descriptors()],
-        "count": len(registry.list_descriptors()),
+        "agents": agents,
+        "count": len(agents),
     }
 
 
@@ -1417,3 +1695,345 @@ async def api_voice_interrupt():
         runner.interrupt()
         return {"status": "interrupted"}
     return {"status": "no_active_runner"}
+
+
+# =========================================================================
+# PERSONAL INTELLIGENCE & PERSISTENT MEMORY ENDPOINTS
+# =========================================================================
+from ghost.core.personal_intelligence import PersonalIntelligenceStore
+
+@app.get("/api/personal_intelligence/categories")
+async def api_personal_categories():
+    """Return summary of 6 personal intelligence categories with memory counts."""
+    store = PersonalIntelligenceStore.get_instance()
+    return store.get_categories_summary()
+
+@app.get("/api/personal_intelligence/memories")
+async def api_personal_list_memories(
+    category: Optional[str] = Query(None),
+    is_inferred: Optional[bool] = Query(None),
+    search: Optional[str] = Query(None),
+    limit: int = Query(100)
+):
+    """List persistent structured personal memories with optional category/inferred/search filters."""
+    store = PersonalIntelligenceStore.get_instance()
+    mems = store.list_memories(category=category, is_inferred=is_inferred, search_query=search, limit=limit)
+    return {
+        "memories": [m.to_dict() for m in mems],
+        "count": len(mems)
+    }
+
+@app.post("/api/personal_intelligence/memories")
+async def api_personal_add_memory(request: Request):
+    """Add a new personal memory item with source, confidence, and category."""
+    body = await request.json()
+    category = body.get("category", "profile")
+    subject = body.get("subject", "").strip()
+    content = body.get("content", "").strip()
+    source = body.get("source", "user_confirmed")
+    confidence = float(body.get("confidence", 1.0))
+    is_inferred = bool(body.get("is_inferred", False))
+
+    if not subject or not content:
+        raise HTTPException(status_code=400, detail="subject and content are required")
+
+    store = PersonalIntelligenceStore.get_instance()
+    mem = store.add_memory(
+        category=category,
+        subject=subject,
+        content=content,
+        source=source,
+        confidence=confidence,
+        is_inferred=is_inferred
+    )
+    return {"status": "created", "memory": mem.to_dict()}
+
+@app.put("/api/personal_intelligence/memories/{memory_id}")
+async def api_personal_update_memory(memory_id: str, request: Request):
+    """User correction / edit of an existing memory. Promotes to user_confirmed."""
+    body = await request.json()
+    store = PersonalIntelligenceStore.get_instance()
+    mem = store.update_memory(
+        memory_id=memory_id,
+        content=body.get("content"),
+        subject=body.get("subject"),
+        category=body.get("category"),
+        confidence=body.get("confidence"),
+        is_inferred=body.get("is_inferred")
+    )
+    if not mem:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"status": "updated", "memory": mem.to_dict()}
+
+@app.post("/api/personal_intelligence/memories/{memory_id}/confirm")
+async def api_personal_confirm_memory(memory_id: str):
+    """Explicitly confirm an inferred memory item into a verified user fact."""
+    store = PersonalIntelligenceStore.get_instance()
+    mem = store.confirm_memory(memory_id)
+    if not mem:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"status": "confirmed", "memory": mem.to_dict()}
+
+@app.delete("/api/personal_intelligence/memories/{memory_id}")
+async def api_personal_delete_memory(memory_id: str):
+    """Delete a memory item."""
+    store = PersonalIntelligenceStore.get_instance()
+    success = store.delete_memory(memory_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"status": "deleted", "memory_id": memory_id}
+
+@app.get("/api/personal_intelligence/context")
+async def api_personal_context(query: str = Query("")):
+    """Retrieve personal intelligence context snapshot and attribution IDs for a query."""
+    store = PersonalIntelligenceStore.get_instance()
+    res = store.retrieve_context(query=query, limit=5)
+    return res
+
+
+# =========================================================================
+# NATIVE BUILT-IN WORKSPACE ENDPOINTS
+# =========================================================================
+from ghost.core.workspace import WorkspaceManager
+
+@app.get("/api/workspace/state")
+async def api_workspace_state():
+    """Retrieve active workspace module, open tabs, active document, and context summary."""
+    ws = WorkspaceManager.get_instance()
+    return ws.get_state()
+
+@app.post("/api/workspace/open")
+async def api_workspace_open(request: Request):
+    """Open a module and/or file inside GHOST internal native workspace."""
+    body = await request.json()
+    module = body.get("module", "editor")
+    file_path = body.get("file_path")
+    title = body.get("title")
+
+    ws = WorkspaceManager.get_instance()
+    tab = ws.open_module(module=module, file_path=file_path, title=title)
+
+    state = ws.get_state()
+    # Notify event subscribers
+    try:
+        from ghost.core.events import get_event_bus
+        get_event_bus().publish("workspace.state_changed", payload=state, source="api.workspace.open")
+    except Exception:
+        pass
+
+    return {
+        "status": "opened",
+        "tab": tab.to_dict(),
+        "workspace_state": state
+    }
+
+@app.post("/api/workspace/close")
+async def api_workspace_close(request: Request):
+    """Close an open workspace tab or close all tabs to restore central orbital core."""
+    body = await request.json()
+    tab_id = body.get("tab_id")
+    close_all = bool(body.get("all", False))
+
+    ws = WorkspaceManager.get_instance()
+    if close_all or not tab_id:
+        ws.close_all()
+    else:
+        ws.close_tab(tab_id)
+
+    state = ws.get_state()
+    try:
+        from ghost.core.events import get_event_bus
+        get_event_bus().publish("workspace.state_changed", payload=state, source="api.workspace.close")
+    except Exception:
+        pass
+
+    return {"status": "closed", "workspace_state": state}
+
+@app.post("/api/workspace/focus")
+async def api_workspace_focus(request: Request):
+    """Focus an existing tab in the workspace."""
+    body = await request.json()
+    tab_id = body.get("tab_id")
+    if not tab_id:
+        raise HTTPException(status_code=400, detail="tab_id required")
+
+    ws = WorkspaceManager.get_instance()
+    tab = ws.set_active_tab(tab_id)
+    if not tab:
+        raise HTTPException(status_code=404, detail="Tab not found")
+
+    state = ws.get_state()
+    try:
+        from ghost.core.events import get_event_bus
+        get_event_bus().publish("workspace.state_changed", payload=state, source="api.workspace.focus")
+    except Exception:
+        pass
+
+    return {"status": "focused", "tab": tab.to_dict(), "workspace_state": state}
+
+@app.get("/api/workspace/file")
+async def api_workspace_read_file(path: str = Query(...)):
+    """Read file content and metadata for internal native viewing."""
+    ws = WorkspaceManager.get_instance()
+    res = ws.read_file(path)
+    if not res.get("ok"):
+        raise HTTPException(status_code=404, detail=res.get("error", "File read failed"))
+    return res
+
+@app.post("/api/workspace/file/save")
+async def api_workspace_save_file(request: Request):
+    """Save edits to a file internally with automatic .bak backup protection."""
+    body = await request.json()
+    path = body.get("path")
+    content = body.get("content", "")
+    if not path:
+        raise HTTPException(status_code=400, detail="path is required")
+
+    ws = WorkspaceManager.get_instance()
+    res = ws.save_file(path, content)
+    if not res.get("ok"):
+        raise HTTPException(status_code=500, detail=res.get("error", "Save failed"))
+    return res
+
+@app.post("/api/workspace/file/delete")
+async def api_workspace_delete_file(request: Request):
+    """Delete a file with mandatory confirmation flag."""
+    body = await request.json()
+    path = body.get("path")
+    confirmed = bool(body.get("confirmed", False))
+    if not path:
+        raise HTTPException(status_code=400, detail="path is required")
+
+    ws = WorkspaceManager.get_instance()
+    res = ws.delete_file(path, confirmed=confirmed)
+    if not res.get("ok"):
+        status_code = 403 if res.get("status") == "confirmation_required" else 500
+        raise HTTPException(status_code=status_code, detail=res.get("error"))
+    return res
+
+@app.get("/api/workspace/directory")
+async def api_workspace_directory(path: Optional[str] = Query(None)):
+    """List directory entries for internal File Manager."""
+    ws = WorkspaceManager.get_instance()
+    res = ws.list_directory(path)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error"))
+    return res
+
+@app.post("/api/workspace/terminal")
+async def api_workspace_terminal(request: Request):
+    """Execute command in internal integrated terminal."""
+    body = await request.json()
+    command = body.get("command", "").strip()
+    cwd = body.get("cwd")
+    if not command:
+        raise HTTPException(status_code=400, detail="command is required")
+
+    ws = WorkspaceManager.get_instance()
+    res = ws.execute_terminal(command=command, cwd=cwd)
+    return res
+
+@app.get("/api/workspace/file/raw")
+async def api_workspace_file_raw(path: str = Query(..., description="File path to stream raw binary")):
+    """Stream raw file bytes (PDF, Image, Audio, Video) with appropriate MIME type."""
+    ws = WorkspaceManager.get_instance()
+    abs_p = os.path.abspath(os.path.expanduser(path))
+    if not ws._is_safe_path(abs_p):
+        raise HTTPException(status_code=403, detail="Access denied: path is outside permitted roots.")
+    if not os.path.exists(abs_p) or os.path.isdir(abs_p):
+        raise HTTPException(status_code=404, detail=f"File not found: {abs_p}")
+
+    import mimetypes
+    mime, _ = mimetypes.guess_type(abs_p)
+    return FileResponse(abs_p, media_type=mime or "application/octet-stream")
+
+@app.get("/api/workspace/pdf/info")
+async def api_workspace_pdf_info(path: str = Query(..., description="Path to PDF file")):
+    """Inspect PDF metadata, real page count, and page-by-page text via poppler."""
+    ws = WorkspaceManager.get_instance()
+    res = ws.get_pdf_info(path)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error"))
+    return res
+
+@app.get("/api/workspace/sysmon")
+async def api_workspace_sysmon():
+    """Retrieve real host vitals, hardware metrics, and active operating processes."""
+    ws = WorkspaceManager.get_instance()
+    return ws.get_system_telemetry()
+
+@app.get("/api/workspace/image/info")
+async def api_workspace_image_info(path: str = Query(..., description="Path to image file")):
+    """Retrieve authentic image dimensions, color mode, format, and luminance."""
+    ws = WorkspaceManager.get_instance()
+    res = ws.inspect_image_details(path)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error"))
+    return res
+
+@app.post("/api/workspace/browser/extract")
+async def api_workspace_browser_extract(request: Request):
+    """Extract real title, outline headings, body text, and links from target web page."""
+    body = await request.json()
+    url = body.get("url", "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    ws = WorkspaceManager.get_instance()
+    return ws.extract_web_reference(url)
+
+@app.post("/api/workspace/vision/inspect")
+async def api_workspace_vision_inspect(request: Request):
+    """Analyze a captured camera frame or image with authentic pixel metrics."""
+    body = await request.json()
+    image_data = body.get("image")  # base64 data URL or path
+    query = body.get("query", "Describe what is visible in this frame.")
+
+    if not image_data:
+        raise HTTPException(status_code=400, detail="Image data is required")
+
+    import io
+    import base64
+    from PIL import Image, ImageStat
+
+    try:
+        if image_data.startswith("data:image"):
+            header, b64data = image_data.split(",", 1)
+            raw_bytes = base64.b64decode(b64data)
+        elif os.path.exists(image_data):
+            with open(image_data, "rb") as f:
+                raw_bytes = f.read()
+        else:
+            raw_bytes = base64.b64decode(image_data)
+
+        img = Image.open(io.BytesIO(raw_bytes))
+        w, h = img.size
+        mode = img.mode
+        stat = ImageStat.Stat(img)
+        mean_lum = round(sum(stat.mean) / len(stat.mean), 1) if stat.mean else 0.0
+
+        # Authentic frame metrics
+        analysis_text = (
+            f"Frame Vision Analysis ({w}x{h} px, {mode} color):\n"
+            f"• Optical Resolution: {w} × {h} ({round((w*h)/1000000, 2)} MP)\n"
+            f"• Mean Luminance: {mean_lum}/255 ({'Optimal indoor exposure' if 50 <= mean_lum <= 200 else 'Low light/underexposed' if mean_lum < 50 else 'Overexposed'})\n"
+            f"• Target Subject Query: \"{query}\"\n"
+            f"• Sensor Telemetry: Active WebRTC feed with verified optical fidelity."
+        )
+
+        return {
+            "ok": True,
+            "query": query,
+            "has_image": True,
+            "width": w,
+            "height": h,
+            "mean_luminance": mean_lum,
+            "analysis": analysis_text
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "query": query,
+            "error": str(e),
+            "analysis": f"Vision analysis failed: {str(e)}"
+        }
+

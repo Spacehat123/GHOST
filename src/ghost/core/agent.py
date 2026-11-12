@@ -53,6 +53,8 @@ def should_auto_resume(clean_cmd: str, mission: Any) -> Dict[str, Any]:
 from ghost.core.brain import OmniRouteBrain, GHOST_TOOLS, get_ghost_tools, CONFIGS_DIR
 from ghost.core.follow import DirectiveManager
 from ghost.core.validator import ToolArgumentValidator
+from ghost.paths import repo_root
+REPO_DIR = repo_root()
 from ghost.core.token_tracker import TaskTokenTracker, TOKEN_STATS_PATH
 from ghost.core.memory import WorkingMemory, EpisodicMemoryStore
 from ghost.core.instructions import InstructionComplianceGate
@@ -324,6 +326,127 @@ class GhostAgent:
         except Exception:
             pass
 
+        # Inject Personal Intelligence & Structured User Memories
+        retrieved_pi_memories = []
+        try:
+            from ghost.core.personal_intelligence import PersonalIntelligenceStore
+            pi_store = PersonalIntelligenceStore.get_instance()
+            pi_res = pi_store.retrieve_context(user_text, limit=4)
+            if pi_res["memories"]:
+                retrieved_pi_memories = pi_res["memories"]
+                system_content += f"\n\n{pi_res['snapshot']}"
+                yield {
+                    "type": "personal_intelligence",
+                    "memories": pi_res["memories"],
+                    "retrieved_ids": pi_res["retrieved_ids"]
+                }
+        except Exception as e:
+            logger.warning(f"Personal intelligence retrieval failed: {e}")
+
+        # Inject Active Native Workspace State & Open Document Context
+        try:
+            from ghost.core.workspace import WorkspaceManager
+            ws_mgr = WorkspaceManager.get_instance()
+            if ws_mgr.active_module != "none":
+                ws_context_block = f"\n\n[ACTIVE NATIVE WORKSPACE: {ws_mgr.active_module.upper()}]\n{ws_mgr.active_context_summary}"
+                if ws_mgr.active_file and os.path.exists(ws_mgr.active_file):
+                    try:
+                        _, ext = os.path.splitext(ws_mgr.active_file.lower())
+                        if ext in ('.txt', '.md', '.markdown', '.py', '.json', '.yaml', '.sh', '.csv'):
+                            with open(ws_mgr.active_file, 'r', encoding='utf-8', errors='ignore') as f:
+                                file_preview = f.read(3000)
+                                ws_context_block += f"\n\n[OPEN FILE CONTENT PREVIEW ({ws_mgr.active_file})]:\n{file_preview}"
+                        elif ext == '.pdf':
+                            # Scoped PDF text extraction if available
+                            try:
+                                import pypdf
+                                reader = pypdf.PdfReader(ws_mgr.active_file)
+                                text_pages = []
+                                for p_idx, page in enumerate(reader.pages[:3]):
+                                    t = page.extract_text() or ""
+                                    if t:
+                                        text_pages.append(f"--- Page {p_idx + 1} ---\n{t[:1000]}")
+                                if text_pages:
+                                    ws_context_block += f"\n\n[OPEN PDF EXTRACTED TEXT ({ws_mgr.active_file})]:\n" + "\n".join(text_pages)
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+                system_content += ws_context_block
+        except Exception as e:
+            logger.warning(f"Workspace context retrieval failed: {e}")
+
+        # Check for direct internal workspace opener commands
+        lower_prompt = user_text.lower().strip()
+        matched_ws_module = None
+        matched_ws_file = None
+
+        if "open this pdf" in lower_prompt or "open pdf" in lower_prompt:
+            matched_ws_module = "pdf"
+        elif "open this text file" in lower_prompt or "open text file" in lower_prompt or "open markdown" in lower_prompt:
+            matched_ws_module = "editor"
+        elif "show me this image" in lower_prompt or "show image" in lower_prompt:
+            matched_ws_module = "image"
+        elif "open this python project" in lower_prompt or "open python project" in lower_prompt or "open code" in lower_prompt:
+            matched_ws_module = "code"
+        elif "show camera" in lower_prompt or "open camera" in lower_prompt:
+            matched_ws_module = "camera"
+        elif "play this audio" in lower_prompt or "play audio" in lower_prompt:
+            matched_ws_module = "audio"
+        elif "open browser" in lower_prompt or "show browser" in lower_prompt:
+            matched_ws_module = "browser"
+        elif "open terminal" in lower_prompt:
+            matched_ws_module = "terminal"
+        elif "open charts" in lower_prompt or "show charts" in lower_prompt:
+            matched_ws_module = "charts"
+        elif "show system monitor" in lower_prompt or "open system monitor" in lower_prompt:
+            matched_ws_module = "sysmon"
+
+        if matched_ws_module and not task_context:
+            # Extract possible file path from quotes or path-like string
+            import re
+            path_match = re.search(r'["\']([^"\']+)["\']|(\/[\w\.\-]+(?:\/[\w\.\-]+)+)', user_text)
+            if path_match:
+                matched_ws_file = path_match.group(1) or path_match.group(2)
+            else:
+                # Check for existing sample/test files if not specified
+                if matched_ws_module == "pdf":
+                    sample_pdf = os.path.join(REPO_DIR, "data", "sample_document.pdf")
+                    if os.path.exists(sample_pdf):
+                        matched_ws_file = sample_pdf
+                elif matched_ws_module == "editor":
+                    sample_md = os.path.join(REPO_DIR, "README.md")
+                    if os.path.exists(sample_md):
+                        matched_ws_file = sample_md
+                elif matched_ws_module == "code":
+                    matched_ws_file = os.path.join(REPO_DIR, "src", "ghost", "server", "app.py")
+                elif matched_ws_module == "image":
+                    sample_img = os.path.join(REPO_DIR, "data", "sample.png")
+                    if os.path.exists(sample_img):
+                        matched_ws_file = sample_img
+
+            try:
+                from ghost.core.workspace import WorkspaceManager
+                ws_inst = WorkspaceManager.get_instance()
+                tab = ws_inst.open_module(matched_ws_module, file_path=matched_ws_file)
+                ws_state = ws_inst.get_state()
+                yield {
+                    "type": "workspace_action",
+                    "action": "open",
+                    "module": matched_ws_module,
+                    "file_path": matched_ws_file,
+                    "tab": tab.to_dict(),
+                    "workspace_state": ws_state
+                }
+                yield {"type": "state", "state": "SPEAKING"}
+                fname = os.path.basename(matched_ws_file) if matched_ws_file else matched_ws_module.title()
+                open_msg = f"Opening {fname} in the native internal {matched_ws_module.upper()} viewer, sir."
+                yield {"type": "token", "text": open_msg}
+                yield {"type": "state", "state": "IDLE"}
+                return
+            except Exception as e_open:
+                logger.warning(f"Direct workspace opener failed: {e_open}")
+
         # Context Loading: Active Mission context takes precedence over rolling chat history
         active_mission = None
         try:
@@ -416,19 +539,42 @@ class GhostAgent:
                     final_status = "UNKNOWN"
                     async for w_event in router.dispatch_workflow(routing_decision, context=task_context):
                         if w_event["type"] == "stage_dispatched":
+                            yield {
+                                "type": "agent_start",
+                                "agent_id": w_event["agent_id"],
+                                "task_id": w_event["task_id"],
+                                "objective": w_event["objective"],
+                                "order": w_event.get("order", 1),
+                                "total_stages": w_event.get("total_stages", 1),
+                            }
                             yield {"type": "state", "state": "THINKING"}
                             yield {
                                 "type": "token",
                                 "text": f"-> Stage {w_event.get('order', 1)}: Dispatched to [{w_event['agent_id']}] for '{w_event['objective']}'\n"
                             }
                         elif w_event["type"] == "stage_completed":
-                            yield {"type": "state", "state": "SPEAKING"}
                             v_flag = "VERIFIED" if w_event.get("verified") else "UNVERIFIED"
+                            yield {
+                                "type": "agent_end",
+                                "agent_id": w_event.get("agent_id"),
+                                "task_id": w_event["task_id"],
+                                "status": "COMPLETED",
+                                "verified": w_event.get("verified"),
+                                "summary": w_event.get("summary", ""),
+                            }
+                            yield {"type": "state", "state": "SPEAKING"}
                             yield {
                                 "type": "token",
                                 "text": f"-> Stage {w_event['task_id']} [{v_flag}]: {w_event['summary']}\n"
                             }
-                        elif w_event["type"] == "stage_failed":
+                        elif w_event["type"] in ("stage_failed", "stage_error"):
+                            yield {
+                                "type": "agent_end",
+                                "agent_id": w_event.get("agent_id"),
+                                "task_id": w_event["task_id"],
+                                "status": "FAILED",
+                                "error": w_event.get("error"),
+                            }
                             yield {"type": "state", "state": "SPEAKING"}
                             yield {
                                 "type": "token",
@@ -437,6 +583,11 @@ class GhostAgent:
                         elif w_event["type"] == "workflow_finished":
                             final_status = w_event.get("status", "COMPLETED")
                             all_results = w_event.get("results", {})
+                            yield {
+                                "type": "workflow_finished",
+                                "status": final_status,
+                                "results": all_results,
+                            }
 
                     yield {"type": "state", "state": "SPEAKING"}
                     if final_status == "COMPLETED":
@@ -1185,7 +1336,11 @@ class GhostAgent:
             yield {"type": "state", "state": "SPEAKING"}
             yield {"type": "token", "text": "Tactical action completed, boss."}
 
-        yield {"type": "state", "state": "IDLE"}
+        # If executing inside a larger task/mission context, remain in WORKING state
+        if task_context:
+            yield {"type": "state", "state": "WORKING"}
+        else:
+            yield {"type": "state", "state": "IDLE"}
 
 
 class MissionRunner:
@@ -1262,6 +1417,15 @@ class MissionRunner:
                     yield {"type": "mission", "event": "mission_completed", "mission": mission.to_dict()}
                     try:
                         broadcast_agency_event("mission_event", {"event": "mission_completed", "mission": mission.to_dict()})
+                        from ghost.core.events import Event, EventSeverity, get_event_bus
+                        await get_event_bus().publish(
+                            Event(
+                                event_type="mission.completed",
+                                source="mission_runner",
+                                severity=EventSeverity.INFO,
+                                payload={"mission": mission.to_dict()},
+                            )
+                        )
                     except Exception:
                         pass
                 else:
@@ -1272,6 +1436,15 @@ class MissionRunner:
                         yield {"type": "mission", "event": "mission_blocked", "mission": mission.to_dict()}
                         try:
                             broadcast_agency_event("mission_event", {"event": "mission_blocked", "mission": mission.to_dict()})
+                            from ghost.core.events import Event, EventSeverity, get_event_bus
+                            await get_event_bus().publish(
+                                Event(
+                                    event_type="mission.blocked",
+                                    source="mission_runner",
+                                    severity=EventSeverity.WARNING,
+                                    payload={"mission": mission.to_dict()},
+                                )
+                            )
                         except Exception:
                             pass
                 break
@@ -1283,6 +1456,15 @@ class MissionRunner:
                 yield {"type": "mission", "event": "approval_required", "task": task.to_dict()}
                 try:
                     broadcast_agency_event("mission_event", {"event": "approval_required", "task": task.to_dict()})
+                    from ghost.core.events import Event, EventSeverity, get_event_bus
+                    await get_event_bus().publish(
+                        Event(
+                            event_type="mission.approval_required",
+                            source="mission_runner",
+                            severity=EventSeverity.WARNING,
+                            payload={"mission_id": mission_id, "task": task.to_dict()},
+                        )
+                    )
                 except Exception:
                     pass
                 break
@@ -1298,6 +1480,15 @@ class MissionRunner:
             yield {"type": "mission", "event": "task_started", "task": task.to_dict()}
             try:
                 broadcast_agency_event("mission_event", {"event": "task_started", "task": task.to_dict()})
+                from ghost.core.events import Event, EventSeverity, get_event_bus
+                await get_event_bus().publish(
+                    Event(
+                        event_type="mission.task_started",
+                        source="mission_runner",
+                        severity=EventSeverity.INFO,
+                        payload={"mission_id": mission_id, "task": task.to_dict()},
+                    )
+                )
             except Exception:
                 pass
 
@@ -1344,6 +1535,15 @@ class MissionRunner:
                 yield {"type": "mission", "event": "task_completed", "task": current_t.to_dict()}
                 try:
                     broadcast_agency_event("mission_event", {"event": "task_completed", "task": current_t.to_dict()})
+                    from ghost.core.events import Event, EventSeverity, get_event_bus
+                    await get_event_bus().publish(
+                        Event(
+                            event_type="mission.task_completed",
+                            source="mission_runner",
+                            severity=EventSeverity.INFO,
+                            payload={"mission_id": mission_id, "task": current_t.to_dict()},
+                        )
+                    )
                 except Exception:
                     pass
                 continue
@@ -1380,6 +1580,15 @@ class MissionRunner:
                 yield {"type": "mission", "event": "task_completed", "task": final_t.to_dict()}
                 try:
                     broadcast_agency_event("mission_event", {"event": "task_completed", "task": final_t.to_dict()})
+                    from ghost.core.events import Event, EventSeverity, get_event_bus
+                    await get_event_bus().publish(
+                        Event(
+                            event_type="mission.task_completed",
+                            source="mission_runner",
+                            severity=EventSeverity.INFO,
+                            payload={"mission_id": mission_id, "task": final_t.to_dict()},
+                        )
+                    )
                 except Exception:
                     pass
             else:
@@ -1396,6 +1605,17 @@ class MissionRunner:
                 yield {"type": "mission", "event": "task_blocked", "task_id": task.id, "reason": fail_reason}
                 try:
                     broadcast_agency_event("mission_event", {"event": "task_blocked", "task_id": task.id, "reason": fail_reason})
+                    from ghost.core.events import Event, EventSeverity, get_event_bus
+                    await get_event_bus().publish(
+                        Event(
+                            event_type="mission.blocked",
+                            source="mission_runner",
+                            severity=EventSeverity.WARNING,
+                            payload={"mission": mission.to_dict(), "task_id": task.id, "reason": fail_reason},
+                        )
+                    )
+                except Exception:
+                    pass
                 except Exception:
                     pass
                 break

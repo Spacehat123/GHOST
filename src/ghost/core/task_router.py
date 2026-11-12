@@ -198,6 +198,14 @@ class TaskRouter:
                     r"\b(motion site|threejs|three\.js|glb model|hero asset)\b",
                 ]
             ),
+            "market": (
+                "market_agent",
+                [
+                    r"\b(stock|shares?|nifty|sensex|bank nifty|bse|nse|adr|arbitrage|usdinr|brent crude|equity|equities)\b",
+                    r"\b(market overview|market intelligence|financial markets?|market scan|overnight adr|indian markets?)\b",
+                    r"\b(analyze.*(stock|infy|reliance|tcs|hdfc|icici|wipro|sbin)|bullish or bearish|trading opportunity|market alert)\b",
+                ]
+            ),
         }
 
     def classify_and_route(
@@ -866,6 +874,7 @@ class TaskRouter:
             PhysicalIntelligenceAgent,
             ResearchIntelligenceAgent,
             SystemIntelligenceAgent,
+            MarketIntelligenceAgent,
         )
 
         agent_instances = {
@@ -876,6 +885,7 @@ class TaskRouter:
             "personal_agent": PersonalIntelligenceAgent(event_bus=self.event_bus),
             "physical_agent": PhysicalIntelligenceAgent(event_bus=self.event_bus),
             "creative_agent": CreativeIntelligenceAgent(event_bus=self.event_bus),
+            "market_agent": MarketIntelligenceAgent(event_bus=self.event_bus),
         }
 
         completed_results: Dict[str, DelegationResult] = {}
@@ -900,6 +910,7 @@ class TaskRouter:
                 "objective": contract.objective,
                 "tool_scope": contract.tool_scope,
                 "order": contract.execution_order,
+                "total_stages": len(sorted_contracts),
             }
 
             # Map inputs and dependencies
@@ -928,9 +939,12 @@ class TaskRouter:
             # Transition task into RUNNING status for execution
             self.orchestrator.transition(task_obj.task_id, TaskStatus.RUNNING)
 
-            # Isolated execution sandbox
+            # Isolated execution sandbox with live agent lifecycle tracking
             start_t = time.time()
             try:
+                # Specialist agent activates and registers with SystemStateManager
+                await agent.initialize()
+
                 # Specialist agent executes task within authorized boundary
                 raw_output = await agent.execute_task(task_obj, stage_inputs)
                 duration = time.time() - start_t
@@ -1019,6 +1033,12 @@ class TaskRouter:
                     "error": str(e),
                 }
                 break
+            finally:
+                # Specialist agent deactivates and unregisters from SystemStateManager
+                try:
+                    await agent.shutdown()
+                except Exception:
+                    pass
 
         # Final Parent Workflow Outcome Summary
         final_status = "COMPLETED" if all_succeeded else "INCOMPLETE"

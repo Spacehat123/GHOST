@@ -241,6 +241,26 @@ class AgentCapabilityRegistry:
             verification_requirements=["3d_geometry_stl_exists"],
         ))
 
+        # 8. Market Intelligence Agent
+        self.register(AgentDescriptor(
+            agent_id="market_agent",
+            name="Market Intelligence Agent",
+            domain="market",
+            description="Continuously monitors Indian equities, indices, US ADR divergence, and financial announcements. Produces directional analysis and invalidation levels.",
+            supported_task_types=["market_surveillance", "instrument_analysis", "adr_arbitrage_scan", "news_impact_assessment", "morning_briefing"],
+            capabilities=["Indian equity surveillance", "ADR arbitrage conversion", "news impact classification", "directional institutional assessment"],
+            registered_tool_ids=[
+                "market_overview", "market_analyze_instrument", "market_adr_summary",
+                "market_get_news", "market_get_alerts", "market_trigger_scan"
+            ],
+            required_inputs=["action"],
+            optional_inputs=["symbol", "impact", "horizon", "limit"],
+            permission_requirements=["market.read", "notification.send"],
+            resource_requirements={"max_memory_mb": 256, "timeout_s": 60.0},
+            output_schema={"type": "object", "properties": {"status": {"type": "string"}, "analysis": {"type": "object"}}},
+            verification_requirements=["readback_state_match"],
+        ))
+
 
 # Global singleton
 _GLOBAL_AGENT_REGISTRY: Optional[AgentCapabilityRegistry] = None

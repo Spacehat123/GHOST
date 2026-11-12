@@ -8,6 +8,7 @@ from ghost.agents.business_agent import BusinessIntelligenceAgent
 from ghost.agents.personal_agent import PersonalIntelligenceAgent
 from ghost.agents.physical_agent import PhysicalIntelligenceAgent
 from ghost.agents.creative_agent import CreativeIntelligenceAgent
+from ghost.agents.market_agent import MarketIntelligenceAgent
 
 __all__ = [
     "AgentContract",
@@ -19,12 +20,13 @@ __all__ = [
     "PersonalIntelligenceAgent",
     "PhysicalIntelligenceAgent",
     "CreativeIntelligenceAgent",
+    "MarketIntelligenceAgent",
     "get_available_agents",
 ]
 
 
 def get_available_agents():
-    """Returns instantiated list of all 7 specialized domain agents."""
+    """Returns instantiated list of all specialized domain agents."""
     return [
         SystemIntelligenceAgent(),
         DevelopmentIntelligenceAgent(),
@@ -33,4 +35,5 @@ def get_available_agents():
         PersonalIntelligenceAgent(),
         PhysicalIntelligenceAgent(),
         CreativeIntelligenceAgent(),
+        MarketIntelligenceAgent(),
     ]

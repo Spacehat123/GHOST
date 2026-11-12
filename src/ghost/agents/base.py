@@ -61,6 +61,7 @@ class AgentContract(ABC):
     async def initialize(self) -> None:
         """Invoked when agent is activated."""
         self._state_mgr.register_agent(self.name)
+        self._state_mgr.register_agent(self.agent_id)
         try:
             await self.event_bus.publish(
                 Event(
@@ -80,6 +81,7 @@ class AgentContract(ABC):
     async def shutdown(self) -> None:
         """Invoked when agent stands down."""
         self._state_mgr.unregister_agent(self.name)
+        self._state_mgr.unregister_agent(self.agent_id)
         try:
             await self.event_bus.publish(
                 Event(

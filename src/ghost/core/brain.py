@@ -1545,6 +1545,160 @@ GHOST_TOOLS = [
                 "properties": {}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_overview",
+            "description": "Query current Indian market overview, key benchmark indices (NIFTY 50, SENSEX, BANK NIFTY), top gainers and losers, and ADR summary.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_analyze_instrument",
+            "description": "Perform deep-dive institutional directional analysis (BULLISH/BEARISH/NEUTRAL) on an Indian stock, index, or ADR. Evaluates technical momentum, RSI, volume profile, ADR parity, and news catalysts with support/resistance levels and risk factors.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Ticker symbol, e.g. 'INFY.NS', 'RELIANCE.NS', 'HDFCBANK.NS', '^NSEI', or ADR 'INFY'"
+                    }
+                },
+                "required": ["symbol"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_adr_summary",
+            "description": "Track price divergence and conversion arbitrage for US-listed Indian ADRs (INFY, HDB, IBN, WIT) vs Indian shares, accounting for conversion ratios, USD/INR FX rate, implied domestic INR price, and US session phase.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_get_news",
+            "description": "Retrieve monitored financial news and regulatory announcements filtered by impact rating (CRITICAL, HIGH, MEDIUM, LOW) or specific stock symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "impact": {
+                        "type": "string",
+                        "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+                        "description": "Optional impact severity filter"
+                    },
+                    "symbol": {
+                        "type": "string",
+                        "description": "Optional ticker symbol filter, e.g. 'INFY.NS', 'RELIANCE.NS'"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of items to return (default 15)"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_get_alerts",
+            "description": "Retrieve historical desktop notifications and market alerts triggered for CRITICAL or HIGH events.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum alerts to return (default 20)"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "market_trigger_scan",
+            "description": "Force an immediate surveillance cycle across live market quotes, US ADR divergence, and financial RSS news feeds.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "workspace_open",
+            "description": "Open a document, file, or native tool in GHOST's internal workspace (pdf, editor, code, image, camera, audio, video, browser, files, terminal, charts, sysmon).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "module": {
+                        "type": "string",
+                        "enum": ["pdf", "editor", "code", "image", "camera", "audio", "video", "browser", "files", "terminal", "charts", "sysmon"],
+                        "description": "The native module to open"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Optional path to the file to open inside the module"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Optional title for the workspace tab"
+                    }
+                },
+                "required": ["module"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "workspace_inspect_context",
+            "description": "Inspect the currently active native workspace module, open document preview, and active file context.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "personal_memory_manage",
+            "description": "Query, create, update, or delete persistent structured personal memories across profile, episodic, project, procedural, knowledge, and goal categories.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["query", "add", "update", "delete", "confirm"],
+                        "description": "Action to perform on personal intelligence store"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": ["profile", "episodic", "project", "procedural", "knowledge", "goal"],
+                        "description": "Memory category"
+                    },
+                    "subject": {"type": "string"},
+                    "content": {"type": "string"},
+                    "memory_id": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        }
     }
 ]
 
@@ -1563,6 +1717,9 @@ CORE_TOOL_NAMES = {
     "execute_workflow",
     "query_agent_registry",
     "check_task_status",
+    "workspace_open",
+    "workspace_inspect_context",
+    "personal_memory_manage",
 }
 
 CORE_TOOLS = [t for t in GHOST_TOOLS if t["function"]["name"] in CORE_TOOL_NAMES]
@@ -2898,6 +3055,117 @@ class OmniRouteBrain:
                 topic=arguments.get("topic", ""),
                 payload=str(arguments.get("payload", ""))
             )
+
+        elif tool_name == "market_overview":
+            from ghost.market.db import get_market_db
+            from ghost.market.data_feed import MarketDataFeed
+            db = get_market_db()
+            feed = MarketDataFeed(db)
+            indices = db.get_quotes(["^NSEI", "^BSESN", "^NSEBANK", "USDINR=X", "BZ=F"])
+            if not indices:
+                indices = feed.fetch_quotes(["^NSEI", "^BSESN", "^NSEBANK", "USDINR=X", "BZ=F"])
+            adrs = db.get_adr_pairs()
+            news = db.get_news(limit=5, impact="HIGH")
+            return {
+                "indices": indices,
+                "adrs": adrs,
+                "recent_high_impact_news": news,
+            }
+
+        elif tool_name == "market_analyze_instrument":
+            from ghost.market.analyst import MarketAnalyst
+            analyst = MarketAnalyst()
+            symbol = arguments.get("symbol", "^NSEI")
+            return analyst.analyze_instrument(symbol)
+
+        elif tool_name == "market_adr_summary":
+            from ghost.market.data_feed import MarketDataFeed
+            feed = MarketDataFeed()
+            pairs = feed.calculate_adr_metrics()
+            return {"adr_pairs": pairs}
+
+        elif tool_name == "market_get_news":
+            from ghost.market.db import get_market_db
+            db = get_market_db()
+            return {
+                "news": db.get_news(
+                    limit=int(arguments.get("limit", 15)),
+                    impact=arguments.get("impact"),
+                    symbol=arguments.get("symbol"),
+                )
+            }
+
+        elif tool_name == "market_get_alerts":
+            from ghost.market.db import get_market_db
+            db = get_market_db()
+            return {
+                "alerts": db.get_alerts(limit=int(arguments.get("limit", 20)))
+            }
+
+        elif tool_name == "market_trigger_scan":
+            from ghost.market.daemon import get_market_daemon
+            daemon = get_market_daemon()
+            summary = await daemon.run_cycle()
+            return {"scan_summary": summary}
+
+        elif tool_name == "workspace_open":
+            from ghost.core.workspace import WorkspaceManager
+            from ghost.core.events import get_event_bus
+            ws = WorkspaceManager.get_instance()
+            mod = arguments.get("module", "editor")
+            fp = arguments.get("file_path")
+            title = arguments.get("title")
+            tab = ws.open_module(mod, title=title, file_path=fp)
+            # Emit live state event
+            try:
+                bus = get_event_bus()
+                bus.publish(
+                    "workspace.state_changed",
+                    payload=ws.get_state(),
+                    source="brain.workspace_open"
+                )
+            except Exception:
+                pass
+            return {"status": "opened", "tab": tab.to_dict(), "workspace_state": ws.get_state()}
+
+        elif tool_name == "workspace_inspect_context":
+            from ghost.core.workspace import WorkspaceManager
+            ws = WorkspaceManager.get_instance()
+            return {"workspace_state": ws.get_state()}
+
+        elif tool_name == "personal_memory_manage":
+            from ghost.core.personal_intelligence import PersonalIntelligenceStore
+            store = PersonalIntelligenceStore.get_instance()
+            act = arguments.get("action", "query")
+            cat = arguments.get("category")
+            subj = arguments.get("subject", "")
+            content = arguments.get("content", "")
+            mem_id = arguments.get("memory_id")
+
+            if act == "query":
+                mems = store.list_memories(category=cat, search_query=subj or content, limit=10)
+                return {"memories": [m.to_dict() for m in mems]}
+            elif act == "add":
+                if not cat or not subj or not content:
+                    return {"error": "category, subject, and content are required to add memory"}
+                mem = store.add_memory(category=cat, subject=subj, content=content, source="user_prompt")
+                return {"status": "created", "memory": mem.to_dict()}
+            elif act == "update":
+                if not mem_id:
+                    return {"error": "memory_id required for update"}
+                mem = store.update_memory(memory_id=mem_id, content=content or None, subject=subj or None, category=cat or None)
+                return {"status": "updated", "memory": mem.to_dict() if mem else None}
+            elif act == "confirm":
+                if not mem_id:
+                    return {"error": "memory_id required for confirm"}
+                mem = store.confirm_memory(mem_id)
+                return {"status": "confirmed", "memory": mem.to_dict() if mem else None}
+            elif act == "delete":
+                if not mem_id:
+                    return {"error": "memory_id required for delete"}
+                deleted = store.delete_memory(mem_id)
+                return {"status": "deleted" if deleted else "not_found", "memory_id": mem_id}
+            return {"error": f"Unknown memory action: {act}"}
 
         # Fallback to ToolRegistry if registered
         try:

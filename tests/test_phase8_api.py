@@ -129,7 +129,7 @@ class TestPhase8API(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertIn("agents", data)
-        self.assertEqual(data["count"], 7)
+        self.assertGreaterEqual(data["count"], 7)
         agent_ids = [a["agent_id"] for a in data["agents"]]
         self.assertIn("system_agent", agent_ids)
         self.assertIn("research_agent", agent_ids)

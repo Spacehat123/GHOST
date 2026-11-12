@@ -27,10 +27,64 @@
         <span id="token-stats-text">LAST: 0 | TODAY: 0</span>
       </div>
 
+      <!-- Restored Kokoro Voice Persona Selector -->
+      <div class="hud-pill-group">
+        <select id="select-hud-voice" class="hud-pill-btn hud-pill-select" title="Voice Persona (Kokoro Neural TTS)">
+          <optgroup label="English (US) — Female">
+            <option value="af_nicole" selected>VOICE: af_nicole (US)</option>
+            <option value="af_aoede">VOICE: af_aoede (US)</option>
+            <option value="af_bella">VOICE: af_bella (US)</option>
+            <option value="af_heart">VOICE: af_heart (US)</option>
+            <option value="af_jessica">VOICE: af_jessica (US)</option>
+            <option value="af_kore">VOICE: af_kore (US)</option>
+            <option value="af_nova">VOICE: af_nova (US)</option>
+            <option value="af_river">VOICE: af_river (US)</option>
+            <option value="af_sarah">VOICE: af_sarah (US)</option>
+            <option value="af_sky">VOICE: af_sky (US)</option>
+            <option value="af_alloy">VOICE: af_alloy (US)</option>
+          </optgroup>
+          <optgroup label="English (US) — Male">
+            <option value="am_adam">VOICE: am_adam (US)</option>
+            <option value="am_echo">VOICE: am_echo (US)</option>
+            <option value="am_eric">VOICE: am_eric (US)</option>
+            <option value="am_fenrir">VOICE: am_fenrir (US)</option>
+            <option value="am_liam">VOICE: am_liam (US)</option>
+            <option value="am_michael">VOICE: am_michael (US)</option>
+            <option value="am_onyx">VOICE: am_onyx (US)</option>
+            <option value="am_puck">VOICE: am_puck (US)</option>
+            <option value="am_santa">VOICE: am_santa (US)</option>
+          </optgroup>
+          <optgroup label="English (UK) — Female">
+            <option value="bf_alice">VOICE: bf_alice (UK)</option>
+            <option value="bf_emma">VOICE: bf_emma (UK)</option>
+            <option value="bf_isabella">VOICE: bf_isabella (UK)</option>
+            <option value="bf_lily">VOICE: bf_lily (UK)</option>
+          </optgroup>
+          <optgroup label="English (UK) — Male">
+            <option value="bm_daniel">VOICE: bm_daniel (UK)</option>
+            <option value="bm_fable">VOICE: bm_fable (UK)</option>
+            <option value="bm_george">VOICE: bm_george (UK)</option>
+            <option value="bm_lewis">VOICE: bm_lewis (UK)</option>
+          </optgroup>
+          <optgroup label="Hindi — Female">
+            <option value="hf_alpha">VOICE: hf_alpha (HI)</option>
+            <option value="hf_beta">VOICE: hf_beta (HI)</option>
+          </optgroup>
+          <optgroup label="Hindi — Male">
+            <option value="hm_omega">VOICE: hm_omega (HI)</option>
+            <option value="hm_psi">VOICE: hm_psi (HI)</option>
+          </optgroup>
+        </select>
+      </div>
+
       <div class="hud-status status-IDLE" id="status-container">
         <div class="state-indicator"></div>
         <span id="status-label">IDLE</span>
       </div>
+
+      <button id="btn-toggle-workspace" class="hud-btn hud-btn-primary" title="Toggle Built-in Native Workspace">
+        <span>💻 Workspace</span>
+      </button>
 
       <button id="btn-quick-halt" class="hud-btn hud-btn-halt" title="Toggle Emergency Halt">
         <span id="quick-halt-label">🛑 HALT</span>
@@ -87,6 +141,58 @@
         </button>
       </div>
 
+      <div class="nav-section-label" style="margin-top: 1.2rem;">BUILT-IN WORKSPACE</div>
+      <div class="hud-pill-group hud-pill-vertical">
+        <button id="btn-ws-pdf" class="hud-pill-btn" title="Native PDF Viewer">
+          <span class="pill-dot red"></span>
+          <span class="pill-text">PDF VIEWER</span>
+        </button>
+        <button id="btn-ws-editor" class="hud-pill-btn" title="Text & Markdown Editor">
+          <span class="pill-dot amber"></span>
+          <span class="pill-text">EDITOR</span>
+        </button>
+        <button id="btn-ws-code" class="hud-pill-btn" title="Code Workspace">
+          <span class="pill-dot cyan"></span>
+          <span class="pill-text">CODE WORKSPACE</span>
+        </button>
+        <button id="btn-ws-image" class="hud-pill-btn" title="Image Inspector">
+          <span class="pill-dot purple"></span>
+          <span class="pill-text">IMAGE VIEWER</span>
+        </button>
+        <button id="btn-ws-camera" class="hud-pill-btn" title="Live Camera Feed">
+          <span class="pill-dot green"></span>
+          <span class="pill-text">CAMERA</span>
+        </button>
+        <button id="btn-ws-audio" class="hud-pill-btn" title="Audio Studio & Recorder">
+          <span class="pill-dot cyan"></span>
+          <span class="pill-text">AUDIO STUDIO</span>
+        </button>
+        <button id="btn-ws-video" class="hud-pill-btn" title="Video Player">
+          <span class="pill-dot red"></span>
+          <span class="pill-text">VIDEO VIEWER</span>
+        </button>
+        <button id="btn-ws-browser" class="hud-pill-btn" title="Internal Research Browser">
+          <span class="pill-dot blue"></span>
+          <span class="pill-text">BROWSER</span>
+        </button>
+        <button id="btn-ws-files" class="hud-pill-btn" title="File Manager">
+          <span class="pill-dot amber"></span>
+          <span class="pill-text">FILE MANAGER</span>
+        </button>
+        <button id="btn-ws-terminal" class="hud-pill-btn" title="Integrated Terminal">
+          <span class="pill-dot green"></span>
+          <span class="pill-text">TERMINAL</span>
+        </button>
+        <button id="btn-ws-charts" class="hud-pill-btn" title="Data & Market Charts">
+          <span class="pill-dot cyan"></span>
+          <span class="pill-text">DATA & CHARTS</span>
+        </button>
+        <button id="btn-ws-sysmon" class="hud-pill-btn" title="Host System Monitor">
+          <span class="pill-dot amber"></span>
+          <span class="pill-text">SYSTEM MON</span>
+        </button>
+      </div>
+
       <div class="nav-section-label" style="margin-top: 1.2rem;">SYSTEM AUDIT</div>
       <div class="hud-pill-group hud-pill-vertical">
         <button id="btn-hud-history" class="hud-pill-btn" title="Interaction History">
@@ -108,17 +214,42 @@
       </div>
     </aside>
 
-    <!-- Center Stage: The Animated Cybernetic Orbital Core -->
-    <main class="cyber-stage-center">
+    <!-- Center Stage: The Animated Cybernetic Orbital Core & Built-in Workspace -->
+    <main class="cyber-stage-center" id="cyber-stage-center">
       <div id="canvas-container">
         <canvas id="orb-canvas"></canvas>
+        <div id="mini-core-dock" class="mini-core-dock hidden" title="GHOST Mini Core — Click to Expand">
+          <span id="mini-core-status">ONLINE</span>
+          <button class="mini-core-expand-btn" id="btn-mini-core-expand" title="Restore Full Central Stage">⛶</button>
+        </div>
       </div>
 
       <!-- Core Identity Reticle -->
-      <div class="core-reticle-banner">
+      <div class="core-reticle-banner" id="core-reticle-banner">
         <span class="reticle-line-left"></span>
         <span class="reticle-core-id">ORBITAL INTELLIGENCE CORE // ACTIVE</span>
         <span class="reticle-line-right"></span>
+      </div>
+
+      <!-- Built-in Workspace Viewport (Active when internal viewer/tool is open) -->
+      <div id="workspace-viewport" class="workspace-viewport hidden">
+        <div class="workspace-top-bar">
+          <div class="workspace-module-meta">
+            <span class="workspace-module-icon" id="ws-module-icon">📄</span>
+            <span class="workspace-module-title" id="ws-module-title">WORKSPACE</span>
+          </div>
+          <div class="workspace-tab-strip" id="workspace-tab-strip">
+            <!-- Dynamic tab pills -->
+          </div>
+          <div class="workspace-top-actions">
+            <button class="ws-action-btn" id="btn-ws-ask-ghost" title="Ask GHOST About This Open Document">✨ Ask GHOST</button>
+            <button class="ws-action-btn" id="btn-ws-external" title="Fallback: Open in External App">↗ External</button>
+            <button class="ws-action-btn ws-action-close" id="btn-ws-close-viewport" title="Close Workspace & Restore Center Core">✕ Close</button>
+          </div>
+        </div>
+        <div class="workspace-content-pane" id="workspace-content-pane">
+          <!-- Active module DOM rendered dynamically -->
+        </div>
       </div>
     </main>
 
@@ -130,23 +261,26 @@
           <span class="panel-status-val" id="active-objective-status">ONLINE</span>
         </div>
         <div class="active-mission-box">
-          <div class="mission-name" id="active-mission-name">Autonomous Agency Core</div>
-          <div class="mission-subtext" id="active-mission-sub">AeroSpire Planter CAD & Venue Reconnaissance</div>
-          <div class="mission-bar"><div class="mission-bar-fill" style="width: 100%;"></div></div>
+          <div class="mission-name" id="active-mission-name">Standby — Universal Core</div>
+          <div class="mission-subtext" id="active-mission-sub">Awaiting next directive...</div>
+          <div class="mission-bar"><div class="mission-bar-fill" id="active-mission-bar-fill" style="width: 0%;"></div></div>
         </div>
       </div>
 
       <div class="telemetry-panel">
         <div class="telemetry-panel-header">
           <span class="panel-tag">DOMAIN AGENTS</span>
-          <span class="panel-status-val green">7 READY</span>
+          <span class="panel-status-val" id="active-agents-count">ALL IDLE</span>
         </div>
-        <div class="agents-status-stack">
-          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Creative Agent</span><span class="agent-spec">OpenSCAD CAD</span></div>
-          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Research Agent</span><span class="agent-spec">Brave CDP Web</span></div>
-          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Business Agent</span><span class="agent-spec">CRM & Obsidian</span></div>
-          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">System Agent</span><span class="agent-spec">Procfs Vitals</span></div>
-          <div class="agent-row"><span class="agent-indicator ready"></span><span class="agent-name">Development Agent</span><span class="agent-spec">Git & Pytest</span></div>
+        <div class="agents-status-stack" id="agents-status-stack">
+          <div class="agent-row" data-agent="creative_agent" title="OpenSCAD CAD & 3D"><span class="agent-indicator idle"></span><span class="agent-name">Creative Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="research_agent" title="Brave CDP Web Recon"><span class="agent-indicator idle"></span><span class="agent-name">Research Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="business_agent" title="CRM & Obsidian Pipeline"><span class="agent-indicator idle"></span><span class="agent-name">Business Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="system_agent" title="Procfs & Host Vitals"><span class="agent-indicator idle"></span><span class="agent-name">System Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="dev_agent" title="Git & Pytest Automation"><span class="agent-indicator idle"></span><span class="agent-name">Development Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="personal_agent" title="Calendar & Executive Assistant"><span class="agent-indicator idle"></span><span class="agent-name">Personal Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="physical_agent" title="Home Assistant & IoT"><span class="agent-indicator idle"></span><span class="agent-name">Physical Agent</span><span class="agent-status-tag idle">IDLE</span></div>
+          <div class="agent-row" data-agent="market_agent" title="NSE/BSE & ADR Arbitrage"><span class="agent-indicator idle"></span><span class="agent-name">Market Agent</span><span class="agent-status-tag idle">IDLE</span></div>
         </div>
       </div>
 
@@ -341,6 +475,7 @@
         <button class="deck-tab-btn" data-view="projects">Projects & Tasks</button>
         <button class="deck-tab-btn" data-view="physical">Smart Home</button>
         <button class="deck-tab-btn" data-view="creative">Creative 3D</button>
+        <button class="deck-tab-btn" data-view="market">Market Intelligence</button>
         <button class="deck-tab-btn" data-view="memory">Memory</button>
         <button class="deck-tab-btn" data-view="control">Control</button>
         <button class="deck-tab-btn" data-view="kanban">Pipeline</button>
@@ -726,40 +861,234 @@
       </section>
 
       <!-- =====================================================================
-           0e. MEMORY & KNOWLEDGE VIEW
+           0d4. MARKET INTELLIGENCE VIEW
+           ===================================================================== -->
+      <section id="view-market" class="deck-view">
+        <div class="deck-panel-box" style="max-width:1250px;">
+          <!-- Top Bar: Title & Surveillance Controls -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div>
+              <div class="deck-section-title" style="font-size:16px; color:#00ffcc; letter-spacing:1px;">MARKET INTELLIGENCE // PERSISTENT SURVEILLANCE</div>
+              <div class="deck-section-desc">Indian equities (NSE/BSE), benchmark indices, US ADR divergence arbitrage, news impact classification & proactive desktop alerting.</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="market-daemon-badge" class="deck-badge" style="background:rgba(0,255,204,0.1); border:1px solid #00ffcc; color:#00ffcc;">DAEMON: ACTIVE (60s)</span>
+              <button id="btn-market-scan" class="deck-btn deck-btn-primary" style="background:#00ffcc; color:#000; font-weight:bold;">⚡ Force Surveillance Scan</button>
+            </div>
+          </div>
+
+          <!-- Market Benchmarks & Macro Ribbon -->
+          <div style="margin-top:14px;">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:0.6; margin-bottom:6px;">Macro & Benchmark Radar</div>
+            <div id="market-benchmarks-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px;">
+              <div class="deck-card" style="padding:10px; text-align:center; opacity:0.6;">Loading benchmarks...</div>
+            </div>
+          </div>
+
+          <!-- Dedicated ADR Arbitrage Table -->
+          <div style="margin-top:20px; background:rgba(255,255,255,0.02); border:1px solid var(--deck-border); border-radius:6px; padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div>
+                <span style="font-size:13px; font-weight:600; color:#00ffcc;">US-Listed Indian ADR Arbitrage & Parity</span>
+                <span style="font-size:11px; opacity:0.6; margin-left:8px;">(Implied INR = ADR_USD × USDINR ÷ Ratio)</span>
+              </div>
+              <span id="market-adr-phase" class="deck-badge" style="background:rgba(255,255,255,0.08); font-size:10px;">US SESSION: CHECKING</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="deck-table" style="width:100%; font-size:12px; font-family:var(--deck-font-mono);">
+                <thead>
+                  <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,0.1);">
+                    <th style="padding:6px 8px;">ADR Ticker</th>
+                    <th style="padding:6px 8px;">Domestic (NSE)</th>
+                    <th style="padding:6px 8px;">Ratio</th>
+                    <th style="padding:6px 8px;">ADR Price ($)</th>
+                    <th style="padding:6px 8px;">Domestic (₹)</th>
+                    <th style="padding:6px 8px;">Implied (₹)</th>
+                    <th style="padding:6px 8px;">Prem / Disc %</th>
+                    <th style="padding:6px 8px;">Signal</th>
+                  </tr>
+                </thead>
+                <tbody id="market-adr-tbody">
+                  <tr><td colspan="8" style="padding:10px; opacity:0.5; text-align:center;">Loading ADR arbitrage data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Interactive On-Demand Deep-Dive Instrument Analysis -->
+          <div style="margin-top:20px; background:rgba(0,0,0,0.3); border:1px solid var(--deck-border); border-radius:6px; padding:14px;">
+            <div style="font-size:13px; font-weight:600; margin-bottom:10px; color:#fff;">Institutional Instrument Analysis & Invalidation Scanner</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <input type="text" id="market-analyze-input" class="deck-input" placeholder="Enter symbol (e.g. INFY.NS, RELIANCE.NS, TCS.NS, ^NSEI, HDB)" style="flex:1; min-width:240px;" value="INFY.NS" />
+              <button id="btn-market-analyze" class="deck-btn deck-btn-primary">Analyze Instrument</button>
+            </div>
+            <div id="market-analysis-result" style="margin-top:12px; display:none; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(0,255,204,0.3); border-radius:6px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- Directional Opportunities & Trading Radar -->
+          <div style="margin-top:20px;">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:0.6; margin-bottom:8px;">Recent Directional Assessments & Opportunities</div>
+            <div id="market-opportunities-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
+              <div class="deck-card" style="padding:12px; opacity:0.6;">Loading directional assessments...</div>
+            </div>
+          </div>
+
+          <!-- Split Row: Live News Stream & High-Impact Desktop Alert Log -->
+          <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <!-- Left: Financial & Regulatory News Feed -->
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--deck-border); border-radius:6px; padding:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:13px; font-weight:600;">Financial & Regulatory News Stream</span>
+                <select id="market-news-filter" class="deck-input" style="font-size:11px; padding:2px 8px; width:auto;">
+                  <option value="">All Impacts</option>
+                  <option value="CRITICAL">Critical Only</option>
+                  <option value="HIGH">High Impact</option>
+                  <option value="MEDIUM">Medium Impact</option>
+                </select>
+              </div>
+              <div id="market-news-container" style="max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:12px; opacity:0.6;">Loading news feed...</div>
+              </div>
+            </div>
+
+            <!-- Right: Alert History -->
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--deck-border); border-radius:6px; padding:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:13px; font-weight:600; color:#ff4444;">Proactive Desktop Alerts History</span>
+                <span style="font-size:11px; opacity:0.6;">(CRITICAL & HIGH events)</span>
+              </div>
+              <div id="market-alerts-container" style="max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:12px; opacity:0.6;">Loading alert history...</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           0e. PERSONAL INTELLIGENCE & PERSISTENT MEMORY VIEW
            ===================================================================== -->
       <section id="view-memory" class="deck-view">
-        <div class="deck-panel-box" style="max-width:1000px;">
-          <div class="deck-section-title">Persistent Memory & Directives</div>
-          <div class="deck-section-desc">Directives, knowledge facts, and episodic memory with conflict resolution.</div>
+        <div class="deck-panel-box" style="max-width:1150px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="deck-section-title">Personal Intelligence & Persistent Memory</div>
+              <div class="deck-section-desc">Structured, persistent understanding of you: profile, procedural preferences, projects, goals, and verified knowledge.</div>
+            </div>
+            <button class="deck-btn deck-btn-primary" id="btn-open-add-memory">+ Add Memory</button>
+          </div>
 
-          <!-- Memory Search -->
-          <div style="margin-top:14px; display:flex; gap:8px;">
-            <input type="text" id="memory-search-input" class="deck-input" placeholder="Search directives and discovered facts..." style="flex:1;" />
+          <!-- Memory Search & Inferred Filter Bar -->
+          <div style="margin-top:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="memory-search-input" class="deck-input" placeholder="Search personal memories, procedural preferences, goals, facts..." style="flex:1; min-width:240px;" />
+            <select id="select-memory-inferred-filter" class="deck-select" style="padding:4px 10px; font-size:11px;">
+              <option value="all" selected>Status: All Memories</option>
+              <option value="confirmed">Confirmed Facts Only</option>
+              <option value="inferred">Inferred Preferences Only</option>
+            </select>
             <button class="deck-btn deck-btn-primary" id="btn-memory-search">Search</button>
           </div>
 
-          <!-- Directives Management -->
-          <div style="margin-top:24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div class="deck-section-title" style="font-size:14px;">Active Directives (Core Memory)</div>
-            </div>
-            <div id="directives-list" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
-
-            <!-- Add Directive -->
-            <form id="form-add-directive" style="margin-top:14px; display:flex; gap:8px;">
-              <input type="text" id="new-directive-text" class="deck-input" placeholder="Enter new operator directive (e.g. Always verify unit tests before staging code)..." style="flex:1;" required />
-              <button type="submit" class="deck-btn deck-btn-primary">Add Directive</button>
-            </form>
+          <!-- 6 Connected Memory Category Tabs -->
+          <div class="memory-category-strip" style="display:flex; gap:8px; margin-top:16px; overflow-x:auto; padding-bottom:4px;">
+            <button class="deck-tab-btn active memory-cat-btn" data-cat="all">ALL (<span id="count-cat-all">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="profile">PROFILE (<span id="count-cat-profile">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="procedural">PROCEDURAL (<span id="count-cat-procedural">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="project">PROJECTS (<span id="count-cat-project">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="goal">GOALS (<span id="count-cat-goal">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="knowledge">KNOWLEDGE (<span id="count-cat-knowledge">0</span>)</button>
+            <button class="deck-tab-btn memory-cat-btn" data-cat="episodic">EPISODIC (<span id="count-cat-episodic">0</span>)</button>
           </div>
 
-          <!-- Discovered Facts -->
-          <div style="margin-top:24px;">
-            <div class="deck-section-title" style="font-size:14px;">Knowledge Facts</div>
-            <div id="facts-list" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
+          <!-- Structured Personal Memories Grid -->
+          <div style="margin-top:18px;">
+            <div id="personal-memories-list" style="display:flex; flex-direction:column; gap:10px;">
+              <div class="deck-card" style="padding:14px; text-align:center; opacity:0.6;">Loading personal intelligence store...</div>
+            </div>
+          </div>
+
+          <!-- Influenced Response Audit Tracker -->
+          <div style="margin-top:28px; background:rgba(0, 240, 255, 0.03); border:1px solid rgba(0, 240, 255, 0.15); border-radius:6px; padding:14px;">
+            <div class="deck-section-title" style="font-size:13px; color:#00f0ff;">Memories That Influenced GHOST Responses</div>
+            <div class="deck-section-desc">Audit trail of personal facts and procedural rules retrieved to ground recent assistant decisions.</div>
+            <div id="personal-influence-audit" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+              <div style="font-size:11px; color:var(--deck-text-muted); font-family:var(--deck-font-mono);">Standing by. Retrieved memories are attributed automatically per turn.</div>
+            </div>
+          </div>
+
+          <!-- Secondary Directives & Discovered Facts Accordion -->
+          <div style="margin-top:28px; border-top:1px solid rgba(255,255,255,0.08); padding-top:20px;">
+            <details>
+              <summary style="cursor:pointer; font-size:12px; font-weight:600; color:var(--deck-text-muted); text-transform:uppercase; letter-spacing:1px;">
+                Advanced: Core Directives & Discovered Facts (Legacy Ledger)
+              </summary>
+              <div style="margin-top:14px;">
+                <div class="deck-section-title" style="font-size:13px;">Active Directives (Core Memory)</div>
+                <div id="directives-list" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
+                <form id="form-add-directive" style="margin-top:10px; display:flex; gap:8px;">
+                  <input type="text" id="new-directive-text" class="deck-input" placeholder="Enter new operator directive..." style="flex:1;" required />
+                  <button type="submit" class="deck-btn deck-btn-primary">Add Directive</button>
+                </form>
+
+                <div class="deck-section-title" style="font-size:13px; margin-top:16px;">Discovered Facts</div>
+                <div id="facts-list" style="margin-top:8px; display:flex; flex-direction:column; gap:4px;"></div>
+              </div>
+            </details>
           </div>
         </div>
       </section>
+
+      <!-- Personal Memory Add / Edit Modal -->
+      <div id="personal-memory-modal" class="modal-backdrop hidden">
+        <div class="modal-card" style="max-width:540px;">
+          <div class="modal-header">
+            <div class="modal-title" id="pm-modal-title">Personal Memory Record</div>
+            <button id="btn-close-pm-modal" class="modal-close">&times;</button>
+          </div>
+          <form id="form-personal-memory" style="margin-top:12px; display:flex; flex-direction:column; gap:12px;">
+            <input type="hidden" id="pm-memory-id" value="" />
+            <div class="form-group">
+              <label>Memory Category</label>
+              <select id="pm-category" class="deck-select" style="width:100%; padding:6px 10px;">
+                <option value="profile">Personal Profile (Facts, Preferences, Style)</option>
+                <option value="procedural">Procedural Memory (How tasks must be done)</option>
+                <option value="project">Project Memory (Objectives, blockers, artifacts)</option>
+                <option value="goal">Goal Memory (Short/Long term objectives)</option>
+                <option value="knowledge">Knowledge Memory (Accumulated research)</option>
+                <option value="episodic">Episodic Memory (Past experiences & outcomes)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Subject / Topic Title</label>
+              <input type="text" id="pm-subject" class="deck-input" placeholder="e.g. Stock Analysis Requirements, CAD Port Grid" required />
+            </div>
+            <div class="form-group">
+              <label>Detailed Content</label>
+              <textarea id="pm-content" class="deck-input" rows="4" placeholder="Enter memory description..." required></textarea>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center;">
+              <div class="form-group" style="flex:1;">
+                <label>Confidence (0.0 to 1.0)</label>
+                <input type="number" id="pm-confidence" class="deck-input" step="0.05" min="0.1" max="1.0" value="1.0" />
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label>Status</label>
+                <select id="pm-inferred" class="deck-select" style="width:100%; padding:6px 10px;">
+                  <option value="0">Confirmed Fact</option>
+                  <option value="1">Inferred Preference</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+              <button type="button" class="deck-btn" id="btn-cancel-pm-modal">Cancel</button>
+              <button type="submit" class="deck-btn deck-btn-primary" id="btn-save-pm-modal">Save Memory</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- =====================================================================
            0f. CONTROL PLANE VIEW
@@ -1129,7 +1458,9 @@
     </div>
   </div>
 
+  <script src="/static/vendor/pdfjs/pdf.min.js"></script>
   <script src="/static/js/orb.js"></script>
+  <script src="/static/js/workspace.js"></script>
   <script src="/static/js/app.js"></script>
   <script src="/static/js/agency_deck.js"></script>
 

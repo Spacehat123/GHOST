@@ -79,6 +79,11 @@
       "id": "f_663880",
       "text": "my preferred terminal is kitty",
       "created_at": 1793521663.8808358
+    },
+    {
+      "id": "mem_1794468819090_452ab6",
+      "text": "Reminder for tomorrow (Friday, Nov 13, 2026): Follow up on pending tasks / study schedule.",
+      "created_at": 1794468819.0904713
     }
   ],
   "memories": [
@@ -249,6 +254,19 @@
       "conflict_with_id": "d_776253",
       "created_at": 1794244869.57099,
       "last_verified": 1794244869.5709906,
+      "expires_at": null
+    },
+    {
+      "id": "mem_1794468819090_452ab6",
+      "type": "fact",
+      "content": "Reminder for tomorrow (Friday, Nov 13, 2026): Follow up on pending tasks / study schedule.",
+      "source": "user_confirmed",
+      "confidence": 1.0,
+      "importance": 0.6,
+      "conflict_detected": false,
+      "conflict_with_id": null,
+      "created_at": 1794468819.0904713,
+      "last_verified": 1794468819.0904715,
       "expires_at": null
     }
   ]

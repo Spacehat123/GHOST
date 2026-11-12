@@ -270,7 +270,7 @@ class AutonomyRuntime:
         self.queue = JobQueue()
         heartbeat.beat("runtime-start")
         bus = get_event_bus()
-        from ghost.collectors import SystemCollector, GitCollector, HyprlandCollector
+        from ghost.collectors import SystemCollector, GitCollector, HyprlandCollector, MarketCollector
         from ghost.intelligence.proactive_orchestrator import get_proactive_orchestrator
         from ghost.intelligence.coordinator import get_cross_domain_coordinator
         from ghost.autonomy.task_worker import get_autonomous_execution_engine
@@ -278,6 +278,7 @@ class AutonomyRuntime:
         self.system_collector = SystemCollector(event_bus=bus)
         self.git_collector = GitCollector(event_bus=bus)
         self.hyprland_collector = HyprlandCollector(event_bus=bus)
+        self.market_collector = MarketCollector(event_bus=bus)
         self.proactive_orchestrator = get_proactive_orchestrator(event_bus=bus)
         self.proactive_orchestrator.start()
         self.coordinator = get_cross_domain_coordinator(event_bus=bus)
@@ -298,6 +299,7 @@ class AutonomyRuntime:
             asyncio.create_task(self.system_collector.run_loop(interval_s=15.0), name="system-collector"),
             asyncio.create_task(self.git_collector.run_loop(interval_s=30.0), name="git-collector"),
             asyncio.create_task(self.hyprland_collector.run_loop(), name="hyprland-collector"),
+            asyncio.create_task(self.market_collector.run_loop(interval_s=60.0), name="market-collector"),
             asyncio.create_task(self.task_worker.run_worker_loop(poll_interval_s=2.0), name="task-worker"),
         ]
         audit("runtime.started", tasks=[t.get_name() for t in self._tasks])
@@ -312,6 +314,8 @@ class AutonomyRuntime:
             self.git_collector.stop()
         if hasattr(self, "hyprland_collector") and self.hyprland_collector:
             self.hyprland_collector.stop()
+        if hasattr(self, "market_collector") and self.market_collector:
+            self.market_collector.stop()
         if hasattr(self, "proactive_orchestrator") and self.proactive_orchestrator:
             self.proactive_orchestrator.stop()
         if hasattr(self, "coordinator") and self.coordinator:
